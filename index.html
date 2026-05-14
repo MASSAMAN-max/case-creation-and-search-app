@@ -5,6 +5,28 @@
   <title>My App</title>
 </head>
 <body>
-  <h1>Hello Vercel!</h1>
+
+<h1>Vercel + GAS</h1>
+
+<button onclick="loadData()">
+  GAS呼び出し
+</button>
+
+<pre id="result"></pre>
+
+<script>
+async function loadData() {
+
+  const response = await fetch(
+    "https://script.google.com/macros/s/AKfycbxDms-KYCJaZkpkFzYKMtieSLPIOE-rtyOaynId8hHJ3lO1bCIMv0ACG_JZ-KjGsg7_/exec"
+  );
+
+  const text = await response.text();
+
+  document.getElementById("result")
+    .textContent = text;
+}
+</script>
+
 </body>
 </html>
