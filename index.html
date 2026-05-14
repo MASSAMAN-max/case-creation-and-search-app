@@ -111,12 +111,14 @@ document.addEventListener(
       const response = await fetch(
         API_URL,
         {
-          method: "POST",
-          headers: {
-            "Content-Type":"application/json"
-          },
-          body: JSON.stringify({
-            action:"master"
+          method:"POST",
+          body:new URLSearchParams({
+            data:JSON.stringify({
+              action:"search",
+              client:client,
+              month:month,
+              keyword:keyword
+            })
           })
         }
       );
