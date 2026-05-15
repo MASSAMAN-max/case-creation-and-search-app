@@ -1,182 +1,143 @@
-<script>
-// --- 通信設定 ---
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbya0qQ9HsAIcues8jupM700xkVG4AyOyeJMqMuBsauD0ThsAe_glb4rTyhdHjJ0ijj0Cw/exec';
-const CLIENT_ID = '302132186875-fr0lh20940o7k9jrdg3drm4n5r19lm99.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive';
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>案件管理アプリ</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; }
+        #initLoader { display: flex; justify-content: center; align-items: center; min-height: 200px; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .login-box { text-align: center; padding: 50px; }
+        button { padding: 10px 20px; cursor: pointer; background: #4285f4; color: white; border: none; border-radius: 4px; }
+        button:disabled { background: #ccc; }
+        .filter-sec { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; }
+        input, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
 
-let accessToken = null;
+    <div id="initLoader">読み込み中...</div>
 
-/**
- * ページ読み込み時の処理
- */
-document.addEventListener("DOMContentLoaded", () => {
-  accessToken = localStorage.getItem("google_access_token");
-  
-  if (!accessToken) {
-    document.getElementById("initLoader").innerHTML = `
-      <div style="text-align:center; padding:50px;">
-        <h3>案件管理アプリをご利用するにはログインが必要です</h3>
-        <button onclick="handleAuthClick()" style="padding:10px 20px; font-size:16px; cursor:pointer;">Googleアカウントでログイン</button>
-      </div>
-    `;
-    document.getElementById("mainApp").style.display = "none";
-  } else {
-    initializeApp();
-  }
-});
+    <div id="mainApp" style="display:none;" class="container">
+        <h2>案件管理システム</h2>
+        <div class="filter-sec">
+            <select id="filterClient"><option value="">すべての発注元</option></select>
+            <input type="number" id="filterMonth" placeholder="月（1-12）" min="1" max="12">
+            <input type="text" id="searchValue" placeholder="キーワード検索">
+            <button id="searchBtn" onclick="search()">検索</button>
+        </div>
+        <div id="resultTable">ここに検索結果が表示されます</div>
+    </div>
 
-/**
- * Google認証画面へ飛ばす処理
- */
-function handleAuthClick() {
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-    `client_id=${CLIENT_ID}` +
-    `&redirect_uri=${window.location.origin}` + 
-    `&response_type=token` +
-    `&scope=${encodeURIComponent(SCOPES)}`;
-  
-  window.location.href = authUrl;
-}
+    <script>
+    // --- 通信設定（ご自身のものに書き換えてください） ---
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbya0qQ9HsAlcues8jupM700xkVG4AyOyeJMqMuBsauD0ThsAe_glb4rTyhdHjJ0ijj0Cw/exec';
+    const CLIENT_ID = '302132186875-fr0lh20940o7k9jrdg3drm4n5r19lm99.apps.googleusercontent.com';
+    const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive';
 
-// トークン拾い上げ
-if (window.location.hash) {
-  const params = new URLSearchParams(window.location.hash.substring(1));
-  const token = params.get("access_token");
-  if (token) {
-    localStorage.setItem("google_access_token", token);
-    window.location.hash = ""; 
-    window.location.reload();
-  }
-}
+    let accessToken = null;
+    let appConfig = {};
 
-/**
- * アプリの初期化
- */
-async function initializeApp() {
-  try {
-    const data = await apiCall('loadMaster');
-    appConfig = data;
-    const select = document.getElementById("filterClient");
-    // プルダウン生成
-    if (data.clientList) {
-      data.clientList.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = opt.textContent = c;
-        select.appendChild(opt);
-      });
+    // 1. 起動時の処理
+    document.addEventListener("DOMContentLoaded", () => {
+        accessToken = localStorage.getItem("google_access_token");
+        
+        if (!accessToken) {
+            showLoginScreen();
+        } else {
+            initializeApp();
+        }
+    });
+
+    // 2. ログイン画面の表示
+    function showLoginScreen() {
+        document.getElementById("initLoader").innerHTML = `
+            <div class="login-box">
+                <h3>案件管理アプリをご利用するにはログインが必要です</h3>
+                <button onclick="handleAuthClick()">Googleアカウントでログイン</button>
+            </div>
+        `;
     }
-    document.getElementById("initLoader").style.display = "none";
-    document.getElementById("mainApp").style.display = "block";
-  } catch (e) {
-    alert("初期化失敗: " + e.message);
-    localStorage.removeItem("google_access_token");
-    window.location.reload();
-  }
-}
 
-/**
- * API通信関数（認証トークン付きに統一）
- */
-async function apiCall(action, payload = {}) {
-  try {
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + accessToken
-      },
-      body: JSON.stringify({
-        action: action,
-        payload: payload
-      })
-    });
-    
-    if (!response.ok) throw new Error("通信エラー");
-    const res = await response.json();
-    if (res.status === 'error') throw new Error(res.message);
-    return res.data;
-  } catch (e) {
-    console.error(e);
-    throw e;
-  }
-}
+    // 3. Google認証
+    function handleAuthClick() {
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+            `client_id=${CLIENT_ID}` +
+            `&redirect_uri=${window.location.origin}` + 
+            `&response_type=token` +
+            `&scope=${encodeURIComponent(SCOPES)}`;
+        window.location.href = authUrl;
+    }
 
-// 検索
-async function search() {
-  const btn = document.getElementById("searchBtn");
-  const icon = document.getElementById("searchIcon");
-  btn.disabled = true;
-  icon.classList.add("spinning");
-  
-  try {
-    const results = await apiCall('search', {
-      client: document.getElementById("filterClient").value,
-      month: document.getElementById("filterMonth").value,
-      keyword: document.getElementById("searchValue").value
-    });
-    displayResults(results); // displayResults関数が他にある前提です
-  } catch (e) {
-    alert("検索失敗: " + e.message);
-  } finally {
-    btn.disabled = false;
-    icon.classList.remove("spinning");
-  }
-}
+    // 4. URLからのトークン取得
+    if (window.location.hash) {
+        const params = new URLSearchParams(window.location.hash.substring(1));
+        const token = params.get("access_token");
+        if (token) {
+            localStorage.setItem("google_access_token", token);
+            window.location.hash = ""; 
+            window.location.reload();
+        }
+    }
 
-// 保存
-async function saveRecord(rowNumber, btnEl) {
-  const originalHtml = btnEl.innerHTML;
-  btnEl.disabled = true;
-  btnEl.innerHTML = '保存中...';
+    // 5. アプリ初期化（マスター取得）
+    async function initializeApp() {
+        try {
+            const data = await apiCall('loadMaster');
+            appConfig = data;
+            const select = document.getElementById("filterClient");
+            if (data.clientList) {
+                data.clientList.forEach(c => {
+                    const opt = document.createElement("option");
+                    opt.value = opt.textContent = c;
+                    select.appendChild(opt);
+                });
+            }
+            document.getElementById("initLoader").style.display = "none";
+            document.getElementById("mainApp").style.display = "block";
+        } catch (e) {
+            console.error(e);
+            alert("初期化失敗: " + e.message);
+            localStorage.removeItem("google_access_token");
+            showLoginScreen();
+        }
+    }
 
-  const formData = {};
-  ["工事内容1","工事内容2","工事内容3","工事内容4","施工日1","施工日2","施工日3","施工日4","検査日","備考"].forEach(f => {
-    const el = document.getElementById(`${f}_${rowNumber}`);
-    if (el) formData[f] = el.value;
-  });
+    // 6. 通信関数
+    async function apiCall(action, payload = {}) {
+        const response = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + accessToken },
+            body: JSON.stringify({ action: action, payload: payload })
+        });
+        if (!response.ok) throw new Error("通信エラーが発生しました");
+        const res = await response.json();
+        if (res.status === 'error') throw new Error(res.message);
+        return res.data;
+    }
 
-  try {
-    const msg = await apiCall('update', { rowNumber, formData });
-    alert(msg);
-  } catch (e) {
-    alert("保存失敗: " + e.message);
-  } finally {
-    btnEl.disabled = false;
-    btnEl.innerHTML = originalHtml;
-  }
-}
-
-// アップロード
-async function handleUpload(rowNumber, btn) {
-  const files = selectedFilesMap[rowNumber];
-  if (!files || files.length === 0) return alert("ファイルを選択してください");
-
-  btn.disabled = true;
-  const status = document.getElementById(`status_${rowNumber}`);
-  status.textContent = "変換中...";
-
-  try {
-    const filesData = await Promise.all(files.map(file => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve({ data: e.target.result, mimeType: file.type, name: file.name });
-        reader.readAsDataURL(file);
-      });
-    }));
-
-    status.textContent = "アップロード中...";
-    const msg = await apiCall('upload', {
-      rowNumber,
-      uploader: document.getElementById(`uploader_${rowNumber}`).value,
-      fileType: document.getElementById(`fileType_${rowNumber}`).value,
-      files: filesData
-    });
-    
-    status.textContent = "✅ " + msg;
-    if (typeof clearFiles === 'function') clearFiles(rowNumber);
-  } catch (e) {
-    status.textContent = "❌ 失敗: " + e.message;
-  } finally {
-    btn.disabled = false;
-  }
-}
-</script>
+    // 7. 検索処理
+    async function search() {
+        const btn = document.getElementById("searchBtn");
+        btn.disabled = true;
+        btn.textContent = "検索中...";
+        try {
+            const results = await apiCall('search', {
+                client: document.getElementById("filterClient").value,
+                month: document.getElementById("filterMonth").value,
+                keyword: document.getElementById("searchValue").value
+            });
+            // 簡易表示（テーブル作成処理などは別途必要）
+            document.getElementById("resultTable").innerHTML = `<p>${results.length} 件見つかりました</p>`;
+            console.log(results);
+        } catch (e) {
+            alert("検索失敗: " + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "検索";
+        }
+    }
+    </script>
+</body>
+</html>
