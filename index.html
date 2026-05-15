@@ -47,18 +47,31 @@ async function search() {
   btn.disabled = true;
   icon.classList.add("spinning");
 
+  async function apiCall(action, payload = {}) {
   try {
-    const records = await apiCall('search', {
-      client: document.getElementById("filterClient").value,
-      month: document.getElementById("filterMonth").value,
-      keyword: document.getElementById("searchValue").value
+    // ⚠️ 余計なカスタムヘッダー（Content-Type: application/json など）は
+    // CORSのPreflightリクエストを誘発してエラーになるため、
+    // あえてプレーンなテキストとして送信するのがGASとVercelを繋ぐ最大のコツです。
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        token: SECURITY_TOKEN,
+        action: action,
+        payload: payload
+      })
     });
-    displayResults(records);
+    
+    if (!response.ok) throw new Error("ネットワークエラー: " + response.statusText);
+    
+    const res = await response.json();
+    
+    if (res.status === 'error') {
+      throw new Error("GAS内部エラー: " + res.message);
+    }
+    return res.data;
   } catch (e) {
-    alert("検索エラー: " + e.message);
-  } finally {
-    btn.disabled = false;
-    icon.classList.remove("spinning");
+    console.error("通信失敗:", e);
+    throw e;
   }
 }
 
