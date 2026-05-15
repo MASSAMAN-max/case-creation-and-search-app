@@ -1,291 +1,122 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+// --- 通信設定 ---
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbya0qQ9HsAIcues8jupM700xkVG4AyOyeJMqMuBsauD0ThsAe_glb4rTyhdHjJ0ijj0Cw/exec';
+const SECURITY_TOKEN = '123'; // code.gsに設定したトークンと合わせる
 
-  <title>案件管理ダッシュボード</title>
+/**
+ * 共通通信関数：google.script.runの代わりに使用
+ */
+async function apiCall(action, payload = {}) {
+  const response = await fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'cors', // これが必要
+    body: JSON.stringify({
+      token: SECURITY_TOKEN,
+      action: action,
+      payload: payload
+    })
+  });
+  const res = await response.json();
+  if (res.status === 'error') throw new Error(res.message);
+  return res.data;
+}
 
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+// --- 以下、各関数の修正版 ---
 
-  <style>
-    body{
-      font-family:sans-serif;
-      padding:20px;
-      background:#f1f5f9;
-    }
-
-    .card{
-      background:white;
-      padding:20px;
-      border-radius:12px;
-      margin-bottom:20px;
-    }
-
-    button{
-      padding:12px 20px;
-      border:none;
-      border-radius:8px;
-      cursor:pointer;
-      background:#2563eb;
-      color:white;
-      font-weight:bold;
-    }
-
-    input,select{
-      width:100%;
-      padding:10px;
-      margin-top:5px;
-      margin-bottom:15px;
-      box-sizing:border-box;
-    }
-
-    .result-item{
-      background:white;
-      padding:15px;
-      border-radius:12px;
-      margin-bottom:12px;
-    }
-  </style>
-</head>
-
-<body>
-
-<h2>案件管理ダッシュボード</h2>
-
-<div class="card">
-
-  <label>発注元</label>
-  <select id="filterClient">
-    <option value="">すべて</option>
-  </select>
-
-  <label>施工予定月</label>
-  <select id="filterMonth">
-    <option value="">全期間</option>
-    <option value="1">1月</option>
-    <option value="2">2月</option>
-    <option value="3">3月</option>
-    <option value="4">4月</option>
-    <option value="5">5月</option>
-    <option value="6">6月</option>
-    <option value="7">7月</option>
-    <option value="8">8月</option>
-    <option value="9">9月</option>
-    <option value="10">10月</option>
-    <option value="11">11月</option>
-    <option value="12">12月</option>
-  </select>
-
-  <label>検索</label>
-  <input type="text"
-    id="searchValue"
-    placeholder="案件名、住所など">
-
-  <button onclick="search()">
-    検索
-  </button>
-
-</div>
-
-<div id="searchCount"></div>
-<div id="results"></div>
-
-<script>
-
-const API_URL = "https://script.google.com/macros/s/AKfycbya0qQ9HsAIcues8jupM700xkVG4AyOyeJMqMuBsauD0ThsAe_glb4rTyhdHjJ0ijj0Cw/exec";
-
-let appConfig = {};
-
-// =========================
-// 初期データ取得
-// =========================
-
-document.addEventListener(
-  "DOMContentLoaded",
-  async () => {
-
-    try {
-
-      const response = await fetch(
-        API_URL,
-        {
-          method:"POST",
-          body:new URLSearchParams({
-            data:JSON.stringify({
-              action:"search",
-              client:client,
-              month:month,
-              keyword:keyword
-            })
-          })
-        }
-      );
-
-      const json = await response.json();
-
-      if(!json.success){
-        throw new Error(json.error);
-      }
-
-      appConfig = json.data;
-
-      const select =
-        document.getElementById(
-          "filterClient"
-        );
-
-      appConfig.clientList.forEach(c => {
-
-        const opt =
-          document.createElement("option");
-
-        opt.value = c;
-        opt.textContent = c;
-
-        select.appendChild(opt);
-
-      });
-
-    } catch(err){
-
-      alert(
-        "初期化失敗: "
-        + err.message
-      );
-
-    }
-
+// 初期化
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const data = await apiCall('loadMaster');
+    appConfig = data;
+    const select = document.getElementById("filterClient");
+    data.clientList.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = opt.textContent = c;
+      select.appendChild(opt);
+    });
+    document.getElementById("initLoader").style.display = "none";
+    document.getElementById("mainApp").style.display = "block";
+  } catch (e) {
+    alert("初期化エラー: " + e.message);
   }
-);
+});
 
-// =========================
 // 検索
-// =========================
-
-async function search(){
-
-  const client =
-    document.getElementById(
-      "filterClient"
-    ).value;
-
-  const month =
-    document.getElementById(
-      "filterMonth"
-    ).value;
-
-  const keyword =
-    document.getElementById(
-      "searchValue"
-    ).value;
+async function search() {
+  const btn = document.getElementById("searchBtn");
+  const icon = document.getElementById("searchIcon");
+  btn.disabled = true;
+  icon.classList.add("spinning");
 
   try {
-
-    const response = await fetch(
-      API_URL,
-      {
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json"
-        },
-        body:JSON.stringify({
-          action:"search",
-          client:client,
-          month:month,
-          keyword:keyword
-        })
-      }
-    );
-
-    const json =
-      await response.json();
-
-    if(!json.success){
-      throw new Error(json.error);
-    }
-
-    displayResults(json.data);
-
-  } catch(err){
-
-    alert(
-      "検索失敗: "
-      + err.message
-    );
-
+    const records = await apiCall('search', {
+      client: document.getElementById("filterClient").value,
+      month: document.getElementById("filterMonth").value,
+      keyword: document.getElementById("searchValue").value
+    });
+    displayResults(records);
+  } catch (e) {
+    alert("検索エラー: " + e.message);
+  } finally {
+    btn.disabled = false;
+    icon.classList.remove("spinning");
   }
 }
 
-// =========================
-// 結果表示
-// =========================
+// 保存
+async function saveRecord(rowNumber, btnEl) {
+  const originalHtml = btnEl.innerHTML;
+  btnEl.disabled = true;
+  btnEl.innerHTML = '保存中...';
 
-function displayResults(records){
-
-  const container =
-    document.getElementById(
-      "results"
-    );
-
-  const countDiv =
-    document.getElementById(
-      "searchCount"
-    );
-
-  container.innerHTML = "";
-
-  if(
-    !records
-    || records.length === 0
-  ){
-
-    countDiv.textContent =
-      "案件がありません";
-
-    return;
-  }
-
-  countDiv.textContent =
-    records.length
-    + " 件";
-
-  records.forEach(record => {
-
-    const div =
-      document.createElement("div");
-
-    div.className =
-      "result-item";
-
-    div.innerHTML = `
-      <div>
-        <strong>
-          No.${record.No}
-        </strong>
-      </div>
-
-      <div>
-        ${record.案件名 || ""}
-      </div>
-
-      <div>
-        ${record.住所 || ""}
-      </div>
-
-      <div>
-        ${record.施工日1 || ""}
-      </div>
-    `;
-
-    container.appendChild(div);
-
+  const formData = {};
+  ["工事内容1","工事内容2","工事内容3","工事内容4","施工日1","施工日2","施工日3","施工日4","検査日","備考"].forEach(f => {
+    const el = document.getElementById(`${f}_${rowNumber}`);
+    if (el) formData[f] = el.value;
   });
 
+  try {
+    const msg = await apiCall('update', { rowNumber, formData });
+    alert(msg);
+  } catch (e) {
+    alert("保存失敗: " + e.message);
+  } finally {
+    btnEl.disabled = false;
+    btnEl.innerHTML = originalHtml;
+  }
 }
 
-</script>
+// アップロード
+async function handleUpload(rowNumber, btn) {
+  const files = selectedFilesMap[rowNumber];
+  if (!files || files.length === 0) return alert("ファイルを選択してください");
 
-</body>
-</html>
+  btn.disabled = true;
+  const status = document.getElementById(`status_${rowNumber}`);
+  status.textContent = "変換中...";
+
+  try {
+    // ファイルをBase64に変換
+    const filesData = await Promise.all(files.map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve({ data: e.target.result, mimeType: file.type, name: file.name });
+        reader.readAsDataURL(file);
+      });
+    }));
+
+    status.textContent = "アップロード中...";
+    const msg = await apiCall('upload', {
+      rowNumber,
+      uploader: document.getElementById(`uploader_${rowNumber}`).value,
+      fileType: document.getElementById(`fileType_${rowNumber}`).value,
+      files: filesData
+    });
+    
+    status.textContent = "✅ " + msg;
+    clearFiles(rowNumber);
+  } catch (e) {
+    status.textContent = "❌ 失敗: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
