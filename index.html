@@ -1,28 +1,61 @@
 // --- 通信設定 ---
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbya0qQ9HsAIcues8jupM700xkVG4AyOyeJMqMuBsauD0ThsAe_glb4rTyhdHjJ0ijj0Cw/exec';
+// Google認証に必要な設定
+const CLIENT_ID = '302132186875-fr0lh20940o7k9jrdg3drm4n5r19lm99.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive';
+
+let accessToken = null;
 
 /**
- * 共通通信関数：google.script.runの代わりに使用
+ * ページ読み込み時の処理
  */
-async function apiCall(action, payload = {}) {
-  const response = await fetch(GAS_URL, {
-    method: 'POST',
-    mode: 'cors', // これが必要
-    body: JSON.stringify({
-      token: SECURITY_TOKEN,
-      action: action,
-      payload: payload
-    })
-  });
-  const res = await response.json();
-  if (res.status === 'error') throw new Error(res.message);
-  return res.data;
+document.addEventListener("DOMContentLoaded", () => {
+  // すでにログイン（トークンが保存）されているかチェック
+  accessToken = localStorage.getItem("google_access_token");
+  
+  if (!accessToken) {
+    // ログインしていない場合はログインボタンを表示し、メインアプリを隠す
+    document.getElementById("initLoader").innerHTML = `
+      <div style="text-align:center; padding:50px;">
+        <h3>案件管理アプリをご利用するにはログインが必要です</h3>
+        <button onclick="handleAuthClick()" style="padding:10px 20px; font-size:16px; cursor:pointer;">Googleアカウントでログイン</button>
+      </div>
+    `;
+    document.getElementById("mainApp").style.display = "none";
+  } else {
+    // ログイン済みの場合はマスターデータをロード
+    initializeApp();
+  }
+});
+
+/**
+ * Google認証画面へ飛ばす処理（OAuth2）
+ */
+function handleAuthClick() {
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${CLIENT_ID}` +
+    `&redirect_uri=${window.location.origin}` + // 今開いているVercelのURLが自動で入ります
+    `&response_type=token` +
+    `&scope=${encodeURIComponent(SCOPES)}`;
+  
+  window.location.href = authUrl;
 }
 
-// --- 以下、各関数の修正版 ---
+// 認証完了後にURLに戻ってきた際のトークン拾い上げ処理
+if (window.location.hash) {
+  const params = new URLSearchParams(window.location.hash.substring(1));
+  const token = params.get("access_token");
+  if (token) {
+    localStorage.setItem("google_access_token", token);
+    window.location.hash = ""; // URLを綺麗にする
+    window.location.reload();
+  }
+}
 
-// 初期化
-document.addEventListener("DOMContentLoaded", async () => {
+/**
+ * アプリの初期化
+ */
+async function initializeApp() {
   try {
     const data = await apiCall('loadMaster');
     appConfig = data;
@@ -35,9 +68,37 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("initLoader").style.display = "none";
     document.getElementById("mainApp").style.display = "block";
   } catch (e) {
-    alert("初期化エラー: " + e.message);
+    alert("初期化失敗: " + e.message);
+    // トークンが古くてエラーになった場合は再ログインを促す
+    localStorage.removeItem("google_access_token");
   }
-});
+}
+
+/**
+ * 認証トークンをヘッダーに乗せてGASを叩く関数
+ */
+async function apiCall(action, payload = {}) {
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + accessToken // Googleに「ログイン済みの本人です」と伝える証拠
+      },
+      body: JSON.stringify({
+        action: action,
+        payload: payload
+      })
+    });
+    
+    if (!response.ok) throw new Error("通信エラー");
+    const res = await response.json();
+    if (res.status === 'error') throw new Error(res.message);
+    return res.data;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+}
 
 // 検索
 async function search() {
