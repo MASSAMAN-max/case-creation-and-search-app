@@ -1,6 +1,5 @@
 // --- 通信設定 ---
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbya0qQ9HsAIcues8jupM700xkVG4AyOyeJMqMuBsauD0ThsAe_glb4rTyhdHjJ0ijj0Cw/exec';
-const SECURITY_TOKEN = 'aiueo'; // code.gsに設定したトークンと合わせる
 
 /**
  * 共通通信関数：google.script.runの代わりに使用
@@ -47,15 +46,12 @@ async function search() {
   btn.disabled = true;
   icon.classList.add("spinning");
 
-  async function apiCall(action, payload = {}) {
+async function apiCall(action, payload = {}) {
   try {
-    // ⚠️ 余計なカスタムヘッダー（Content-Type: application/json など）は
-    // CORSのPreflightリクエストを誘発してエラーになるため、
-    // あえてプレーンなテキストとして送信するのがGASとVercelを繋ぐ最大のコツです。
+    // ⚠️ トークンを削除し、ヘッダーも一切指定しない「最もプレーンなリクエスト」
     const response = await fetch(GAS_URL, {
       method: 'POST',
       body: JSON.stringify({
-        token: SECURITY_TOKEN,
         action: action,
         payload: payload
       })
@@ -64,10 +60,7 @@ async function search() {
     if (!response.ok) throw new Error("ネットワークエラー: " + response.statusText);
     
     const res = await response.json();
-    
-    if (res.status === 'error') {
-      throw new Error("GAS内部エラー: " + res.message);
-    }
+    if (res.status === 'error') throw new Error("GAS内部エラー: " + res.message);
     return res.data;
   } catch (e) {
     console.error("通信失敗:", e);
