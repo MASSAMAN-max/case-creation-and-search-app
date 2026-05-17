@@ -62,10 +62,13 @@
 
     // 3. Google認証
     function handleAuthClick() {
-      // window.location.origin に戻すことで、3種類どのドメインから開いてもその場所に正しく戻って来れるようになります
+      // ⚠️ Vercelの「本番用URL（絶対に変わらない方）」を直接ここに手書きで固定します！
+      // ※末尾のスラッシュ「なし」にしてください。
+      const PROD_URL = 'https://my-first-app-rho-nine.vercel.app'; 
+    
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${CLIENT_ID}` +
-        `&redirect_uri=${window.location.origin}` + 
+        `&redirect_uri=${encodeURIComponent(PROD_URL)}` + // 固定したURLを送る
         `&response_type=token` +
         `&scope=${encodeURIComponent(SCOPES)}`;
       
