@@ -110,14 +110,12 @@
     }
 
     // 6. 通信関数
-    /**
-     * VercelからGASへデータを安全に送信する関数
-     */
     async function apiCall(action, payload = {}) {
-      // ログイン時に取得した認証トークン（アクセストークン）を取得
       const token = localStorage.getItem('google_access_token'); 
       
-      // 送信するデータを一塊にする
+      // 💡 トークンはヘッダーではなく、データの中身（payload）にこっそり混ぜる
+      payload.token = token;
+    
       const requestBody = {
         action: action,
         payload: payload
@@ -126,12 +124,9 @@
       try {
         const response = await fetch(GAS_URL, {
           method: 'POST',
-          // ⚠️ GASに「JSONデータを送るよ」と「認証トークン」を正しく伝える
           headers: {
-            'Content-Type': 'text/plain', // GASのpostDataを確実に動かすための指定
-            'Authorization': `Bearer ${token}`
+            'Content-Type': 'text/plain' // 💡 これだけにする！
           },
-          // ⚠️ データを必ず文字列に変換して送る
           body: JSON.stringify(requestBody)
         });
     
@@ -140,8 +135,6 @@
         }
     
         const result = await response.json();
-        
-        // GAS側でエラーが返ってきた場合
         if (result.status === 'error') {
           throw new Error(result.message);
         }
