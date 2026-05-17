@@ -63,13 +63,20 @@
     }
 
     // 3. Google認証
+    /**
+     * Google認証画面へ飛ばす処理（OAuth2）
+     */
     function handleAuthClick() {
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-            `client_id=${CLIENT_ID}` +
-            `&redirect_uri=${window.location.origin}` + 
-            `&response_type=token` +
-            `&scope=${encodeURIComponent(SCOPES)}`;
-        window.location.href = authUrl;
+      // ⚠️ window.location.origin をやめて、Googleに登録してある【メインのURL】に完全に固定します
+      const MAIN_REDIRECT_URI = 'https://my-first-app-rho-nine.vercel.app'; 
+    
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${CLIENT_ID}` +
+        `&redirect_uri=${encodeURIComponent(MAIN_REDIRECT_URI)}` + // 確実にエンコードする
+        `&response_type=token` +
+        `&scope=${encodeURIComponent(SCOPES)}`;
+      
+      window.location.href = authUrl;
     }
 
     // 4. URLからのトークン取得
