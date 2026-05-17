@@ -330,11 +330,13 @@
 // 🛠️ 【重要】ここにご自身のID情報を正しく設定してください
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw17-nkHnUfe0KYq3VSDG60N_3y-hG7b-soGOfNGnN-ZkqLrHTJ9WsOqlJO3KeUmYKjBA/exec';
 const CLIENT_ID = '302132186875-fr0lh20940o7k9jrdg3drm4n5r19lm99.apps.googleusercontent.com';
+
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive';
 
 let appConfig = {};
 const selectedFilesMap = {};
 
+// 以前ばっちり動いていた固定URL（末尾にスラッシュ / を入れない）
 const REDIRECT_URI = "https://my-first-app-rho-nine.vercel.app";
 
 function getHashParams() {
@@ -353,7 +355,7 @@ function redirectToLogin() {
     `client_id=${encodeURIComponent(CLIENT_ID)}` +
     `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
     `&response_type=token` +
-    `&scope=${encodeURIComponent(SCOPES)}` + // 適切なスコープ群を適用
+    `&scope=${encodeURIComponent(SCOPES)}` +
     `&prompt=consent`;
   window.location.href = authUrl;
 }
@@ -386,7 +388,9 @@ async function apiCall(action, payload = {}) {
   
   const result = await response.json();
   if (result.error) throw new Error(result.error);
-  return result.data;
+  
+  // ★ GASから直接返ってきたオブジェクトを正しくそのまま返すように修正（.data を削除）
+  return result; 
 }
 
 // 画面起動時の初期化ロジック
