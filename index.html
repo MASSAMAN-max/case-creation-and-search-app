@@ -63,16 +63,11 @@
     }
 
     // 3. Google認証
-    /**
-     * Google認証画面へ飛ばす処理（OAuth2）
-     */
     function handleAuthClick() {
-      // ⚠️ window.location.origin をやめて、Googleに登録してある【メインのURL】に完全に固定します
-      const MAIN_REDIRECT_URI = 'https://my-first-app-rho-nine.vercel.app'; 
-    
+      // window.location.origin に戻すことで、3種類どのドメインから開いてもその場所に正しく戻って来れるようになります
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${CLIENT_ID}` +
-        `&redirect_uri=${encodeURIComponent(MAIN_REDIRECT_URI)}` + // 確実にエンコードする
+        `&redirect_uri=${window.location.origin}` + 
         `&response_type=token` +
         `&scope=${encodeURIComponent(SCOPES)}`;
       
