@@ -111,18 +111,49 @@
     }
 
     // 6. 通信関数
+    /**
+     * VercelからGASへデータを安全に送信する関数
+     */
     async function apiCall(action, payload = {}) {
+      // ログイン時に取得した認証トークン（アクセストークン）を取得
+      const token = localStorage.getItem('google_access_token'); 
+      
+      // 送信するデータを一塊にする
+      const requestBody = {
+        action: action,
+        payload: payload
+      };
+    
+      try {
         const response = await fetch(GAS_URL, {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + accessToken },
-            body: JSON.stringify({ action: action, payload: payload })
+          method: 'POST',
+          // ⚠️ GASに「JSONデータを送るよ」と「認証トークン」を正しく伝える
+          headers: {
+            'Content-Type': 'text/plain', // GASのpostDataを確実に動かすための指定
+            'Authorization': `Bearer ${token}`
+          },
+          // ⚠️ データを必ず文字列に変換して送る
+          body: JSON.stringify(requestBody)
         });
-        if (!response.ok) throw new Error("通信エラーが発生しました");
-        const res = await response.json();
-        if (res.status === 'error') throw new Error(res.message);
-        return res.data;
+    
+        if (!response.ok) {
+          throw new Error(`ネットワークエラー: ${response.status}`);
+        }
+    
+        const result = await response.json();
+        
+        // GAS側でエラーが返ってきた場合
+        if (result.status === 'error') {
+          throw new Error(result.message);
+        }
+    
+        return result.data;
+    
+      } catch (error) {
+        console.error('通信失敗:', error);
+        throw error;
+      }
     }
-
     // 7. 検索処理
     async function search() {
         const btn = document.getElementById("searchBtn");
