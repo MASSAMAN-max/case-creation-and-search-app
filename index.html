@@ -111,9 +111,10 @@
 
     // 6. 通信関数
     async function apiCall(action, payload = {}) {
+      // ログイン時に取得した認証トークン
       const token = localStorage.getItem('google_access_token'); 
       
-      // 💡 トークンはヘッダーではなく、データの中身（payload）にこっそり混ぜる
+      // 💡 トークンはヘッダーではなく、データ（payload）の中に混ぜる！
       payload.token = token;
     
       const requestBody = {
@@ -125,7 +126,8 @@
         const response = await fetch(GAS_URL, {
           method: 'POST',
           headers: {
-            'Content-Type': 'text/plain' // 💡 これだけにする！
+            // 💡 ヘッダーはこれだけにします。Authorizationは絶対に書かないでください！
+            'Content-Type': 'text/plain' 
           },
           body: JSON.stringify(requestBody)
         });
@@ -135,6 +137,7 @@
         }
     
         const result = await response.json();
+        
         if (result.status === 'error') {
           throw new Error(result.message);
         }
