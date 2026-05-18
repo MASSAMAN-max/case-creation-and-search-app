@@ -284,13 +284,34 @@
   </style>
 </head>
 <body>
+  <div id="loginScreen" style="display: none; min-height: 100vh; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); display: flex; align-items: center; justify-content: center; font-family: 'Helvetica Neue', Arial, sans-serif;">
+    <div style="background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 400px; box-sizing: border-box;">
+      <h2 style="margin: 0 0 8px 0; color: #333; font-size: 24px; font-weight: 600; text-align: center;">案件管理システム</h2>
+      <p style="margin: 0 0 24px 0; color: #666; font-size: 14px; text-align: center;">IDとパスワードを入力してログインしてください</p>
+      
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; margin-bottom: 6px; color: #555; font-size: 14px; font-weight: 500;">ログインID</label>
+        <input type="text" id="loginIdInput" placeholder="example@gmail.com" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#4a90e2'" onblur="this.style.borderColor='#ddd'">
+      </div>
+      
+      <div style="margin-bottom: 24px;">
+        <label style="display: block; margin-bottom: 6px; color: #555; font-size: 14px; font-weight: 500;">パスワード</label>
+        <input type="password" id="loginPasswordInput" placeholder="••••••••" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#4a90e2'" onblur="this.style.borderColor='#ddd'">
+      </div>
+      
+      <button id="loginBtn" onclick="handleLoginSubmit()" style="width: 100%; padding: 12px; background: #4a90e2; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; shadow: 0 4px 6px rgba(74,144,226,0.2);" onmouseover="this.style.background='#357abd'" onmouseout="this.style.background='#4a90e2'">
+        ログイン
+      </button>
+    </div>
+  </div>
 
-<div id="initLoader" style="text-align:center; padding: 100px 0;">
-  <span class="material-symbols-outlined spinning" style="font-size: 48px; color: var(--primary);">progress_activity</span>
-  <p id="loaderText" style="color:var(--text-sub); font-weight: 600; margin-top:10px;">ユーザー認証を確認中...</p>
-</div>
+  <div id="initLoader" style="display:none; text-align: center; margin-top: 100px;">
+    <div class="loader"></div>
+    <p id="loaderText" style="margin-top:200px;">データを読み込み中...</p>
+  </div>
 
-<div id="mainApp" style="display:none;">
+  <div id="mainApp" style="display:none;">
+    
   <div class="app-header">
     <span class="material-symbols-outlined" style="color:var(--primary); font-size:32px;">domain</span>
     <h2>案件管理ダッシュボード</h2>
@@ -397,64 +418,114 @@ async function apiCall(action, payload = {}) {
   return result.data; 
 }
 // 画面起動時の初期化ロジック（ID・パスワード認証版）
+// 画面起動時の初期化ロジック（直打ちログイン画面版）
 document.addEventListener("DOMContentLoaded", async () => {
-  // 1. ブラウザの記憶から保存済みのIDとパスワードを取得
-  let savedId = localStorage.getItem('app_login_id');
-  let savedPassword = localStorage.getItem('app_login_password');
-  
-  // 2. 保存されていなければ、ポップアップで入力を求める
-  if (!savedId || !savedPassword) {
-    savedId = prompt("ログインIDを入力してください：");
-    if (savedId) {
-      savedPassword = prompt("パスワードを入力してください：");
-    }
-    
-    if (savedId && savedPassword) {
-      localStorage.setItem('app_login_id', savedId);
-      localStorage.setItem('app_login_password', savedPassword);
-    } else {
-      alert("ログインにはIDとパスワードの両方が必要です。画面を再読み込みして入力してください。");
-      return;
-    }
-  }
+  // 1. まず画面を隠す
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("initLoader").style.display = "none";
+  document.getElementById("mainApp").style.display = "none";
 
-  document.getElementById("loaderText").textContent = "データを読み込み中...";
+  // 2. ブラウザに過去のログイン情報が残っているか確認
+  const savedId = localStorage.getItem('app_login_id');
+  const savedPassword = localStorage.getItem('app_login_password');
+  
+  if (savedId && savedPassword) {
+    // 記憶があれば、自動でマスターデータの読み込みにすすむ
+    initializeApp(savedId, savedPassword);
+  } else {
+    // 記憶がなければ、モダンなログイン画面をパッと表示
+    document.getElementById("loginScreen").style.display = "flex";
+    
+    // 💡 ログイン画面でもEnterキーでログインできるようにイベントを追加
+    const enterContainer = (e) => { if (e.key === "Enter") handleLoginSubmit(); };
+    document.getElementById("loginIdInput").addEventListener("keypress", enterContainer);
+    document.getElementById("loginPasswordInput").addEventListener("keypress", enterContainer);
+  }
+});
+
+/**
+ * 💡 ログインボタンが押された（またはEnterが押された）時の処理
+ */
+async function handleLoginSubmit() {
+  const idInput = document.getElementById("loginIdInput").value.trim();
+  const passwordInput = document.getElementById("loginPasswordInput").value.trim();
+  
+  if (!idInput || !passwordInput) {
+    alert("IDとパスワードの両方を入力してください。");
+    return;
+  }
+  
+  // ボタンを無効化して連打を防ぐ
+  const btn = document.getElementById("loginBtn");
+  btn.disabled = true;
+  btn.textContent = "認証中...";
+  
+  // 一時的にローカルストレージに保存して初期化を走らせる
+  localStorage.setItem('app_login_id', idInput);
+  localStorage.setItem('app_login_password', passwordInput);
+  
+  // ログイン画面を隠してローダーを表示
+  document.getElementById("loginScreen").style.display = "none";
+  
+  await initializeApp(idInput, passwordInput);
+}
+
+/**
+ * 💡 アプリのデータを読み込んで起動する共通関数
+ */
+async function initializeApp(loginId, password) {
+  const loader = document.getElementById("initLoader");
+  loader.style.display = "block";
+  document.getElementById("loaderText").textContent = "ログイン認証中 & データを読み込み中...";
 
   try {
-    // 💡 IDとパスワードを裏で自動送信してマスターデータを取得
+    // GAS側へ通信（通信に失敗するか、パスワードが違うとここでエラーが飛ぶ）
     const data = await apiCall("loadAppDataMaster");
     
     if (!data || typeof data !== 'object') {
-      throw new Error("GASからの返却値が不正です。");
+      throw new Error("GASからのデータが正しくありません。");
     }
 
+    // マスターデータのセットアップ
     appConfig = data;
     const select = document.getElementById("filterClient");
+    select.innerHTML = '<option value="">すべて</option>'; // 初期化
     data.clientList.forEach(c => {
       const opt = document.createElement("option");
       opt.value = opt.textContent = c;
       select.appendChild(opt);
     });
-    document.getElementById("initLoader").style.display = "none";
+    
+    // 認証大成功！メイン画面を表示
+    loader.style.display = "none";
     document.getElementById("mainApp").style.display = "block";
   } catch (err) {
     console.error(err);
-    alert("認証エラー、またはデータの取得に失敗しました。\n\n詳細: " + err.message + "\n\nログイン情報をリセットして再試行します。");
-    // 間違っている可能性が高いのでブラウザの記憶を削除
+    alert("ログインに失敗しました。\n\n理由: " + err.message);
+    
+    // 失敗したのでブラウザの記憶を完全にクリアして、ログイン画面に戻す
     localStorage.removeItem('app_login_id');
     localStorage.removeItem('app_login_password');
-    window.location.reload(); // 再入力させるためにリロード
+    
+    // ログインボタンの表示を元に戻す
+    const btn = document.getElementById("loginBtn");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "ログイン";
+    }
+    
+    loader.style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
   }
-});
+}
 
 /**
- * 💡 常にログイン情報を payload に自動混入させて通信する関数
+ * 💡 常にログイン情報を自動添付して通信する関数（前回と同じですが、念のため確認）
  */
 async function apiCall(action, payload = {}) {
   const loginId = localStorage.getItem('app_login_id');
   const password = localStorage.getItem('app_login_password');
   
-  // payloadの中に自動的にIDとパスワードをセットしてGASに送る
   payload.loginId = loginId;
   payload.password = password;
 
