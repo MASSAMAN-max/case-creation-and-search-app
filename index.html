@@ -459,7 +459,12 @@ async function search() {
 
   const client = document.getElementById("filterClient").value;
   const month = document.getElementById("filterMonth").value;
-  const keyword = document.getElementById("searchValue").value;
+  
+  // 💡 入力された文字の全角英数字・大文字をきれいに変換してGASへ送る
+  let keyword = document.getElementById("searchValue").value;
+  if (keyword) {
+    keyword = keyword.replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).toLowerCase().trim();
+  }
 
   try {
     const records = await apiCall("searchRecordsExtended", {
@@ -754,6 +759,14 @@ async function handleUpload(rowNumber, btn) {
     btn.innerHTML = originalHtml;
   }
 }
+  
+// 💡 フリーワード入力欄でEnterキーが押されたら検索を実行する
+document.getElementById("searchValue").addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault(); // 画面全体の予期せぬリロードを防ぐ
+    search();
+  }
+});
 </script>
 </body>
 </html>
