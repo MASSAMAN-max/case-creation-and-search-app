@@ -396,37 +396,36 @@ async function apiCall(action, payload = {}) {
   // 💡 GASが包んでくれている「data」の包み紙を剥がして、中身だけを返却します！
   return result.data; 
 }
-
-// 画面起動時の初期化ロジック
+// 画面起動時の初期化ロジック（ID・パスワード認証版）
 document.addEventListener("DOMContentLoaded", async () => {
-  const params = getHashParams();
+  // 1. ブラウザの記憶から保存済みのIDとパスワードを取得
+  let savedId = localStorage.getItem('app_login_id');
+  let savedPassword = localStorage.getItem('app_login_password');
   
-  if (params.access_token) {
-    localStorage.setItem('google_access_token', params.access_token);
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-  
-  const token = localStorage.getItem('google_access_token');
-  if (!token) {
-    redirectToLogin();
-    return;
+  // 2. 保存されていなければ、ポップアップで入力を求める
+  if (!savedId || !savedPassword) {
+    savedId = prompt("ログインIDを入力してください：");
+    if (savedId) {
+      savedPassword = prompt("パスワードを入力してください：");
+    }
+    
+    if (savedId && savedPassword) {
+      localStorage.setItem('app_login_id', savedId);
+      localStorage.setItem('app_login_password', savedPassword);
+    } else {
+      alert("ログインにはIDとパスワードの両方が必要です。画面を再読み込みして入力してください。");
+      return;
+    }
   }
 
   document.getElementById("loaderText").textContent = "データを読み込み中...";
 
   try {
+    // 💡 IDとパスワードを裏で自動送信してマスターデータを取得
     const data = await apiCall("loadAppDataMaster");
     
     if (!data || typeof data !== 'object') {
-      throw new Error("GASからの返却値が正しいオブジェクトではありません（データ型: " + typeof data + "）");
-    }
-    if (!data.clientList) {
-      const keys = Object.keys(data).join(", ");
-      throw new Error(
-        "データは届きましたが、'clientList' という名前の項目が見つかりません。\n\n" +
-        "【届いたデータの項目（キー）一覧】:\n [" + keys + "]\n\n" +
-        "【データの中身】:\n" + JSON.stringify(data)
-      );
+      throw new Error("GASからの返却値が不正です。");
     }
 
     appConfig = data;
@@ -440,16 +439,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("mainApp").style.display = "block";
   } catch (err) {
     console.error(err);
-    // 💡 古いトークンが原因でエラーが出ているため、アラートを出す前にブラウザの記憶を完全に消去します
-    localStorage.removeItem('google_access_token');
-    localStorage.removeItem('google_token_saved_at');
-    
-    alert("セッションが切れたか、認証エラーが発生しました。再ログインします。\n\n詳細: " + err.message);
-    
-    // 確実にGoogleのログイン画面へ強制送還する
-    redirectToLogin();
+    alert("認証エラー、またはデータの取得に失敗しました。\n\n詳細: " + err.message + "\n\nログイン情報をリセットして再試行します。");
+    // 間違っている可能性が高いのでブラウザの記憶を削除
+    localStorage.removeItem('app_login_id');
+    localStorage.removeItem('app_login_password');
+    window.location.reload(); // 再入力させるためにリロード
   }
 });
+
+/**
+ * 💡 常にログイン情報を payload に自動混入させて通信する関数
+ */
+async function apiCall(action, payload = {}) {
+  const loginId = localStorage.getItem('app_login_id');
+  const password = localStorage.getItem('app_login_password');
+  
+  // payloadの中に自動的にIDとパスワードをセットしてGASに送る
+  payload.loginId = loginId;
+  payload.password = password;
+
+  const response = await fetch(GAS_WEBAPP_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: action, payload: payload })
+  });
+  const resData = await response.json();
+  if (resData.status === "error") {
+    throw new Error(resData.message);
+  }
+  return resData.data;
+}
 
 // 検索実行
 async function search() {
