@@ -296,10 +296,18 @@
       
       <div style="margin-bottom: 24px;">
         <label style="display: block; margin-bottom: 6px; color: #555; font-size: 14px; font-weight: 500;">パスワード</label>
-        <input type="password" id="loginPasswordInput" placeholder="••••••••" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#4a90e2'" onblur="this.style.borderColor='#ddd'">
+        <div style="position: relative; width: 100%;">
+          <input type="password" id="loginPasswordInput" placeholder="••••••••" style="width: 100%; padding: 12px 45px 12px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#4a90e2'" onblur="this.style.borderColor='#ddd'">
+          <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #999; display: flex; align-items: center; justify-content: center; padding: 0; outline: none;">
+            <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+          </button>
+        </div>
       </div>
       
-      <button id="loginBtn" onclick="handleLoginSubmit()" style="width: 100%; padding: 12px; background: #4a90e2; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; shadow: 0 4px 6px rgba(74,144,226,0.2);" onmouseover="this.style.background='#357abd'" onmouseout="this.style.background='#4a90e2'">
+      <button id="loginBtn" onclick="handleLoginSubmit()" style="width: 100%; padding: 12px; background: #4a90e2; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 6px rgba(74,144,226,0.2);" onmouseover="this.style.background='#357abd'" onmouseout="this.style.background='#4a90e2'">
         ログイン
       </button>
     </div>
@@ -418,25 +426,26 @@ async function apiCall(action, payload = {}) {
   return result.data; 
 }
 // 画面起動時の初期化ロジック（ID・パスワード認証版）
-// 画面起動時の初期化ロジック（直打ちログイン画面版）
+// 画面起動時の初期化ロジック
 document.addEventListener("DOMContentLoaded", async () => {
-  // 1. まず画面を隠す
+  // 💡 元の変数名「GAS_URL」が定義されているかチェック
+  if (typeof GAS_URL === 'undefined' || !GAS_URL) {
+    alert("⚠️ 設定エラー\n\nJavaScript内で「GAS_URL」が定義されていません。\nURLを定義している行が消えていないか確認してください。");
+    return;
+  }
+
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("initLoader").style.display = "none";
   document.getElementById("mainApp").style.display = "none";
 
-  // 2. ブラウザに過去のログイン情報が残っているか確認
   const savedId = localStorage.getItem('app_login_id');
   const savedPassword = localStorage.getItem('app_login_password');
   
   if (savedId && savedPassword) {
-    // 記憶があれば、自動でマスターデータの読み込みにすすむ
     initializeApp(savedId, savedPassword);
   } else {
-    // 記憶がなければ、モダンなログイン画面をパッと表示
     document.getElementById("loginScreen").style.display = "flex";
     
-    // 💡 ログイン画面でもEnterキーでログインできるようにイベントを追加
     const enterContainer = (e) => { if (e.key === "Enter") handleLoginSubmit(); };
     document.getElementById("loginIdInput").addEventListener("keypress", enterContainer);
     document.getElementById("loginPasswordInput").addEventListener("keypress", enterContainer);
@@ -444,7 +453,28 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /**
- * 💡 ログインボタンが押された（またはEnterが押された）時の処理
+ * パスワードの「見える／見えない」を切り替える関数
+ */
+function togglePasswordVisibility() {
+  const passInput = document.getElementById("loginPasswordInput");
+  const eyeIcon = document.getElementById("eyeIcon");
+  
+  if (passInput.type === "password") {
+    passInput.type = "text";
+    eyeIcon.innerHTML = `
+      <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.822 7.822 3 3m-3-3a9.675 9.675 0 0 1-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+    `;
+  } else {
+    passInput.type = "password";
+    eyeIcon.innerHTML = `
+      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+    `;
+  }
+}
+
+/**
+ * ログインボタンが押された時の処理
  */
 async function handleLoginSubmit() {
   const idInput = document.getElementById("loginIdInput").value.trim();
@@ -455,23 +485,19 @@ async function handleLoginSubmit() {
     return;
   }
   
-  // ボタンを無効化して連打を防ぐ
   const btn = document.getElementById("loginBtn");
   btn.disabled = true;
   btn.textContent = "認証中...";
   
-  // 一時的にローカルストレージに保存して初期化を走らせる
   localStorage.setItem('app_login_id', idInput);
   localStorage.setItem('app_login_password', passwordInput);
   
-  // ログイン画面を隠してローダーを表示
   document.getElementById("loginScreen").style.display = "none";
-  
   await initializeApp(idInput, passwordInput);
 }
 
 /**
- * 💡 アプリのデータを読み込んで起動する共通関数
+ * アプリのデータを読み込んで起動する共通関数
  */
 async function initializeApp(loginId, password) {
   const loader = document.getElementById("initLoader");
@@ -479,35 +505,30 @@ async function initializeApp(loginId, password) {
   document.getElementById("loaderText").textContent = "ログイン認証中 & データを読み込み中...";
 
   try {
-    // GAS側へ通信（通信に失敗するか、パスワードが違うとここでエラーが飛ぶ）
     const data = await apiCall("loadAppDataMaster");
     
     if (!data || typeof data !== 'object') {
       throw new Error("GASからのデータが正しくありません。");
     }
 
-    // マスターデータのセットアップ
     appConfig = data;
     const select = document.getElementById("filterClient");
-    select.innerHTML = '<option value="">すべて</option>'; // 初期化
+    select.innerHTML = '<option value="">すべて</option>'; 
     data.clientList.forEach(c => {
       const opt = document.createElement("option");
       opt.value = opt.textContent = c;
       select.appendChild(opt);
     });
     
-    // 認証大成功！メイン画面を表示
     loader.style.display = "none";
     document.getElementById("mainApp").style.display = "block";
   } catch (err) {
     console.error(err);
     alert("ログインに失敗しました。\n\n理由: " + err.message);
     
-    // 失敗したのでブラウザの記憶を完全にクリアして、ログイン画面に戻す
     localStorage.removeItem('app_login_id');
     localStorage.removeItem('app_login_password');
     
-    // ログインボタンの表示を元に戻す
     const btn = document.getElementById("loginBtn");
     if (btn) {
       btn.disabled = false;
@@ -520,7 +541,7 @@ async function initializeApp(loginId, password) {
 }
 
 /**
- * 💡 常にログイン情報を自動添付して通信する関数（前回と同じですが、念のため確認）
+ * 常にログイン情報を自動添付して通信する関数（💡 GAS_URL に修正）
  */
 async function apiCall(action, payload = {}) {
   const loginId = localStorage.getItem('app_login_id');
@@ -529,7 +550,8 @@ async function apiCall(action, payload = {}) {
   payload.loginId = loginId;
   payload.password = password;
 
-  const response = await fetch(GAS_WEBAPP_URL, {
+  // 💡 ここを元の変数名「GAS_URL」に戻しました！
+  const response = await fetch(GAS_URL, {
     method: "POST",
     body: JSON.stringify({ action: action, payload: payload })
   });
@@ -539,7 +561,7 @@ async function apiCall(action, payload = {}) {
   }
   return resData.data;
 }
-
+  
 // 検索実行
 async function search() {
   const btn = document.getElementById("searchBtn");
