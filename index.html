@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>案件検索</title>
+  <title>すっきり案件みつけ隊</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   
   <style>
@@ -265,13 +265,11 @@
       </form>
     </div>
   </div>
-
   <script>
-
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbw17-nkHnUfe0KYq3VSDG60N_3y-hG7b-soGOfNGnN-ZkqLrHTJ9WsOqlJO3KeUmYKjBA/exec';
-  const CLIENT_ID = '302132186875-fr0lh20940o7k9jrdg3drm4n5r19lm99.apps.googleusercontent.com';
-  const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive';
     
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbw17-nkHnUfe0KYq3VSDG60N_3y-hG7b-soGOfNGnN-ZkqLrHTJ9WsOqlJO3KeUmYKjBA/exec';
+    const CLIENT_ID = '302132186875-fr0lh20940o7k9jrdg3drm4n5r19lm99.apps.googleusercontent.com';
+    const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive';
     let appConfig = {};
     const selectedFilesMap = {};
     const REDIRECT_URI = "my-first-app-atago-bfe9dq5s3rmsl-nine02yhkkm17ahmhLo.vercel.app";
@@ -441,29 +439,9 @@
       }
     }
 
-    // =================================================================
-    // 📅 曜日を自動計算するヘルパー関数
-    // =================================================================
-    function getWeekday(dateStr) {
-      if (!dateStr) return "";
-      const cleanDate = dateStr.split("T")[0].replace(/\//g, "-");
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) return "";
-      const days = ["日", "月", "火", "水", "木", "金", "土"];
-      const date = new Date(cleanDate);
-      return isNaN(date.getTime()) ? "" : `(${days[date.getDay()]})`;
-    }
-
-    // 入力欄の日付が変わった時に、横の曜日をリアルタイム更新する関数
-    window.updateInputWeekday = function(inputEl, spanId) {
-      const span = document.getElementById(spanId);
-      if (span) {
-        span.textContent = getWeekday(inputEl.value);
-      }
-    };
-
-    // =================================================================
-    // 📊 検索結果リスト表示エリア（レイアウト＆バグ修正版）
-    // =================================================================
+    /**
+     * 💡 結果表示（「存在するバッジだけ表示」＆「1〜4面の入っている内容をすべてサマリー表示」対応）
+     */
     function displayResults(records) {
       const container = document.getElementById("results");
       const countDiv = document.getElementById("searchCount");
@@ -481,21 +459,13 @@
         
         const parseDate = (d) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? d : "";
 
-        // 💡 【ファイルバッジバグ修正】GAS側のあらゆるデータ形式（独立列・カンマ区切り列）を全自動で網羅判別
-        const fileProp = record.保存済みファイル || record.保存ファイル || record.ファイル種別 || record.アップロード済み || "";
-        const savedCodes = String(fileProp).split(",").map(s => s.trim());
-        
+        // 💡 【仕様変更1】保存されているファイル種別だけを綺麗に抽出してバッジ描画
+        const savedCodes = record.保存済みファイル ? String(record.保存済みファイル).split(",").map(s => s.trim()) : [];
         let badgeHtml = '<div style="margin-top:6px; margin-bottom:2px; display:flex; flex-wrap:wrap; gap:4px;">';
         let hasBadge = false;
-        
         for (let code in FILE_TYPES_DEF) {
-          const typeName = FILE_TYPES_DEF[code]; 
-          // 列として record["QR"] や record["01"] が存在するか、または一括文字列に含まれているかを両方チェック
-          const isExistInProp = record[code] || record[typeName];
-          const isExistInList = savedCodes.includes(code) || savedCodes.includes(typeName);
-
-          if (isExistInProp || isExistInList) {
-            badgeHtml += `<span class="file-badge">${typeName}</span>`;
+          if (savedCodes.includes(code)) {
+            badgeHtml += `<span class="file-badge">${FILE_TYPES_DEF[code]}</span>`;
             hasBadge = true;
           }
         }
@@ -504,7 +474,7 @@
         }
         badgeHtml += '</div>';
 
-        // 💡 【サマリー】施工日の隣に曜日を表示
+        // 💡 【仕様変更2】1〜4面の中でデータが入っている組み合わせをすべてサマリーへ縦並びで出力
         let workScheduleHtml = '<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">';
         let hasAnyWork = false;
         for (let i = 1; i <= 4; i++) {
@@ -513,11 +483,10 @@
           if (wContent || wDate) {
             hasAnyWork = true;
             const fDate = (wDate && /^\d{4}-\d{2}-\d{2}$/.test(wDate)) ? wDate.replace(/-/g, '/') : (wDate || "未定");
-            const wDay = getWeekday(wDate); 
             workScheduleHtml += `
               <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:14px; align-items:center; background:#f1f5f9; padding:6px 12px; border-radius:6px; width:fit-content;">
                 <span style="display:flex; align-items:center; gap:4px; font-weight:bold; color:#334155;"><span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);">construction</span> ${wContent || "内容未定"}</span>
-                <span style="display:flex; align-items:center; gap:4px; color:#555;"><span class="material-symbols-outlined" style="font-size:16px;">calendar_month</span> ${fDate}${wDay}</span>
+                <span style="display:flex; align-items:center; gap:4px; color:#555;"><span class="material-symbols-outlined" style="font-size:16px;">calendar_month</span> ${fDate}</span>
               </div>
             `;
           }
@@ -535,7 +504,9 @@
                 <span style="font-size:14px; color:var(--text-sub); font-weight:bold;">${record.発注元}</span>
               </div>
               <span class="anken-title">${record.案件名}</span>
+              
               ${badgeHtml}
+
               ${workScheduleHtml}
             </div>
             <span class="material-symbols-outlined expand-icon" style="transition: transform 0.3s; color:var(--text-sub); font-size:32px;">expand_more</span>
@@ -558,11 +529,14 @@
             ` : `<div style="padding:14px; font-size:14px; color:var(--text-sub); background:#f1f5f9; border-radius:8px; margin-bottom:16px;">📁 共有資料フォルダ：未作成 (ファイルアップロードで自動生成)</div>`}
 
             <div class="detail-card">
-              <div class="data-row-input" style="grid-column: span 2;">
+              <div class="data-row-input">
                 <label>所在地（住所）</label>
                 <input type="text" id="住所_${record.rowNumber}" value="${record.住所 || ''}">
               </div>
-              
+              <div class="data-row-input">
+                <label>面積</label>
+                <input type="text" id="専有面積_${record.rowNumber}" value="${record.専有面積 || ''}">
+              </div>
               <div class="data-row-input">
                 <label>担当者</label>
                 <input type="text" id="担当者_${record.rowNumber}" value="${record.担当者 || ''}">
@@ -571,20 +545,15 @@
                 <label>連絡先</label>
                 <input type="text" id="連絡先_${record.rowNumber}" value="${record.連絡先 || ''}">
               </div>
-              
-              <div class="data-row-input">
-                <label>面積</label>
-                <input type="text" id="専有面積_${record.rowNumber}" value="${record.専有面積 || ''}">
-              </div>
-              <div class="data-row-input">
+              <div class="data-row-input" style="grid-column: span 2;">
                 <label>🔑 キーBOX情報（保管場所・暗証番号など）</label>
                 <input type="text" id="キーBOX_${record.rowNumber}" value="${record.キーBOX || ''}" placeholder="キーBOXの情報をここに入力">
               </div>
+            </div>
 
-              <div class="data-row-input" style="grid-column: span 2;">
-                <label>📝 備考メモ</label>
-                <textarea id="備考_${record.rowNumber}" rows="2" style="width:100%; border:1px solid #adb5bd; border-radius:6px; padding:10px; font-family:inherit; font-size:16px; box-sizing:border-box;" placeholder="特記情報を入力">${record.備考 || ""}</textarea>
-              </div>
+            <div style="margin-bottom:15px;">
+              <label style="font-weight:bold; display:block; margin-bottom:6px;">📝 備考メモ</label>
+              <textarea id="備考_${record.rowNumber}" rows="2" style="width:100%;" placeholder="特記情報を入力">${record.備考 || ""}</textarea>
             </div>
 
             <div style="margin-bottom:15px;">
@@ -643,12 +612,10 @@
         `;
         container.appendChild(item);
 
-        // 💡 【詳細欄】施工予定日のループ処理内に、リアルタイムで変わる曜日表示・イベントを追加
         const workContainer = document.getElementById(`workFields_${record.rowNumber}`);
         for(let i=1; i<=4; i++) {
           const rawDate = record['施工日'+i];
           const dateVal = parseDate(rawDate);
-          const dayStr = getWeekday(dateVal); 
           
           const div = document.createElement("div");
           div.className = "work-section";
@@ -660,8 +627,8 @@
               </select>
             </div>
             <div>
-              <label>施工予定日 ${i} <span id="daySpan_${i}_${record.rowNumber}" style="font-weight:bold; color:var(--primary); margin-left:6px;">${dayStr}</span></label>
-              <input type="date" id="施工日${i}_${record.rowNumber}" value="${dateVal}" onchange="updateInputWeekday(this, 'daySpan_${i}_${record.rowNumber}')">
+              <label>施工予定日 ${i}</label>
+              <input type="date" id="施工日${i}_${record.rowNumber}" value="${dateVal}">
             </div>
           `;
           workContainer.appendChild(div);
