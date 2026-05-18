@@ -336,7 +336,7 @@ const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googlea
 let appConfig = {};
 const selectedFilesMap = {};
 
-// 以前ばっちり動いていた固定URL（末尾にスラッシュ / を入れない）
+// 以前ばっちり動いていた固定URL
 const REDIRECT_URI = "https://my-first-app-rho-nine.vercel.app";
 
 function getHashParams() {
@@ -389,7 +389,6 @@ async function apiCall(action, payload = {}) {
   const result = await response.json();
   if (result.error) throw new Error(result.error);
   
-  // ★ GASから直接返ってきたオブジェクトを正しくそのまま返すように修正（.data を削除）
   return result; 
 }
 
@@ -412,6 +411,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   try {
     const data = await apiCall("loadAppDataMaster");
+    
+    // 🚨 【原因特定のための自動デバッグコード】
+    if (!data || typeof data !== 'object') {
+      throw new Error("GASからの返却値が正しいオブジェクトではありません（データ型: " + typeof data + "）");
+    }
+    if (!data.clientList) {
+      const keys = Object.keys(data).join(", ");
+      throw new Error(
+        "データは届きましたが、'clientList' という名前の項目が見つかりません。\n\n" +
+        "【届いたデータの項目（キー）一覧】:\n [" + keys + "]\n\n" +
+        "【データの中身】:\n" + JSON.stringify(data)
+      );
+    }
+
     appConfig = data;
     const select = document.getElementById("filterClient");
     data.clientList.forEach(c => {
@@ -423,7 +436,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("mainApp").style.display = "block";
   } catch (err) {
     console.error(err);
-    alert("マスターデータの取得に失敗しました。再ログインを試みます。: " + err.message);
+    // エラーメッセージをポップアップで詳しく表示
+    alert("マスターデータの取得に失敗しました。\n\n詳細エラー:\n" + err.message);
     localStorage.removeItem('google_access_token');
     redirectToLogin();
   }
