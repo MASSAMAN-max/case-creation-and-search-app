@@ -3,42 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>案件管理システム</title>
+  <title>案件検索</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   
   <style>
-    /* 🎨 ベースデザインシステム（既存の変数を維持しつつ高齢者向けに最適化） */
+    /* 🎨 ベースデザインシステム（視認性の高いメイリオを最優先に配置） */
     :root {
       --primary: #4a90e2;
       --primary-hover: #357abd;
       --success: #2ecc71;
       --success-hover: #27ae60;
-      --text-main: #333333;
-      --text-sub: #666666;
-      --border: #dddddd;
-      --bg-light: #f5f7fa;
+      --text-main: #222222;
+      --text-sub: #555555;
+      --border: #cccccc;
+      --bg-light: #f4f6f9;
     }
 
     body {
-      font-family: 'Helvetica Neue', Arial, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      font-family: Meiryo, "Meiryo UI", "Hiragino Kaku Gothic ProN", sans-serif;
       margin: 0;
       background-color: var(--bg-light);
       color: var(--text-main);
       font-size: 16px;
       line-height: 1.6;
+      font-weight: 500; /* 全体的に少し太めにして視認性アップ */
     }
 
-    /* 💡 ユニバーサルデザイン：ボタンと入力欄（大きく押しやすく） */
+    /* 💡 ユニバーサルデザイン：ボタンと入力欄（大きく押しやすく変更） */
     input, select, textarea {
-      font-size: 16px !important; /* スマホでのズーム防止、高齢者向け視認性 */
+      font-family: inherit;
+      font-size: 16px !important;
       padding: 12px;
       border: 2px solid var(--border);
       border-radius: 8px;
       box-sizing: border-box;
+      background: white;
     }
     input:focus, select:focus, textarea:focus {
       border-color: var(--primary);
       outline: none;
+      background: #fdfdfd;
     }
 
     .btn {
@@ -60,51 +64,49 @@
     .btn-success:hover { background-color: var(--success-hover); }
     .btn-secondary { background-color: #bdc3c7; color: white; }
 
-    /* 🔒 既存のログイン画面用スタイル */
+    /* 🔒 ログイン画面 */
     .login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: white; }
     .login-box { width: 100%; max-width: 400px; padding: 32px; box-sizing: border-box; }
 
-    /* 🔍 既存の検索結果（アコーディオン）用スタイル */
-    .result-item { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; overflow: hidden; border: 1px solid #eee; }
-    .result-summary { padding: 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white; transition: background 0.2s; }
-    .result-summary:hover { background: #fafafa; }
-    .result-details { display: none; padding: 24px; border-top: 1px solid #f0f2f5; background: #fcfdfe; }
+    /* 🔍 検索結果（アコーディオン） */
+    .result-item { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 18px; overflow: hidden; border: 1px solid #e2e8f0; }
+    .result-summary { padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white; transition: background 0.2s; }
+    .result-summary:hover { background: #f8fafc; }
+    .result-details { display: none; padding: 24px; border-top: 2px solid #e2e8f0; background: #fcfdfe; }
     .result-item.is-open .result-details { display: block; }
     .result-item.is-open .expand-icon { transform: rotate(180deg); }
     
     .row-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .badge-no { background: #eef2f7; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 13px; font-weight: bold; }
-    .anken-title { font-size: 18px; font-weight: bold; color: #1e293b; }
-    .summary-subtext { display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; color: var(--text-sub); margin-top: 8px; }
+    .badge-no { background: #e2e8f0; color: #334155; padding: 3px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; }
+    .anken-title { font-size: 20px; font-weight: bold; color: #0f172a; }
     
-    .detail-card { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
-    .data-row { display: flex; flex-direction: column; }
-    .data-label { font-size: 12px; color: var(--text-sub); font-weight: bold; margin-bottom: 2px; }
-    .data-value { font-size: 15px; font-weight: 500; }
+    /* 🛠️ 入力可能になった詳細カードレイアウト */
+    .detail-card { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; background: #edf2f7; padding: 18px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #cbd5e1; }
+    .data-row-input { display: flex; flex-direction: column; }
+    .data-row-input label { font-size: 13px; color: #475569; font-weight: bold; margin-bottom: 4px; }
+    .data-row-input input { width: 100%; padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; }
 
-    .work-section { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #fff; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; margin-bottom: 8px; }
-    .work-section label { display: block; font-size: 12px; color: var(--text-sub); font-weight: bold; margin-bottom: 4px; }
-    .work-section select, .work-section input { width: 100%; padding: 8px; }
+    .work-section { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #fff; border: 2px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-bottom: 10px; }
+    .work-section label { display: block; font-size: 13px; color: var(--text-sub); font-weight: bold; margin-bottom: 4px; }
+    .work-section select, .work-section input { width: 100%; padding: 10px; }
 
-    /* 📂 ドラッグ＆ドロップエリア */
+    /* 📂 アップロード */
     .upload-box { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s; margin-top: 15px; }
     .upload-box.dragover { border-color: var(--primary); background: #e0f2fe; }
     .file-item { display: flex; align-items: center; background: white; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 6px; font-size: 14px; }
 
-    /* 📄 視認性抜群：パッと見ファイル種別バッジ（開く前に一目でわかる） */
-    .file-badge { display: inline-block; padding: 4px 10px; margin: 2px; border-radius: 6px; font-size: 13px; font-weight: bold; border: 1px solid #ddd; }
-    .file-badge.badge-active { background-color: #e3f2fd; color: #0d47a1; border-color: #90caf9; box-shadow: 0 2px 4px rgba(13,71,161,0.08); }
-    .file-badge.badge-inactive { background-color: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; font-weight: normal; }
+    /* 📄 存在するファイル種別だけがピッと出るバッジスタイル */
+    .file-badge { display: inline-block; padding: 4px 12px; margin: 2px; border-radius: 6px; font-size: 14px; font-weight: bold; border: 1px solid #90caf9; background-color: #e3f2fd; color: #0d47a1; box-shadow: 0 2px 4px rgba(13,71,161,0.08); }
 
-    /* 💡 高齢者親切設計：特大新規登録モーダル（ポップアップ窓） */
+    /* 🔒 新規登録モーダル */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 5000; display: flex; align-items: center; justify-content: center; }
     .modal-content { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 600px; box-sizing: border-box; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-    .form-group { margin-bottom: 20px; }
-    .form-group label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 16px; color: #334155; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 15px; color: #334155; }
     .form-group input, .form-group select, .form-group textarea { width: 100%; }
     .badge-required { background-color: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-left: 8px; vertical-align: middle; }
 
-    /* 🔄 アニメーション回転 */
+    /* 🔄 アニメーション */
     .spinning { animation: spin 1s linear infinite; display: inline-block; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     @keyframes geminiWave {
@@ -146,7 +148,7 @@
         <div style="width: 6px; height: 24px; background: linear-gradient(to bottom, #9b59b6, #ff0844); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.45s;"></div>
       </div>
       <p id="loaderText" style="margin: 0; color: #475569; font-size: 16px; font-weight: bold; letter-spacing: 0.5px; animation: pulseText 2s ease-in-out infinite;">
-        ログイン認証中 & データを読み込み中...
+        読み込み中...
       </p>
     </div>
   </div>
@@ -155,8 +157,8 @@
     
     <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 24px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f0f2f5; padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
-        <div style="font-size: 20px; font-weight: bold; color: #1e293b; display:flex; align-items:center; gap:8px;">
-          <span class="material-symbols-outlined" style="color:var(--primary)">search</span> 案件検索
+        <div style="font-size: 22px; font-weight: bold; color: #1e293b; display:flex; align-items:center; gap:8px;">
+          <span class="material-symbols-outlined" style="color:var(--primary); font-size:30px;">saved_search</span> すっきり案件みつけ隊
         </div>
         <button class="btn btn-success" onclick="openCreateModal()" style="font-size: 18px; padding: 14px 28px;">
           <span class="material-symbols-outlined">add_circle</span> 新規案件を登録する
@@ -181,7 +183,7 @@
         </div>
 
         <div style="flex: 2; min-width: 250px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">キーワード検索（No、案件名、住所など）</label>
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">キーワード検索（No、案件名、住所、キーBOXなど）</label>
           <input type="text" id="searchValue" placeholder="文字を入力（Enterキーでも検索できます）" style="width: 100%;">
         </div>
 
@@ -194,8 +196,7 @@
     </div>
 
     <div id="searchCount" style="margin-bottom: 12px; font-weight: bold; font-size: 16px; padding-left: 4px;"></div>
-    <div id="results">
-      </div>
+    <div id="results"></div>
   </div>
 
   <div id="createModal" class="modal-overlay" style="display: none;">
@@ -226,8 +227,33 @@
         </div>
 
         <div class="form-group">
+          <label>所在地（住所）</label>
+          <input type="text" name="住所" placeholder="住所を入力してください">
+        </div>
+
+        <div class="form-group">
+          <label>面積</label>
+          <input type="text" name="専有面積" placeholder="例：85㎡">
+        </div>
+
+        <div class="form-group">
+          <label>担当者</label>
+          <input type="text" name="担当者" placeholder="担当者名">
+        </div>
+
+        <div class="form-group">
+          <label>連絡先</label>
+          <input type="text" name="連絡先" placeholder="電話番号など">
+        </div>
+
+        <div class="form-group">
+          <label>🔑 キーBOX</label>
+          <input type="text" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所">
+        </div>
+
+        <div class="form-group">
           <label>備考</label>
-          <textarea name="備考" rows="3" placeholder="特記事項があれば入力してください" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px; font-size:16px; font-family:inherit; box-sizing:border-box;"></textarea>
+          <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px; font-size:16px; font-family:inherit; box-sizing:border-box;"></textarea>
         </div>
         
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px;">
@@ -241,18 +267,17 @@
   </div>
 
   <script>
-    // 💡 設定情報のプレースホルダー（既存の環境に合わせて自動読み込みされるか、最上部に直接記述してご活用ください）
+
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbw17-nkHnUfe0KYq3VSDG60N_3y-hG7b-soGOfNGnN-ZkqLrHTJ9WsOqlJO3KeUmYKjBA/exec';
   const CLIENT_ID = '302132186875-fr0lh20940o7k9jrdg3drm4n5r19lm99.apps.googleusercontent.com';
   
   const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive';
-
     
     let appConfig = {};
     const selectedFilesMap = {};
     const REDIRECT_URI = "my-first-app-atago-bfe9dq5s3rmsl-nine02yhkkm17ahmhLo.vercel.app";
 
-    // 💡 10大ファイル種別コードと日本語バッジ表示の定義マッピング
+    // 💡 10大ファイル種別定義マッピング
     const FILE_TYPES_DEF = {
       "01": "QR", "02": "工程", "03": "平面", "04": "立面", "05": "注文",
       "06": "駐車", "07": "写真", "08": "見積", "10": "地図", "20": "請求"
@@ -279,9 +304,6 @@
       window.location.href = authUrl;
     }
 
-    /**
-     * 💡 ID・パスワード認証 ＆ ログ機能連携型 共通通信関数（一元化）
-     */
     async function apiCall(action, payload = {}) {
       const loginId = localStorage.getItem('app_login_id');
       const password = localStorage.getItem('app_login_password');
@@ -303,7 +325,6 @@
       return resData.data;
     }
 
-    // 画面起動時の初期化
     document.addEventListener("DOMContentLoaded", async () => {
       if (typeof GAS_URL === 'undefined' || !GAS_URL) {
         alert("⚠️ 設定エラー\n\nJavaScript内で「GAS_URL」が定義されていません。\nURLを定義している行が消えていないか確認してください。");
@@ -321,7 +342,6 @@
         initializeApp(savedId, savedPassword);
       } else {
         document.getElementById("loginScreen").style.display = "flex";
-        
         const enterContainer = (e) => { if (e.key === "Enter") handleLoginSubmit(); };
         document.getElementById("loginIdInput").addEventListener("keypress", enterContainer);
         document.getElementById("loginPasswordInput").addEventListener("keypress", enterContainer);
@@ -331,7 +351,6 @@
     function togglePasswordVisibility() {
       const passInput = document.getElementById("loginPasswordInput");
       const eyeIcon = document.getElementById("eyeIcon");
-      
       if (passInput.type === "password") {
         passInput.type = "text";
         eyeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.822 7.822 3 3m-3-3a9.675 9.675 0 0 1-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />`;
@@ -347,11 +366,7 @@
     async function handleLoginSubmit() {
       const idInput = document.getElementById("loginIdInput").value.trim();
       const passwordInput = document.getElementById("loginPasswordInput").value.trim();
-      
-      if (!idInput || !passwordInput) {
-        alert("IDとパスワードの両方を入力してください。");
-        return;
-      }
+      if (!idInput || !passwordInput) return alert("IDとパスワードを入力してください。");
       
       const btn = document.getElementById("loginBtn");
       btn.disabled = true;
@@ -359,7 +374,6 @@
       
       localStorage.setItem('app_login_id', idInput);
       localStorage.setItem('app_login_password', passwordInput);
-      
       document.getElementById("loginScreen").style.display = "none";
       await initializeApp(idInput, passwordInput);
     }
@@ -371,11 +385,6 @@
 
       try {
         const data = await apiCall("loadAppDataMaster");
-        
-        if (!data || typeof data !== 'object') {
-          throw new Error("GASからのデータが正しくありません。");
-        }
-
         appConfig = data;
         const select = document.getElementById("filterClient");
         select.innerHTML = '<option value="">すべて</option>'; 
@@ -388,47 +397,26 @@
         loader.style.display = "none";
         document.getElementById("mainApp").style.display = "block";
       } catch (err) {
-        console.error(err);
         alert("ログインに失敗しました。\n\n理由: " + err.message);
-        
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
-        
-        const btn = document.getElementById("loginBtn");
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = "ログイン";
-        }
-        
-        loader.style.display = "none";
-        document.getElementById("loginScreen").style.display = "flex";
+        window.location.reload();
       }
     }
 
-    /**
-     * 💡 検索処理（Gemini風アニメーション連携版）
-     */
     async function search() {
       const btn = document.getElementById("searchBtn");
       const icon = document.getElementById("searchIcon");
       const resultsDiv = document.getElementById("results");
       
-      // くるくるを画面真ん中上部に表示
       document.getElementById("mainApp").style.display = "none";
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "データを検索中...";
-
       btn.disabled = true;
-      if (icon) {
-        icon.textContent = "autorenew";
-        icon.classList.add("spinning");
-      }
-      resultsDiv.style.opacity = "0.5";
 
       const client = document.getElementById("filterClient").value;
       const month = document.getElementById("filterMonth").value;
-      
       let keyword = document.getElementById("searchValue").value;
       if (keyword) {
         keyword = keyword.replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).toLowerCase().trim();
@@ -442,30 +430,20 @@
         });
         
         displayResults(records);
-        
         loader.style.display = "none";
         document.getElementById("mainApp").style.display = "block";
         btn.disabled = false;
-        if (icon) {
-          icon.textContent = "search";
-          icon.classList.remove("spinning");
-        }
         resultsDiv.style.opacity = "1";
       } catch (err) {
         loader.style.display = "none";
         document.getElementById("mainApp").style.display = "block";
         btn.disabled = false;
-        if (icon) {
-          icon.textContent = "search";
-          icon.classList.remove("spinning");
-        }
-        resultsDiv.style.opacity = "1";
         resultsDiv.innerHTML = '<p style="color:red; text-align:center;">エラー: ' + err.message + '</p>';
       }
     }
 
     /**
-     * 💡 結果表示処理（アコーディオン閉じた状態でファイルバッジが並ぶ神機能組み込み）
+     * 💡 結果表示（「存在するバッジだけ表示」＆「1〜4面の入っている内容をすべてサマリー表示」対応）
      */
     function displayResults(records) {
       const container = document.getElementById("results");
@@ -483,19 +461,43 @@
         item.className = "result-item";
         
         const parseDate = (d) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? d : "";
-        const displayDate = (record.施工日1 && /^\d{4}-\d{2}-\d{2}$/.test(record.施工日1)) 
-                            ? record.施工日1.replace(/-/g, '/') 
-                            : (record.施工日1 || "未定");
 
-        // 💡 【新機能】保存済みファイル列データを元に、表示する10個のバッジ文字列を生成
+        // 💡 【仕様変更1】保存されているファイル種別だけを綺麗に抽出してバッジ描画
         const savedCodes = record.保存済みファイル ? String(record.保存済みファイル).split(",").map(s => s.trim()) : [];
-        let badgeHtml = '<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">';
+        let badgeHtml = '<div style="margin-top:6px; margin-bottom:2px; display:flex; flex-wrap:wrap; gap:4px;">';
+        let hasBadge = false;
         for (let code in FILE_TYPES_DEF) {
-          const isActive = savedCodes.includes(code);
-          const statusClass = isActive ? 'badge-active' : 'badge-inactive';
-          badgeHtml += `<span class="file-badge ${statusClass}">${FILE_TYPES_DEF[code]}</span>`;
+          if (savedCodes.includes(code)) {
+            badgeHtml += `<span class="file-badge">${FILE_TYPES_DEF[code]}</span>`;
+            hasBadge = true;
+          }
+        }
+        if(!hasBadge) {
+          badgeHtml += `<span style="font-size:13px; color:#94a3b8; font-weight:normal;">📄 ファイルなし</span>`;
         }
         badgeHtml += '</div>';
+
+        // 💡 【仕様変更2】1〜4面の中でデータが入っている組み合わせをすべてサマリーへ縦並びで出力
+        let workScheduleHtml = '<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">';
+        let hasAnyWork = false;
+        for (let i = 1; i <= 4; i++) {
+          const wContent = record['工事内容' + i];
+          const wDate = record['施工日' + i];
+          if (wContent || wDate) {
+            hasAnyWork = true;
+            const fDate = (wDate && /^\d{4}-\d{2}-\d{2}$/.test(wDate)) ? wDate.replace(/-/g, '/') : (wDate || "未定");
+            workScheduleHtml += `
+              <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:14px; align-items:center; background:#f1f5f9; padding:6px 12px; border-radius:6px; width:fit-content;">
+                <span style="display:flex; align-items:center; gap:4px; font-weight:bold; color:#334155;"><span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);">construction</span> ${wContent || "内容未定"}</span>
+                <span style="display:flex; align-items:center; gap:4px; color:#555;"><span class="material-symbols-outlined" style="font-size:16px;">calendar_month</span> ${fDate}</span>
+              </div>
+            `;
+          }
+        }
+        if(!hasAnyWork) {
+          workScheduleHtml += `<div style="font-size:14px; color:#94a3b8;">📅 工事予定なし</div>`;
+        }
+        workScheduleHtml += '</div>';
 
         item.innerHTML = `
           <div class="result-summary" onclick="this.parentElement.classList.toggle('is-open')">
@@ -508,21 +510,18 @@
               
               ${badgeHtml}
 
-              <div class="summary-subtext">
-                <span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-outlined" style="font-size:18px;">calendar_month</span> ${displayDate}</span>
-                <span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-outlined" style="font-size:18px;">construction</span> ${record.工事内容1 || "---"}</span>
-              </div>
+              ${workScheduleHtml}
             </div>
-            <span class="material-symbols-outlined expand-icon" style="transition: transform 0.3s; color:var(--text-sub); font-size:28px;">expand_more</span>
+            <span class="material-symbols-outlined expand-icon" style="transition: transform 0.3s; color:var(--text-sub); font-size:32px;">expand_more</span>
           </div>
           
           <div class="result-details">
             ${record.添付資料 ? `
-            <div class="folder-container" style="display:flex; justify-content:between; align-items:center; background:#edf2f7; padding:12px; border-radius:8px; margin-bottom:16px;">
-              <div class="folder-info" style="display:flex; align-items:center; gap:12px; flex:1;">
-                <span class="material-symbols-outlined folder-icon" style="font-size:32px; color:var(--primary)">cloud_done</span>
+            <div style="display:flex; justify-content:between; align-items:center; background:#edf2f7; padding:12px; border-radius:8px; margin-bottom:16px;">
+              <div style="display:flex; align-items:center; gap:12px; flex:1;">
+                <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">cloud_done</span>
                 <div>
-                  <div class="folder-label" style="font-weight:bold;">共有資料フォルダ</div>
+                  <div style="font-weight:bold;">共有資料フォルダ</div>
                   <div style="font-size:12px; color:var(--text-sub)">図面・写真・報告書</div>
                 </div>
               </div>
@@ -530,12 +529,29 @@
                 <span class="material-symbols-outlined" style="font-size:18px;">open_in_new</span> 開く
               </a>
             </div>
-            ` : `<div style="padding:16px; font-size:14px; color:var(--text-sub); background:#f1f5f9; border-radius:8px; margin-bottom:16px;">📁 共有資料フォルダ：未作成 (ファイルをアップロードすると自動作成されます)</div>`}
+            ` : `<div style="padding:14px; font-size:14px; color:var(--text-sub); background:#f1f5f9; border-radius:8px; margin-bottom:16px;">📁 共有資料フォルダ：未作成 (ファイルアップロードで自動生成)</div>`}
 
             <div class="detail-card">
-              <div class="data-row"><span class="data-label">所在地</span><span class="data-value">${record.住所 || "---"}</span></div>
-              <div class="data-row"><span class="data-label">面積</span><span class="data-value">${record.専有面積 || "---"}</span></div>
-              <div class="data-row" style="grid-column: span 2;"><span class="data-label">担当者 / 連絡先</span><span class="data-value">${record.担当者 || ""} / ${record.連絡先 || ""}</span></div>
+              <div class="data-row-input">
+                <label>所在地（住所）</label>
+                <input type="text" id="住所_${record.rowNumber}" value="${record.住所 || ''}">
+              </div>
+              <div class="data-row-input">
+                <label>面積</label>
+                <input type="text" id="専有面積_${record.rowNumber}" value="${record.専有面積 || ''}">
+              </div>
+              <div class="data-row-input">
+                <label>担当者</label>
+                <input type="text" id="担当者_${record.rowNumber}" value="${record.担当者 || ''}">
+              </div>
+              <div class="data-row-input">
+                <label>連絡先</label>
+                <input type="text" id="連絡先_${record.rowNumber}" value="${record.連絡先 || ''}">
+              </div>
+              <div class="data-row-input" style="grid-column: span 2;">
+                <label>🔑 キーBOX情報（保管場所・暗証番号など）</label>
+                <input type="text" id="キーBOX_${record.rowNumber}" value="${record.キーBOX || ''}" placeholder="キーBOXの情報をここに入力">
+              </div>
             </div>
 
             <div style="margin-bottom:15px;">
@@ -550,8 +566,8 @@
 
             <div id="workFields_${record.rowNumber}"></div>
 
-            <button class="btn btn-primary" onclick="saveRecord(${record.rowNumber}, this)" style="margin-top:20px; width:100%; padding:14px;">
-              <span class="material-symbols-outlined">save</span> 内容を更新して保存
+            <button class="btn btn-primary" onclick="saveRecord(${record.rowNumber}, this)" style="margin-top:20px; width:100%; padding:14px; font-size:18px;">
+              <span class="material-symbols-outlined">save</span> この案件の内容をすべて更新して保存
             </button>
 
             <div class="upload-box" 
@@ -563,7 +579,7 @@
               
               <div onclick="document.getElementById('files_${record.rowNumber}').click()">
                 <span class="material-symbols-outlined" style="font-size:40px; color:var(--text-sub);">cloud_upload</span>
-                <div class="drop-zone-text" style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
+                <div style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
                 <div style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
               </div>
               
@@ -572,10 +588,9 @@
               </button>
               
               <input type="file" id="files_${record.rowNumber}" multiple style="display:none;" onchange="handleFileSelect(this, ${record.rowNumber})">
-              
               <div id="fileList_${record.rowNumber}" class="file-list"></div>
 
-              <div class="upload-controls" style="margin-top:20px; border-top:1px solid var(--border); padding-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:12px; text-align:left;">
+              <div style="margin-top:20px; border-top:1px solid var(--border); padding-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:12px; text-align:left;">
                 <div>
                   <label style="font-size:12px; font-weight:bold; color:var(--text-sub);">担当者</label>
                   <select id="uploader_${record.rowNumber}" style="width:100%; padding:6px; margin-top:4px;">${createOptions(appConfig.uploaders)}</select>
@@ -629,14 +644,22 @@
       return list.map(opt => `<option value="${opt}" ${opt==selected?'selected':''}>${opt}</option>`).join("");
     }
 
-    // 既存の保存処理
+    /**
+     * 💡 保存処理（拡張した「住所」「専有面積」「担当者」「連絡先」「キーBOX」をマッピング網羅）
+     */
     async function saveRecord(rowNumber, btnEl) {
       const originalHtml = btnEl.innerHTML;
       btnEl.disabled = true;
       btnEl.innerHTML = '<span class="material-symbols-outlined spinning">sync</span> 保存中...';
       
       const formData = { rowNumber: rowNumber };
-      const fields = ["工事内容1","工事内容2","工事内容3","工事内容4","施工日1","施工日2","施工日3","施工日4","検査日","備考"];
+      
+      // 💡 GASに送信する対象フィールドに新項目を完全網羅
+      const fields = [
+        "工事内容1","工事内容2","工事内容3","工事内容4",
+        "施工日1","施工日2","施工日3","施工日4",
+        "検査日","備考","住所","専有面積","担当者","連絡先","キーBOX"
+      ];
       
       fields.forEach(f => {
         const el = document.getElementById(`${f}_${rowNumber}`);
@@ -655,7 +678,6 @@
       }
     }
 
-    // --- ➕ 新規案件登録モーダル制御用ロジック ---
     function openCreateModal() {
       const addSelect = document.getElementById("addClientSelect");
       addSelect.innerHTML = '<option value="">選択してください</option>';
@@ -676,7 +698,6 @@
 
     async function handleCreateSubmit(event) {
       event.preventDefault();
-      
       const form = document.getElementById("createProjectForm");
       const formDataObj = {};
       const inputs = form.querySelectorAll("input, select, textarea");
@@ -685,7 +706,6 @@
         if (input.name) formDataObj[input.name] = input.value.trim();
       });
 
-      // 画面上部中央のGemini風ローダーを表示
       document.getElementById("mainApp").style.display = "none";
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
@@ -694,9 +714,8 @@
       try {
         const result = await apiCall("createRecord", { formData: formDataObj });
         alert(`案件の登録が完了しました！\n自動採番されたNoは【 No.${result.newNo} 】です。`);
-        
         closeCreateModal();
-        window.location.reload(); // 最新データに更新
+        window.location.reload();
       } catch (err) {
         alert("登録に失敗しました。\n理由: " + err.message);
         loader.style.display = "none";
@@ -704,7 +723,6 @@
       }
     }
 
-    // --- 既存のアップロード用関数群 ---
     function handleFileSelect(input, rowNumber) {
       if (input.files && input.files.length > 0) {
         addFilesToList(Array.from(input.files), rowNumber);
@@ -799,7 +817,6 @@
       }
     }
       
-    // 💡 フリーワード入力欄でのEnterキー検索リスナー
     document.getElementById("searchValue").addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
