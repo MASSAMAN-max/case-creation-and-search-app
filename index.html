@@ -183,7 +183,7 @@
         </div>
 
         <div style="flex: 2; min-width: 250px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">キーワード検索（No、案件名、住所、担当者など）</label>
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">キーワード検索（案件名、担当者など）</label>
           <input type="text" id="searchValue" placeholder="文字を入力（Enterキーでも検索できます）" style="width: 100%;">
         </div>
 
@@ -292,12 +292,12 @@
         </div>
 
         <div class="form-group">
-          <label>緯度・経度</label>
+          <label>🗺 緯度・経度</label>
           <input type="text" name="緯度・経度" placeholder="例：36.84209,137.40605">
         </div>
 
         <div class="form-group">
-          <label>面積</label>
+          <label>面 積</label>
           <input type="text" name="専有面積・延床面積" placeholder="例：85㎡">
         </div>
 
@@ -307,7 +307,7 @@
         </div>
 
         <div class="form-group">
-          <label>連絡先</label>
+          <label>📳 連絡先</label>
           <input type="text" name="連絡先" placeholder="電話番号など">
         </div>
 
@@ -317,7 +317,7 @@
         </div>
 
         <div class="form-group">
-          <label>備考</label>
+          <label>備 考</label>
           <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px; font-size:16px; font-family:inherit; box-sizing:border-box;"></textarea>
         </div>
         
@@ -725,7 +725,7 @@
             </div>
 
             <button class="btn btn-primary" onclick="saveRecord(${record.rowNumber}, this)" style="width:100%; padding:14px; font-size:18px; margin-bottom:10px;">
-              <span class="material-symbols-outlined">save</span> この案件の内容をすべて更新して保存
+              <span class="material-symbols-outlined">save</span> この案件内容を更新して保存
             </button>
           </div>
         `;
