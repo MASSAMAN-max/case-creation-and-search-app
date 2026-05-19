@@ -832,16 +832,26 @@
         if (daySpan) daySpan.textContent = '';
       }
 
-      // 3. 💡 ＋ボタンの表示と非表示エリアのリセット
-      window.currentWorkCount = 1;
-      document.getElementById('addWorkGroup_2').style.display = 'none';
-      document.getElementById('addWorkGroup_3').style.display = 'none';
-      document.getElementById('addWorkGroup_4').style.display = 'none';
-      document.getElementById('addWorkBtn').style.display = 'flex';
+      //  3.💡 ＋ボタンで次の入力欄を展開する処理
+      window.showNextWorkField = function() {
+      if (typeof window.currentWorkCount === 'undefined') {
+        window.currentWorkCount = 1;
+      }
+    
+      if (window.currentWorkCount < 4) {
+        window.currentWorkCount++;
+        const targetGroup = document.getElementById('addWorkGroup_' + window.currentWorkCount);
+        if (targetGroup) {
 
-      // 4. モーダルを表示
-      document.getElementById("createModal").style.display = "flex";
-    }
+      // 4. 競合を完全に上書きしてグリッド表示に変更
+          targetGroup.style.setProperty('display', 'grid', 'important');
+        }
+        if (window.currentWorkCount === 4) {
+          const addBtn = document.getElementById('addWorkBtn');
+          if (addBtn) addBtn.style.display = 'none';
+        }
+      }
+    };
     
     function closeCreateModal() {
       document.getElementById("createProjectForm").reset();
