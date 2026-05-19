@@ -199,7 +199,7 @@
     <div id="results"></div>
   </div>
 
-  <div id="createModal" class="modal-overlay" style="display: none;">
+<div id="createModal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <h2 style="margin-top: 0; margin-bottom: 24px; color: #1e293b; border-bottom: 3px solid var(--success); padding-bottom: 10px; display:flex; align-items:center; gap:8px;">
         <span class="material-symbols-outlined" style="color:var(--success); font-size:32px;">assignment_add</span> 新規案件の登録
@@ -211,7 +211,7 @@
           <select name="発注元" id="addClientSelect" required style="width:100%;"></select>
         </div>
 
-<div class="form-group">
+        <div class="form-group">
           <label>案件名 <span class="badge-required">必須</span></label>
           <input type="text" name="案件名" placeholder="例：〇〇様邸新築工事" required>
         </div>
@@ -236,7 +236,7 @@
             </div>
           </div>
 
-          <div id="addWorkGroup_2" style="display:none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div id="addWorkGroup_2" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;">
               <label>施工予定日 2 <span id="newDaySpan_2" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label>
               <input type="date" name="施工日2" onchange="updateInputWeekday(this, 'newDaySpan_2')">
@@ -251,7 +251,7 @@
             </div>
           </div>
 
-          <div id="addWorkGroup_3" style="display:none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div id="addWorkGroup_3" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;">
               <label>施工予定日 3 <span id="newDaySpan_3" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label>
               <input type="date" name="施工日3" onchange="updateInputWeekday(this, 'newDaySpan_3')">
@@ -266,7 +266,7 @@
             </div>
           </div>
 
-          <div id="addWorkGroup_4" style="display:none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div id="addWorkGroup_4" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;">
               <label>施工予定日 4 <span id="newDaySpan_4" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label>
               <input type="date" name="施工日4" onchange="updateInputWeekday(this, 'newDaySpan_4')">
@@ -285,6 +285,7 @@
             <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span> 施工日・工事内容・担当を追加
           </button>
         </div>
+
         <div class="form-group">
           <label>所在地（住所）</label>
           <input type="text" name="住所" placeholder="住所を入力してください">
@@ -325,33 +326,6 @@
     </div>
   </div>
   <script>
-
-// 💡 ＋ボタンを押した時に次の工事入力欄（2〜4）を順番に表示する関数
-window.showNextWorkField = function() {
-  // 現在のカウントが未定義の場合は1で初期化
-  if (typeof window.currentWorkCount === 'undefined') {
-    window.currentWorkCount = 1;
-  }
-
-  if (window.currentWorkCount < 4) {
-    window.currentWorkCount++;
-    
-    // 対象の入力グループ（addWorkGroup_2 などのID）を取得
-    const targetGroup = document.getElementById('addWorkGroup_' + window.currentWorkCount);
-    
-    if (targetGroup) {
-      // 枠線やレイアウト崩れを防ぐため、displayを 'grid' に変更して表示
-      targetGroup.style.setProperty('display', 'grid', 'important');
-    }
-    
-    // 4つ目（最後）まで表示されたら、＋ボタン自体を非表示にする
-    if (window.currentWorkCount === 4) {
-      const addBtn = document.getElementById('addWorkBtn');
-      if (addBtn) addBtn.style.display = 'none';
-    }
-  }
-};
-    
     
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxk1Iu7URAnEtxG8v0K2WrD5qNhoLdUU6mWi5MCnFG3UC-wVVRY6MduQiIT80BdeRJ8/exec';
     const CLIENT_ID = '302132186875-fr0lh20940o7k9jrdg3drm4n5r19lm99.apps.googleusercontent.com';
@@ -359,6 +333,27 @@ window.showNextWorkField = function() {
     let appConfig = {};
     const selectedFilesMap = {};
     const REDIRECT_URI = "my-first-app-atago-bfe9dq5s3rmsl-nine02yhkkm17ahmhLo.vercel.app";
+
+    // 💡 ＋ボタンで次の入力欄を展開する処理
+    window.showNextWorkField = function() {
+      if (typeof window.currentWorkCount === 'undefined') {
+        window.currentWorkCount = 1;
+      }
+    
+      if (window.currentWorkCount < 4) {
+        window.currentWorkCount++;
+        const targetGroup = document.getElementById('addWorkGroup_' + window.currentWorkCount);
+        if (targetGroup) {
+          // 競合を完全に上書きしてグリッド表示に変更
+          targetGroup.style.setProperty('display', 'grid', 'important');
+        }
+        if (window.currentWorkCount === 4) {
+          const addBtn = document.getElementById('addWorkBtn');
+          if (addBtn) addBtn.style.display = 'none';
+        }
+      }
+    };
+    
 
     // 💡 10大ファイル種別定義マッピング
     const FILE_TYPES_DEF = {
