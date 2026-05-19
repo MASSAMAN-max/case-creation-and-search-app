@@ -120,7 +120,7 @@
 
   <div id="loginScreen" class="login-container" style="display:none;">
     <div class="login-box">
-      <h2 style="text-align:center; margin-bottom:32px;">案件管理システム ログイン</h2>
+      <h2 style="text-align:center; margin-bottom:32px;">案件登録&検索アプリ ログイン</h2>
       <div style="margin-bottom:20px;">
         <label style="display:block; margin-bottom:8px; font-weight:bold;">ログインID</label>
         <input type="text" id="loginIdInput" style="width:100%;" placeholder="IDを入力してください">
@@ -287,6 +287,8 @@
         </div>
         <div class="form-group">
           <label>所在地（住所）</label>
+          <input type="text" name="住所" placeholder="住所を入力してください">
+        </div>
 
         <div class="form-group">
           <label>面積</label>
@@ -323,6 +325,33 @@
     </div>
   </div>
   <script>
+
+// 💡 ＋ボタンを押した時に次の工事入力欄（2〜4）を順番に表示する関数
+window.showNextWorkField = function() {
+  // 現在のカウントが未定義の場合は1で初期化
+  if (typeof window.currentWorkCount === 'undefined') {
+    window.currentWorkCount = 1;
+  }
+
+  if (window.currentWorkCount < 4) {
+    window.currentWorkCount++;
+    
+    // 対象の入力グループ（addWorkGroup_2 などのID）を取得
+    const targetGroup = document.getElementById('addWorkGroup_' + window.currentWorkCount);
+    
+    if (targetGroup) {
+      // 枠線やレイアウト崩れを防ぐため、displayを 'grid' に変更して表示
+      targetGroup.style.setProperty('display', 'grid', 'important');
+    }
+    
+    // 4つ目（最後）まで表示されたら、＋ボタン自体を非表示にする
+    if (window.currentWorkCount === 4) {
+      const addBtn = document.getElementById('addWorkBtn');
+      if (addBtn) addBtn.style.display = 'none';
+    }
+  }
+};
+    
     
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxk1Iu7URAnEtxG8v0K2WrD5qNhoLdUU6mWi5MCnFG3UC-wVVRY6MduQiIT80BdeRJ8/exec';
     const CLIENT_ID = '302132186875-fr0lh20940o7k9jrdg3drm4n5r19lm99.apps.googleusercontent.com';
@@ -611,7 +640,7 @@
                 <span class="material-symbols-outlined" style="font-size:18px;">open_in_new</span> 開く
               </a>
             </div>
-            ` : `<div style="padding:14px; font-size:14px; color:var(--text-sub); background:#f1f5f9; border-radius:8px; margin-bottom:16px;">📁 共有資料フォルダ：未作成 (ファイルアップロードで自動生成)</div>`}
+            ` : `<div style="padding:14px; font-size:14px; color:var(--text-sub); background:#f1f5f9; border-radius:8px; margin-bottom:16px;">📁 フォルダ：未作成 (ファイルアップロードで自動生成)</div>`}
 
             <div class="detail-card">
               <div class="data-row-input" style="grid-column: span 2;">
