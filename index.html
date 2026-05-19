@@ -292,6 +292,11 @@
         </div>
 
         <div class="form-group">
+          <label>緯度・経度</label>
+          <input type="text" name="住所" placeholder="例：36.84209,137.40605">
+        </div>
+
+        <div class="form-group">
           <label>面積</label>
           <input type="text" name="専有面積" placeholder="例：85㎡">
         </div>
@@ -653,12 +658,16 @@
               </div>
               
               <div class="data-row-input">
-                <label>面積</label>
-                <input type="text" id="専有面積_${record.rowNumber}" value="${record.専有面積 || ''}">
+                <label>面 積</label>
+                <input type="text" id="専有面積_${record.rowNumber}" value="${record.専有面積・延床面積 || ''}">
               </div>
               <div class="data-row-input">
                 <label>🔑 キーBOX情報（保管場所・暗証番号など）</label>
-                <input type="text" id="キーBOX_${record.rowNumber}" value="${record.キーBOX || ''}" placeholder="キーBOXの情報をここ入力">
+                <input type="text" id="キーBOX_${record.rowNumber}" value="${record.キーBOX || ''}" placeholder="現場カギ情報を入力">
+              </div>
+              <div class="data-row-input">
+                <label>緯度・経度</label>
+                <input type="text" id="緯度・経度_${record.rowNumber}" value="${record.緯度・経度 || ''}" placeholder="例：36.84209,137.40605">
               </div>
 
               <div class="data-row-input" style="grid-column: span 2;">
@@ -777,9 +786,10 @@
       
       // 💡 GASに送信する対象フィールドに新項目を完全網羅
       const fields = [
+        "工事担当者1","工事担当者2","工事担当者3","工事担当者4"
         "工事内容1","工事内容2","工事内容3","工事内容4",
         "施工日1","施工日2","施工日3","施工日4",
-        "検査日","備考","住所","専有面積","担当者","連絡先","キーBOX"
+        "検査日","備考","住所","緯度・経度","専有面積・延床面積","担当者","連絡先","キーBOX"
       ];
       
       fields.forEach(f => {
