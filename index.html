@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -120,7 +121,7 @@
 
   <div id="loginScreen" class="login-container" style="display:none;">
     <div class="login-box">
-      <h2 style="text-align:center; margin-bottom:32px;">案件管理システム ログイン</h2>
+      <h2 style="text-align:center; margin-bottom:32px;">案件登録&検索アプリ ログイン</h2>
       <div style="margin-bottom:20px;">
         <label style="display:block; margin-bottom:8px; font-weight:bold;">ログインID</label>
         <input type="text" id="loginIdInput" style="width:100%;" placeholder="IDを入力してください">
@@ -183,7 +184,7 @@
         </div>
 
         <div style="flex: 2; min-width: 250px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">キーワード検索（No、案件名、住所、キーBOXなど）</label>
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">キーワード検索（案件名、担当者など）</label>
           <input type="text" id="searchValue" placeholder="文字を入力（Enterキーでも検索できます）" style="width: 100%;">
         </div>
 
@@ -199,7 +200,7 @@
     <div id="results"></div>
   </div>
 
-  <div id="createModal" class="modal-overlay" style="display: none;">
+<div id="createModal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <h2 style="margin-top: 0; margin-bottom: 24px; color: #1e293b; border-bottom: 3px solid var(--success); padding-bottom: 10px; display:flex; align-items:center; gap:8px;">
         <span class="material-symbols-outlined" style="color:var(--success); font-size:32px;">assignment_add</span> 新規案件の登録
@@ -216,14 +217,74 @@
           <input type="text" name="案件名" placeholder="例：〇〇様邸新築工事" required>
         </div>
 
-        <div class="form-group">
-          <label>工事内容1 <span class="badge-required">必須</span></label>
-          <input type="text" name="工事内容1" placeholder="例：コーキング" required>
-        </div>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+          <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #475569; display: flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: var(--primary);">calendar_month</span> 工事予定・担当割当
+          </h3>
 
-        <div class="form-group">
-          <label>施工日1</label>
-          <input type="date" name="施工日1">
+          <div class="work-input-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div class="form-group" style="margin:0;">
+              <label>施工予定日 1 <span id="newDaySpan_1" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label>
+              <input type="date" name="施工日1" onchange="updateInputWeekday(this, 'newDaySpan_1')">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>工事内容 1 <span class="badge-required">必須</span></label>
+              <select name="工事内容1" id="newWorkContent_1" required style="width:100%;"></select>
+            </div>
+            <div class="form-group" style="grid-column: span 2; margin:0;">
+              <label>工事担当者 1</label>
+              <select name="工事担当1" id="newWorker_1" style="width:100%;"></select>
+            </div>
+          </div>
+
+          <div id="addWorkGroup_2" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group" style="margin:0;">
+              <label>施工予定日 2 <span id="newDaySpan_2" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label>
+              <input type="date" name="施工日2" onchange="updateInputWeekday(this, 'newDaySpan_2')">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>工事内容 2</label>
+              <select name="工事内容2" id="newWorkContent_2" style="width:100%;"></select>
+            </div>
+            <div class="form-group" style="grid-column: span 2; margin:0;">
+              <label>工事担当者 2</label>
+              <select name="工事担当2" id="newWorker_2" style="width:100%;"></select>
+            </div>
+          </div>
+
+          <div id="addWorkGroup_3" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group" style="margin:0;">
+              <label>施工予定日 3 <span id="newDaySpan_3" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label>
+              <input type="date" name="施工日3" onchange="updateInputWeekday(this, 'newDaySpan_3')">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>工事内容 3</label>
+              <select name="工事内容3" id="newWorkContent_3" style="width:100%;"></select>
+            </div>
+            <div class="form-group" style="grid-column: span 2; margin:0;">
+              <label>工事担当者 3</label>
+              <select name="工事担当3" id="newWorker_3" style="width:100%;"></select>
+            </div>
+          </div>
+
+          <div id="addWorkGroup_4" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group" style="margin:0;">
+              <label>施工予定日 4 <span id="newDaySpan_4" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label>
+              <input type="date" name="施工日4" onchange="updateInputWeekday(this, 'newDaySpan_4')">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>工事内容 4</label>
+              <select name="工事内容4" id="newWorkContent_4" style="width:100%;"></select>
+            </div>
+            <div class="form-group" style="grid-column: span 2; margin:0;">
+              <label>工事担当者 4</label>
+              <select name="工事担当4" id="newWorker_4" style="width:100%;"></select>
+            </div>
+          </div>
+
+          <button type="button" id="addWorkBtn" class="btn" style="margin-top:16px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="showNextWorkField()">
+            <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span> 施工日・工事内容・担当を追加
+          </button>
         </div>
 
         <div class="form-group">
@@ -232,8 +293,13 @@
         </div>
 
         <div class="form-group">
-          <label>面積</label>
-          <input type="text" name="専有面積" placeholder="例：85㎡">
+          <label>🗺 緯度・経度</label>
+          <input type="text" name="緯度・経度" placeholder="例：36.84209,137.40605">
+        </div>
+
+        <div class="form-group">
+          <label>面 積</label>
+          <input type="text" name="専有面積・延床面積" placeholder="例：85㎡">
         </div>
 
         <div class="form-group">
@@ -242,7 +308,7 @@
         </div>
 
         <div class="form-group">
-          <label>連絡先</label>
+          <label>📳 連絡先</label>
           <input type="text" name="連絡先" placeholder="電話番号など">
         </div>
 
@@ -252,7 +318,7 @@
         </div>
 
         <div class="form-group">
-          <label>備考</label>
+          <label>備 考</label>
           <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px; font-size:16px; font-family:inherit; box-sizing:border-box;"></textarea>
         </div>
         
@@ -273,6 +339,26 @@
     let appConfig = {};
     const selectedFilesMap = {};
     const REDIRECT_URI = "my-first-app-atago-bfe9dq5s3rmsl-nine02yhkkm17ahmhLo.vercel.app";
+
+    // 💡 ＋ボタンで次の入力欄を展開する処理
+    window.showNextWorkField = function() {
+      if (typeof window.currentWorkCount === 'undefined') {
+        window.currentWorkCount = 1;
+      }
+    
+      if (window.currentWorkCount < 4) {
+        window.currentWorkCount++;
+        const targetGroup = document.getElementById('addWorkGroup_' + window.currentWorkCount);
+        if (targetGroup) {
+          // 競合を完全に上書きしてグリッド表示に変更
+          targetGroup.style.setProperty('display', 'grid', 'important');
+        }
+        if (window.currentWorkCount === 4) {
+          const addBtn = document.getElementById('addWorkBtn');
+          if (addBtn) addBtn.style.display = 'none';
+        }
+      }
+    };
 
     // 💡 10大ファイル種別定義マッピング
     const FILE_TYPES_DEF = {
@@ -460,7 +546,7 @@
     };
 
     // =================================================================
-    // 📊 検索結果リスト表示エリア（レイアウト＆バグ修正版）
+    // 📊 検索結果リスト表示エリア（工事内容・日付・担当の3点セット版）
     // =================================================================
     function displayResults(records) {
       const container = document.getElementById("results");
@@ -479,20 +565,18 @@
         
         const parseDate = (d) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? d : "";
 
-        // 💡 【ファイルバッジバグ修正】GAS側のあらゆるデータ形式（独立列・カンマ区切り列）を全自動で網羅判別
-        const fileProp = record.保存済みファイル || record.保存ファイル || record.ファイル種別 || record.アップロード済み || "";
-        const savedCodes = String(fileProp).split(",").map(s => s.trim());
-        
+        // 💡 【ファイルバッジ判別】
         let badgeHtml = '<div style="margin-top:6px; margin-bottom:2px; display:flex; flex-wrap:wrap; gap:4px;">';
         let hasBadge = false;
-        
+        const allRecordValuesStr = JSON.stringify(record);
+
         for (let code in FILE_TYPES_DEF) {
           const typeName = FILE_TYPES_DEF[code]; 
-          // 列として record["QR"] や record["01"] が存在するか、または一括文字列に含まれているかを両方チェック
-          const isExistInProp = record[code] || record[typeName];
-          const isExistInList = savedCodes.includes(code) || savedCodes.includes(typeName);
+          const isTrueInKey = record[code] === true || record[code] === "TRUE" || record[code] === "〇" || record[code] === "1";
+          const isNameInKey = record[typeName] === true || record[typeName] === "TRUE" || record[typeName] === "〇" || record[typeName] === "1";
+          const isIncludedInText = allRecordValuesStr.includes(code) || allRecordValuesStr.includes(typeName);
 
-          if (isExistInProp || isExistInList) {
+          if (isTrueInKey || isNameInKey || isIncludedInText) {
             badgeHtml += `<span class="file-badge">${typeName}</span>`;
             hasBadge = true;
           }
@@ -502,20 +586,23 @@
         }
         badgeHtml += '</div>';
 
-        // 💡 【サマリー】施工日の隣に曜日を表示
+        // 💡 【アコーディオン表サマリー】「日付 / 工事内容 / 担当者」の順で上部に綺麗に表示
         let workScheduleHtml = '<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">';
         let hasAnyWork = false;
         for (let i = 1; i <= 4; i++) {
           const wContent = record['工事内容' + i];
           const wDate = record['施工日' + i];
-          if (wContent || wDate) {
+          const wWorker = record['工事担当' + i] || record['担当者' + i] || ''; // スプレッドシート側の列名に依存
+          
+          if (wContent || wDate || wWorker) {
             hasAnyWork = true;
             const fDate = (wDate && /^\d{4}-\d{2}-\d{2}$/.test(wDate)) ? wDate.replace(/-/g, '/') : (wDate || "未定");
             const wDay = getWeekday(wDate); 
             workScheduleHtml += `
               <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:14px; align-items:center; background:#f1f5f9; padding:6px 12px; border-radius:6px; width:fit-content;">
-                <span style="display:flex; align-items:center; gap:4px; font-weight:bold; color:#334155;"><span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);">construction</span> ${wContent || "内容未定"}</span>
                 <span style="display:flex; align-items:center; gap:4px; color:#555;"><span class="material-symbols-outlined" style="font-size:16px;">calendar_month</span> ${fDate}${wDay}</span>
+                <span style="display:flex; align-items:center; gap:4px; font-weight:bold; color:#334155;"><span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);">construction</span> ${wContent || "内容未定"}</span>
+                ${wWorker ? `<span style="display:flex; align-items:center; gap:4px; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:bold;"><span class="material-symbols-outlined" style="font-size:14px;">person</span> ${wWorker}</span>` : ''}
               </div>
             `;
           }
@@ -553,7 +640,7 @@
                 <span class="material-symbols-outlined" style="font-size:18px;">open_in_new</span> 開く
               </a>
             </div>
-            ` : `<div style="padding:14px; font-size:14px; color:var(--text-sub); background:#f1f5f9; border-radius:8px; margin-bottom:16px;">📁 共有資料フォルダ：未作成 (ファイルアップロードで自動生成)</div>`}
+            ` : `<div style="padding:14px; font-size:14px; color:var(--text-sub); background:#f1f5f9; border-radius:8px; margin-bottom:16px;">📁 フォルダ：未作成 (ファイルアップロードで自動生成)</div>`}
 
             <div class="detail-card">
               <div class="data-row-input" style="grid-column: span 2;">
@@ -562,7 +649,7 @@
               </div>
               
               <div class="data-row-input">
-                <label>担当者</label>
+                <label>担当者（元請窓口等）</label>
                 <input type="text" id="担当者_${record.rowNumber}" value="${record.担当者 || ''}">
               </div>
               <div class="data-row-input">
@@ -571,12 +658,16 @@
               </div>
               
               <div class="data-row-input">
-                <label>面積</label>
-                <input type="text" id="専有面積_${record.rowNumber}" value="${record.専有面積 || ''}">
+                <label>面 積</label>
+                <input type="text" id="専有面積_${record.rowNumber}" value="${record.専有面積・延床面積 || ''}">
               </div>
               <div class="data-row-input">
                 <label>🔑 キーBOX情報（保管場所・暗証番号など）</label>
-                <input type="text" id="キーBOX_${record.rowNumber}" value="${record.キーBOX || ''}" placeholder="キーBOXの情報をここに入力">
+                <input type="text" id="キーBOX_${record.rowNumber}" value="${record.キーBOX || ''}" placeholder="現場カギ情報を入力">
+              </div>
+              <div class="data-row-input">
+                <label>緯度・経度</label>
+                <input type="text" id="緯度・経度_${record.rowNumber}" value="${record.緯度・経度 || ''}" placeholder="例：36.84209,137.40605">
               </div>
 
               <div class="data-row-input" style="grid-column: span 2;">
@@ -592,13 +683,9 @@
 
             <div id="workFields_${record.rowNumber}"></div>
 
-            <button class="btn btn-primary" onclick="saveRecord(${record.rowNumber}, this)" style="margin-top:20px; width:100%; padding:14px; font-size:18px;">
-              <span class="material-symbols-outlined">save</span> この案件の内容をすべて更新して保存
-            </button>
-
             <div class="upload-box" 
                  id="dropZone_${record.rowNumber}" 
-                 style="cursor: pointer;"
+                 style="cursor: pointer; margin-bottom:20px;"
                  ondragover="event.preventDefault(); event.stopPropagation(); this.classList.add('dragover')" 
                  ondragenter="event.preventDefault(); event.stopPropagation(); this.classList.add('dragover')"
                  ondrop="event.preventDefault(); event.stopPropagation(); this.classList.remove('dragover'); handleDrop(event, ${record.rowNumber})">
@@ -637,29 +724,44 @@
               </div>
               <div id="status_${record.rowNumber}" style="font-size:13px; margin-top:10px; font-weight:bold; color:var(--primary); text-align:left;"></div>
             </div>
+
+            <button class="btn btn-primary" onclick="saveRecord(${record.rowNumber}, this)" style="width:100%; padding:14px; font-size:18px; margin-bottom:10px;">
+              <span class="material-symbols-outlined">save</span> この案件内容を更新して保存
+            </button>
           </div>
         `;
         container.appendChild(item);
 
-        // 💡 【詳細欄】施工予定日のループ処理内に、リアルタイムで変わる曜日表示・イベントを追加
+        // 💡 【詳細欄】施工予定日のループ（日付 / 工事内容 / 工事担当 の3点セット表示・編集）
         const workContainer = document.getElementById(`workFields_${record.rowNumber}`);
         for(let i=1; i<=4; i++) {
           const rawDate = record['施工日'+i];
           const dateVal = parseDate(rawDate);
           const dayStr = getWeekday(dateVal); 
+          const selectedWorker = record['工事担当'+i] || record['担当者'+i] || ''; // スプレッドシート側の値
           
           const div = document.createElement("div");
           div.className = "work-section";
+          div.style.cssText = "display:flex; flex-direction:column; gap:8px; background:#f8fafc; padding:12px; border-radius:6px; margin-bottom:10px; border:1px solid #e2e8f0;";
           div.innerHTML = `
-            <div>
-              <label>工事内容 ${i}</label>
-              <select id="工事内容${i}_${record.rowNumber}">
-                ${createOptions(appConfig.workOptions, record['工事内容'+i])}
-              </select>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+              <div>
+                <label style="font-size:13px;">施工予定日 ${i} <span id="daySpan_${i}_${record.rowNumber}" style="font-weight:bold; color:var(--primary); margin-left:4px;">${dayStr}</span></label>
+                <input type="date" id="施工日${i}_${record.rowNumber}" value="${dateVal}" onchange="updateInputWeekday(this, 'daySpan_${i}_${record.rowNumber}')" style="width:100%;">
+              </div>
+              <div>
+                <label style="font-size:13px;">工事内容 ${i}</label>
+                <select id="工事内容${i}_${record.rowNumber}" style="width:100%;">
+                  ${createOptions(appConfig.workOptions, record['工事内容'+i])}
+                </select>
+              </div>
             </div>
             <div>
-              <label>施工予定日 ${i} <span id="daySpan_${i}_${record.rowNumber}" style="font-weight:bold; color:var(--primary); margin-left:6px;">${dayStr}</span></label>
-              <input type="date" id="施工日${i}_${record.rowNumber}" value="${dateVal}" onchange="updateInputWeekday(this, 'daySpan_${i}_${record.rowNumber}')">
+              <label style="font-size:13px;">工事担当者 ${i}</label>
+              <select id="工事担当${i}_${record.rowNumber}" style="width:100%;">
+                <option value="">選択してください</option>
+                ${createOptions(appConfig.uploaders, selectedWorker)}
+              </select>
             </div>
           `;
           workContainer.appendChild(div);
@@ -684,9 +786,10 @@
       
       // 💡 GASに送信する対象フィールドに新項目を完全網羅
       const fields = [
+        "工事担当者1","工事担当者2","工事担当者3","工事担当者4",
         "工事内容1","工事内容2","工事内容3","工事内容4",
         "施工日1","施工日2","施工日3","施工日4",
-        "検査日","備考","住所","専有面積","担当者","連絡先","キーBOX"
+        "検査日","備考","住所","緯度・経度","専有面積・延床面積","担当者","連絡先","キーBOX"
       ];
       
       fields.forEach(f => {
@@ -707,6 +810,7 @@
     }
 
     function openCreateModal() {
+      // 1. 発注元リストの生成
       const addSelect = document.getElementById("addClientSelect");
       addSelect.innerHTML = '<option value="">選択してください</option>';
       if (appConfig && appConfig.clientList) {
@@ -716,9 +820,39 @@
           addSelect.appendChild(opt);
         });
       }
+
+      // 2. 💡 工事内容・工事担当者プルダウンの動的生成 (1〜4のセット)
+      for (let i = 1; i <= 4; i++) {
+        // 工事内容の選択肢
+        const contentSelect = document.getElementById(`newWorkContent_${i}`);
+        if (contentSelect) {
+          // 1つ目は必須、2〜4は任意なので空の選択肢を先頭に入れる
+          const defaultOpt = i === 1 ? '<option value="">選択してください</option>' : '<option value="">(未定)</option>';
+          contentSelect.innerHTML = defaultOpt + createOptions(appConfig.workOptions);
+        }
+        
+        // 工事担当者の選択肢（ファイルアップロード者と同じリストを使用）
+        const workerSelect = document.getElementById(`newWorker_${i}`);
+        if (workerSelect) {
+          workerSelect.innerHTML = '<option value="">選択してください</option>' + createOptions(appConfig.uploaders);
+        }
+        
+        // 曜日表示をクリア
+        const daySpan = document.getElementById(`newDaySpan_${i}`);
+        if (daySpan) daySpan.textContent = '';
+      }
+
+      // 3. 💡 ＋ボタンの表示と非表示エリアのリセット
+      window.currentWorkCount = 1;
+      document.getElementById('addWorkGroup_2').style.display = 'none';
+      document.getElementById('addWorkGroup_3').style.display = 'none';
+      document.getElementById('addWorkGroup_4').style.display = 'none';
+      document.getElementById('addWorkBtn').style.display = 'flex';
+
+      // 4. モーダルを表示
       document.getElementById("createModal").style.display = "flex";
     }
-
+    
     function closeCreateModal() {
       document.getElementById("createProjectForm").reset();
       document.getElementById("createModal").style.display = "none";
