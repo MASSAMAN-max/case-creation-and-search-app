@@ -1,908 +1,990 @@
 <!DOCTYPE html>
-<html>
+
+<html lang="ja">
 <head>
-  <base target="_top">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>案件登録&検索アプリ</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
   <style>
+    /* 🎨 ベースデザインシステム（視認性の高いメイリオを最優先に配置） */
     :root {
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --bg: #f1f5f9;
-      --card-bg: #ffffff;
-      --text-main: #0f172a;
-      --text-sub: #64748b;
-      --border: #e2e8f0;
-      --accent: #3b82f6;
-      --folder-bg: #eff6ff;
-      --folder-text: #1d4ed8;
+      --primary: #4a90e2;
+      --primary-hover: #357abd;
+      --success: #2ecc71;
+      --success-hover: #27ae60;
+      --text-main: #222222;
+      --text-sub: #555555;
+      --border: #cccccc;
+      --bg-light: #f4f6f9;
     }
 
     body {
-      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text-main);
+      font-family: Meiryo, "Meiryo UI", "Hiragino Kaku Gothic ProN", sans-serif;
       margin: 0;
-      padding: 16px;
+      background-color: var(--bg-light);
+      color: var(--text-main);
+      font-size: 16px;
       line-height: 1.6;
+      font-weight: 500; /* 全体的に少し太めにして視認性アップ */
     }
 
-    /* ヘッダー・タイトル */
-    .app-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-      color: var(--text-main);
-    }
-    .app-header h2 { margin: 0; font-size: 1.25rem; font-weight: 800; }
-
-    /* 検索パネル */
-    .search-card {
-      background: var(--card-bg);
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
-      margin-bottom: 24px;
-      border: 1px solid var(--border);
-    }
-
-    .filter-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-    @media (min-width: 768px) {
-      .filter-grid { grid-template-columns: 1fr 1fr 2fr; }
-    }
-
-    label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-sub);
-      display: block;
-      margin-bottom: 6px;
-      letter-spacing: 0.02em;
-    }
-
+    /* 💡 ユニバーサルデザイン：ボタンと入力欄（大きく押しやすく変更） */
     input, select, textarea {
-      width: 100%;
+      font-family: inherit;
+      font-size: 16px !important;
       padding: 12px;
-      font-size: 15px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: #fff;
-      transition: all 0.2s;
+      border: 2px solid var(--border);
+      border-radius: 8px;
       box-sizing: border-box;
-      color: var(--text-main);
+      background: white;
     }
-    input:focus, select:focus {
-      outline: none;
+    input:focus, select:focus, textarea:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      outline: none;
+      background: #fdfdfd;
     }
 
-    /* ボタンデザイン */
     .btn {
-      cursor: pointer;
-      border: none;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 14px;
-      transition: all 0.2s;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 14px;
-    }
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-      width: 100%;
-    }
-    .btn-primary:hover {
-      background: var(--primary-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-    }
-    .btn-primary:active { transform: translateY(0); }
-    
-    .btn-secondary {
-      background: #f1f5f9;
-      color: var(--text-sub);
-      border: 1px solid var(--border);
-    }
-
-    /* くるくる */
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .spinning { animation: spin 1s linear infinite; display: inline-block; }
-
-    /* 結果リスト */
-    .result-item {
-      background: var(--card-bg);
-      border-radius: 14px;
-      margin-bottom: 12px;
-      border: 1px solid var(--border);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      overflow: hidden;
-    }
-    .result-item:hover {
-      border-color: var(--accent);
-      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
-    }
-
-    .result-summary {
-      padding: 16px 20px;
+      font-weight: bold;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-    .summary-info { flex: 1; }
-    .row-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .badge-no { font-size: 10px; font-weight: 800; background: #f1f5f9; color: var(--text-sub); padding: 2px 8px; border-radius: 5px; }
-    .anken-title { font-weight: 700; font-size: 16px; color: var(--text-main); display: block; }
-    .summary-subtext { font-size: 13px; color: var(--text-sub); margin-top: 4px; display: flex; gap: 12px; }
-
-    /* 詳細エリア */
-    .result-details {
-      display: none;
-      padding: 0 20px 24px 20px;
-      background: #fff;
-    }
-    .is-open { border-left: 4px solid var(--primary); }
-    .is-open .result-details { display: block; }
-    .is-open .expand-icon { transform: rotate(180deg); color: var(--primary); }
-
-    /* クラウドフォルダ風デザイン */
-    .folder-container {
-      display: flex;
-      align-items: center;
-      background: var(--folder-bg);
-      border-radius: 12px;
-      padding: 12px 16px;
-      margin: 10px 0 20px 0;
-      border: 1px solid #dbeafe;
-    }
-    .folder-info { flex: 1; display: flex; align-items: center; gap: 10px; }
-    .folder-icon { color: #3b82f6; font-size: 32px; }
-    .folder-label { font-size: 13px; font-weight: 700; color: var(--folder-text); }
-    .btn-folder {
-      background: #fff;
-      color: var(--folder-text);
-      border: 1px solid #bfdbfe;
-      padding: 8px 16px;
+      border: none;
       border-radius: 8px;
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 700;
-      transition: 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .btn-folder:hover { background: var(--folder-text); color: #fff; }
-
-    /* クラウド風アップロードエリア */
-    .upload-box {
-      margin-top: 24px;
-      padding: 20px;
-      background: #fafafa;
-      border: 2px dashed var(--border);
-      border-radius: 12px;
-      text-align: center;
+      padding: 12px 24px;
+      font-size: 16px;
       transition: all 0.2s;
     }
-    .upload-box.dragover {
-      border-color: var(--primary);
-      background: rgba(37, 99, 235, 0.05);
-    }
-    .drop-zone-text {
-      color: var(--text-sub);
-      font-size: 14px;
-      margin-bottom: 10px;
-    }
-    .file-list {
-      text-align: left;
-      margin: 15px 0;
-      font-size: 13px;
-      min-height: 20px;
-      padding: 10px;
-      background: #f1f5f9 !important;
-      border-radius: 8px;
-    }
-    .file-item {
-      display: flex !important;
-      align-items: center;
-      background: white !important;
-      color: #0f172a !important;
-      padding: 8px;
-      margin-bottom: 5px;
-      border: 1px solid #cbd5e1;
-    }
-    .upload-footer {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 15px;
-    }
-    @media (max-width: 600px) {
-      .pc-only { display: none; }
-    }
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-primary:hover { background-color: var(--primary-hover); }
+    .btn-success { background-color: var(--success); color: white; }
+    .btn-success:hover { background-color: var(--success-hover); }
+    .btn-secondary { background-color: #bdc3c7; color: white; }
 
-    /* 詳細内部のグリッド */
-    .detail-card {
-      background: #f8fafc;
-      border-radius: 12px;
-      padding: 16px;
-      margin: 10px 0 20px 0;
-      font-size: 14px;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-    @media (min-width: 600px) { .detail-card { grid-template-columns: 1fr 1fr; } }
+    /* 🔒 ログイン画面 */
+    .login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: white; }
+    .login-box { width: 100%; max-width: 400px; padding: 32px; box-sizing: border-box; }
+
+    /* 🔍 検索結果（アコーディオン） */
+    .result-item { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 18px; overflow: hidden; border: 1px solid #e2e8f0; }
+    .result-summary { padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white; transition: background 0.2s; }
+    .result-summary:hover { background: #f8fafc; }
+    .result-details { display: none; padding: 24px; border-top: 2px solid #e2e8f0; background: #fcfdfe; }
+    .result-item.is-open .result-details { display: block; }
+    .result-item.is-open .expand-icon { transform: rotate(180deg); }
     
-    .data-row { display: flex; flex-direction: column; }
-    .data-label { font-size: 11px; color: var(--text-sub); font-weight: bold; }
-    .data-value { font-weight: 500; }
+    .row-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .badge-no { background: #e2e8f0; color: #334155; padding: 3px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; }
+    .anken-title { font-size: 20px; font-weight: bold; color: #0f172a; }
+    
+    /* 🛠️ 入力可能になった詳細カードレイアウト */
+    .detail-card { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; background: #edf2f7; padding: 18px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #cbd5e1; }
+    .data-row-input { display: flex; flex-direction: column; }
+    .data-row-input label { font-size: 13px; color: #475569; font-weight: bold; margin-bottom: 4px; }
+    .data-row-input input { width: 100%; padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; }
 
-    .work-section {
-      display: grid;
-      grid-template-columns: 1.5fr 1fr;
-      gap: 10px;
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 1px dashed var(--border);
-    }
-    .work-section:last-child { border-bottom: none; }
+    .work-section { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #fff; border: 2px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-bottom: 10px; }
+    .work-section label { display: block; font-size: 13px; color: var(--text-sub); font-weight: bold; margin-bottom: 4px; }
+    .work-section select, .work-section input { width: 100%; padding: 10px; }
 
-    .upload-controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
+    /* 📂 アップロード */
+    .upload-box { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s; margin-top: 15px; }
+    .upload-box.dragover { border-color: var(--primary); background: #e0f2fe; }
+    .file-item { display: flex; align-items: center; background: white; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 6px; font-size: 14px; }
 
-    #searchCount { font-size: 13px; font-weight: 600; color: var(--text-sub); margin-bottom: 12px; }
+    /* 📄 存在するファイル種別だけがピッと出るバッジスタイル */
+    .file-badge { display: inline-block; padding: 4px 12px; margin: 2px; border-radius: 6px; font-size: 14px; font-weight: bold; border: 1px solid #90caf9; background-color: #e3f2fd; color: #0d47a1; box-shadow: 0 2px 4px rgba(13,71,161,0.08); }
 
-    .input-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-    .input-row label {
-      flex: 0 0 70px;
-      margin-bottom: 0;
-    }
-    .input-row select {
-      flex: 1;
-    }
-  </style>
-</head>
-<body>
-  <div id="loginScreen" style="display: none; min-height: 100vh; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); display: flex; align-items: center; justify-content: center; font-family: 'Helvetica Neue', Arial, sans-serif;">
-    <div style="background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 400px; box-sizing: border-box;">
-      <h2 style="margin: 0 0 8px 0; color: #333; font-size: 24px; font-weight: 600; text-align: center;">案件管理システム</h2>
-      <p style="margin: 0 0 24px 0; color: #666; font-size: 14px; text-align: center;">IDとパスワードを入力してログインしてください</p>
-      
-      <div style="margin-bottom: 16px;">
-        <label style="display: block; margin-bottom: 6px; color: #555; font-size: 14px; font-weight: 500;">ログインID</label>
-        <input type="text" id="loginIdInput" placeholder="example@gmail.com" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#4a90e2'" onblur="this.style.borderColor='#ddd'">
-      </div>
-      
-      <div style="margin-bottom: 24px;">
-        <label style="display: block; margin-bottom: 6px; color: #555; font-size: 14px; font-weight: 500;">パスワード</label>
-        <div style="position: relative; width: 100%;">
-          <input type="password" id="loginPasswordInput" placeholder="••••••••" style="width: 100%; padding: 12px 45px 12px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#4a90e2'" onblur="this.style.borderColor='#ddd'">
-          <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #999; display: flex; align-items: center; justify-content: center; padding: 0; outline: none;">
-            <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-            </svg>
-          </button>
-        </div>
-      </div>
-      
-      <button id="loginBtn" onclick="handleLoginSubmit()" style="width: 100%; padding: 12px; background: #4a90e2; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 6px rgba(74,144,226,0.2);" onmouseover="this.style.background='#357abd'" onmouseout="this.style.background='#4a90e2'">
-        ログイン
-      </button>
-    </div>
-  </div>
+    /* 🔒 新規登録モーダル */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 5000; display: flex; align-items: center; justify-content: center; }
+    .modal-content { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 600px; box-sizing: border-box; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 15px; color: #334155; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; }
+    .badge-required { background-color: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-left: 8px; vertical-align: middle; }
 
-  <div id="initLoader" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #ffffff; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Helvetica Neue', Arial, sans-serif;">
-    <div style="width: 100%; max-width: 320px; text-align: center;">
-      <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 24px; height: 40px;">
-        <div class="gemini-bar" style="width: 6px; height: 16px; background: linear-gradient(to bottom, #4a90e2, #9b59b6); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite;"></div>
-        <div class="gemini-bar" style="width: 6px; height: 32px; background: linear-gradient(to bottom, #7bb0f9, #bdc3c7); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.15s;"></div>
-        <div class="gemini-bar" style="width: 6px; height: 48px; background: linear-gradient(to bottom, #4a90e2, #4facfe); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.3s;"></div>
-        <div class="gemini-bar" style="width: 6px; height: 24px; background: linear-gradient(to bottom, #9b59b6, #ff0844); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.45s;"></div>
-      </div>
-      <p id="loaderText" style="margin: 0; color: #555; font-size: 15px; font-weight: 500; letter-spacing: 0.5px; animation: pulseText 2s ease-in-out infinite;">
-        ログイン認証中 & データを読み込み中...
-      </p>
-    </div>
-  </div>
-
-  <style>
+    /* 🔄 アニメーション */
+    .spinning { animation: spin 1s linear infinite; display: inline-block; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     @keyframes geminiWave {
       0%, 100% { transform: scaleY(0.3); opacity: 0.6; }
       50% { transform: scaleY(1); opacity: 1; filter: drop-shadow(0 0 4px rgba(74,144,226,0.5)); }
     }
-    @keyframes pulseText {
-      0%, 100% { opacity: 0.6; }
-      50% { opacity: 1; }
-    }
+    @keyframes pulseText { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
   </style>
+</head>
+<body>
 
-  <div id="mainApp" style="display:none;">
-    
-  <div class="app-header">
-    <span class="material-symbols-outlined" style="color:var(--primary); font-size:32px;">domain</span>
-    <h2>案件管理ダッシュボード</h2>
-  </div>
-  
-  <div class="search-card">
-    <div class="filter-grid">
-      <div>
-        <label>発注元（クライアント）</label>
-        <select id="filterClient"><option value="">すべての発注元</option></select>
+  <div id="loginScreen" class="login-container" style="display:none;">
+    <div class="login-box">
+      <h2 style="text-align:center; margin-bottom:32px;">案件登録&検索アプリ ログイン</h2>
+      <div style="margin-bottom:20px;">
+        <label style="display:block; margin-bottom:8px; font-weight:bold;">ログインID</label>
+        <input type="text" id="loginIdInput" style="width:100%;" placeholder="IDを入力してください">
       </div>
-      <div>
-        <label>施工予定月</label>
-        <select id="filterMonth">
-          <option value="">全期間</option>
-          <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
-          <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
-          <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
-          <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
-        </select>
+      <div style="margin-bottom:32px; position:relative;">
+        <label style="display:block; margin-bottom:8px; font-weight:bold;">パスワード</label>
+        <input type="password" id="loginPasswordInput" style="width:100%; padding-right:50px;" placeholder="パスワードを入力してください">
+        <span onclick="togglePasswordVisibility()" style="position:absolute; right:12px; top:42px; cursor:pointer; color:var(--text-sub);">
+          <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:24px; height:24px;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+          </svg>
+        </span>
       </div>
-      <div>
-        <label>フリーワード検索</label>
-        <input type="text" id="searchValue" placeholder="案件名、No、住所で絞り込み...">
-      </div>
+      <button id="loginBtn" class="btn btn-primary" onclick="handleLoginSubmit()" style="width:100%; padding:14px; font-size:18px;">ログイン</button>
     </div>
-    <button onclick="search()" id="searchBtn" class="btn btn-primary">
-      <span id="searchIcon" class="material-symbols-outlined" style="font-size:20px;">search</span> 案件を検索する
-    </button>
   </div>
 
-  <div id="searchCount"></div>
-  <div id="results"></div>
-</div>
-
-<script>
-// 🛠️ 【重要】ここにご自身のID情報を正しく設定してください
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbw17-nkHnUfe0KYq3VSDG60N_3y-hG7b-soGOfNGnN-ZkqLrHTJ9WsOqlJO3KeUmYKjBA/exec';
-const CLIENT_ID = '302132186875-fr0lh20940o7k9jrdg3drm4n5r19lm99.apps.googleusercontent.com';
-
-const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive';
-
-let appConfig = {};
-const selectedFilesMap = {};
-
-// vercel固定URL
-const REDIRECT_URI = "my-first-app-atago-bfe9dq5s3rmsl-nine02yhkkm17ahmhLo.vercel.app";
-
-function getHashParams() {
-  const hash = window.location.hash.substring(1);
-  const params = {};
-  if (!hash) return params;
-  hash.split('&').forEach(pair => {
-    const [key, val] = pair.split('=');
-    params[key] = decodeURIComponent(val);
-  });
-  return params;
-}
-
-function redirectToLogin() {
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-    `client_id=${encodeURIComponent(CLIENT_ID)}` +
-    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-    `&response_type=token` +
-    `&scope=${encodeURIComponent(SCOPES)}` +
-    `&prompt=consent`;
-  window.location.href = authUrl;
-}
-
-// Vercel用の共通API通信関数
-async function apiCall(action, payload = {}) {
-  const token = localStorage.getItem('google_access_token');
-  if (!token) {
-    alert("セッションが切れたため、再ログインします。");
-    redirectToLogin();
-    return;
-  }
-  
-  payload.token = token;
-
-  const requestBody = {
-    action: action,
-    payload: payload
-  };
-
-  const response = await fetch(GAS_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'text/plain'
-    },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!response.ok) throw new Error(`HTTPエラー! ステータス: ${response.status}`);
-  
-  const result = await response.json();
-  
-  // 🚨 GASのエラー判定構造に合わせて修正
-  if (result.status === 'error') {
-    throw new Error(result.message);
-  }
-  
-  // 💡 GASが包んでくれている「data」の包み紙を剥がして、中身だけを返却します！
-  return result.data; 
-}
-// 画面起動時の初期化ロジック（ID・パスワード認証版）
-// 画面起動時の初期化ロジック
-document.addEventListener("DOMContentLoaded", async () => {
-  // 💡 元の変数名「GAS_URL」が定義されているかチェック
-  if (typeof GAS_URL === 'undefined' || !GAS_URL) {
-    alert("⚠️ 設定エラー\n\nJavaScript内で「GAS_URL」が定義されていません。\nURLを定義している行が消えていないか確認してください。");
-    return;
-  }
-
-  document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("initLoader").style.display = "none";
-  document.getElementById("mainApp").style.display = "none";
-
-  const savedId = localStorage.getItem('app_login_id');
-  const savedPassword = localStorage.getItem('app_login_password');
-  
-  if (savedId && savedPassword) {
-    initializeApp(savedId, savedPassword);
-  } else {
-    document.getElementById("loginScreen").style.display = "flex";
-    
-    const enterContainer = (e) => { if (e.key === "Enter") handleLoginSubmit(); };
-    document.getElementById("loginIdInput").addEventListener("keypress", enterContainer);
-    document.getElementById("loginPasswordInput").addEventListener("keypress", enterContainer);
-  }
-});
-
-/**
- * パスワードの「見える／見えない」を切り替える関数
- */
-function togglePasswordVisibility() {
-  const passInput = document.getElementById("loginPasswordInput");
-  const eyeIcon = document.getElementById("eyeIcon");
-  
-  if (passInput.type === "password") {
-    passInput.type = "text";
-    eyeIcon.innerHTML = `
-      <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.822 7.822 3 3m-3-3a9.675 9.675 0 0 1-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-    `;
-  } else {
-    passInput.type = "password";
-    eyeIcon.innerHTML = `
-      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-    `;
-  }
-}
-
-/**
- * ログインボタンが押された時の処理
- */
-async function handleLoginSubmit() {
-  const idInput = document.getElementById("loginIdInput").value.trim();
-  const passwordInput = document.getElementById("loginPasswordInput").value.trim();
-  
-  if (!idInput || !passwordInput) {
-    alert("IDとパスワードの両方を入力してください。");
-    return;
-  }
-  
-  const btn = document.getElementById("loginBtn");
-  btn.disabled = true;
-  btn.textContent = "認証中...";
-  
-  localStorage.setItem('app_login_id', idInput);
-  localStorage.setItem('app_login_password', passwordInput);
-  
-  document.getElementById("loginScreen").style.display = "none";
-  await initializeApp(idInput, passwordInput);
-}
-
-/**
- * アプリのデータを読み込んで起動する共通関数
- */
-async function initializeApp(loginId, password) {
-  const loader = document.getElementById("initLoader");
-  loader.style.display = "block";
-  document.getElementById("loaderText").textContent = "ログイン認証中 & データを読み込み中...";
-
-  try {
-    const data = await apiCall("loadAppDataMaster");
-    
-    if (!data || typeof data !== 'object') {
-      throw new Error("GASからのデータが正しくありません。");
-    }
-
-    appConfig = data;
-    const select = document.getElementById("filterClient");
-    select.innerHTML = '<option value="">すべて</option>'; 
-    data.clientList.forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = opt.textContent = c;
-      select.appendChild(opt);
-    });
-    
-    loader.style.display = "none";
-    document.getElementById("mainApp").style.display = "block";
-  } catch (err) {
-    console.error(err);
-    alert("ログインに失敗しました。\n\n理由: " + err.message);
-    
-    localStorage.removeItem('app_login_id');
-    localStorage.removeItem('app_login_password');
-    
-    const btn = document.getElementById("loginBtn");
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = "ログイン";
-    }
-    
-    loader.style.display = "none";
-    document.getElementById("loginScreen").style.display = "flex";
-  }
-}
-
-/**
- * 常にログイン情報を自動添付して通信する関数（💡 GAS_URL に修正）
- */
-async function apiCall(action, payload = {}) {
-  const loginId = localStorage.getItem('app_login_id');
-  const password = localStorage.getItem('app_login_password');
-  
-  payload.loginId = loginId;
-  payload.password = password;
-
-  // 💡 ここを元の変数名「GAS_URL」に戻しました！
-  const response = await fetch(GAS_URL, {
-    method: "POST",
-    body: JSON.stringify({ action: action, payload: payload })
-  });
-  const resData = await response.json();
-  if (resData.status === "error") {
-    throw new Error(resData.message);
-  }
-  return resData.data;
-}
-  
-// 検索実行
-async function search() {
-  const btn = document.getElementById("searchBtn");
-  const icon = document.getElementById("searchIcon");
-  const resultsDiv = document.getElementById("results");
-  
-  btn.disabled = true;
-  icon.textContent = "autorenew";
-  icon.classList.add("spinning");
-  resultsDiv.style.opacity = "0.5";
-
-  const client = document.getElementById("filterClient").value;
-  const month = document.getElementById("filterMonth").value;
-  
-  // 💡 入力された文字の全角英数字・大文字をきれいに変換してGASへ送る
-  let keyword = document.getElementById("searchValue").value;
-  if (keyword) {
-    keyword = keyword.replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).toLowerCase().trim();
-  }
-
-  try {
-    const records = await apiCall("searchRecordsExtended", {
-      client: client,
-      month: month,
-      keyword: keyword
-    });
-    btn.disabled = false;
-    icon.textContent = "search";
-    icon.classList.remove("spinning");
-    resultsDiv.style.opacity = "1";
-    displayResults(records);
-  } catch (err) {
-    btn.disabled = false;
-    icon.textContent = "search";
-    icon.classList.remove("spinning");
-    resultsDiv.style.opacity = "1";
-    resultsDiv.innerHTML = '<p style="color:red; text-align:center;">エラー: ' + err.message + '</p>';
-  }
-}
-
-// 結果表示
-function displayResults(records) {
-  const container = document.getElementById("results");
-  const countDiv = document.getElementById("searchCount");
-  container.innerHTML = "";
-  
-  if (!records || records.length === 0) {
-    countDiv.innerHTML = "条件に一致する案件は見つかりませんでした。";
-    return;
-  }
-  countDiv.innerHTML = `<span style="color:var(--primary)">${records.length}</span> 件の案件を表示中`;
-
-  records.forEach(record => {
-    const item = document.createElement("div");
-    item.className = "result-item";
-    
-    const parseDate = (d) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? d : "";
-    const displayDate = (record.施工日1 && /^\d{4}-\d{2}-\d{2}$/.test(record.施工日1)) 
-                        ? record.施工日1.replace(/-/g, '/') 
-                        : (record.施工日1 || "未定");
-
-    item.innerHTML = `
-      <div class="result-summary" onclick="this.parentElement.classList.toggle('is-open')">
-        <div class="summary-info">
-          <div class="row-meta">
-            <span class="badge-no">No.${record.No}</span>
-            <span style="font-size:12px; color:var(--text-sub);">${record.発注元}</span>
-          </div>
-          <span class="anken-title">${record.案件名}</span>
-          <div class="summary-subtext">
-            <span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-outlined" style="font-size:16px;">calendar_month</span> ${displayDate}</span>
-            <span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-outlined" style="font-size:16px;">construction</span> ${record.工事内容1 || "---"}</span>
-          </div>
-        </div>
-        <span class="material-symbols-outlined expand-icon" style="transition: transform 0.3s; color:var(--text-sub)">expand_more</span>
+  <div id="initLoader" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #ffffff; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 120px;">
+    <div style="width: 100%; max-width: 350px; text-align: center;">
+      <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 24px; height: 50px;">
+        <div style="width: 6px; height: 16px; background: linear-gradient(to bottom, #4a90e2, #9b59b6); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite;"></div>
+        <div style="width: 6px; height: 32px; background: linear-gradient(to bottom, #7bb0f9, #bdc3c7); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.15s;"></div>
+        <div style="width: 6px; height: 48px; background: linear-gradient(to bottom, #4a90e2, #4facfe); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.3s;"></div>
+        <div style="width: 6px; height: 24px; background: linear-gradient(to bottom, #9b59b6, #ff0844); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.45s;"></div>
       </div>
-      
-      <div class="result-details">
-        ${record.添付資料 ? `
-        <div class="folder-container">
-          <div class="folder-info">
-            <span class="material-symbols-outlined folder-icon">cloud_done</span>
-            <div>
-              <div class="folder-label">共有資料フォルダ</div>
-              <div style="font-size:11px; color:var(--text-sub)">図面・写真・報告書</div>
-            </div>
-          </div>
-          <a href="${record.添付資料}" target="_blank" class="btn-folder">
-            <span class="material-symbols-outlined" style="font-size:18px;">open_in_new</span> 開く
-          </a>
+      <p id="loaderText" style="margin: 0; color: #475569; font-size: 16px; font-weight: bold; letter-spacing: 0.5px; animation: pulseText 2s ease-in-out infinite;">
+        読み込み中...
+      </p>
+    </div>
+  </div>
+
+  <div id="mainApp" style="display:none; padding: 24px;">
+    
+    <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f0f2f5; padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
+        <div style="font-size: 22px; font-weight: bold; color: #1e293b; display:flex; align-items:center; gap:8px;">
+          <span class="material-symbols-outlined" style="color:var(--primary); font-size:30px;">saved_search</span> 案件登録&検索アプリ
         </div>
-        ` : `<div style="padding:16px; font-size:12px; color:var(--text-sub);">共有資料フォルダ：未作成</div>`}
-
-        <div class="detail-card">
-          <div class="data-row"><span class="data-label">所在地</span><span class="data-value">${record.住所 || "---"}</span></div>
-          <div class="data-row"><span class="data-label">面積</span><span class="data-value">${record.専有面積 || "---"}</span></div>
-          <div class="data-row" style="grid-column: span 2;"><span class="data-label">担当者 / 連絡先</span><span class="data-value">${record.担当者 || ""} / ${record.連絡先 || ""}</span></div>
-        </div>
-
-        <div style="margin-bottom:15px;">
-          <label>📝 備考メモ</label>
-          <textarea id="備考_${record.rowNumber}" rows="2" placeholder="特記情報を入力">${record.備考 || ""}</textarea>
-        </div>
-
-        <div style="margin-bottom:15px;">
-          <label>🔍 検査予定日時</label>
-          <input type="datetime-local" id="検査日_${record.rowNumber}" value="${record.検査日 || ''}">
-        </div>
-
-        <div id="workFields_${record.rowNumber}"></div>
-
-        <button class="btn btn-primary" onclick="saveRecord(${record.rowNumber}, this)" style="margin-top:20px;">
-          <span class="material-symbols-outlined">save</span> 内容を更新して保存
+        <button class="btn btn-success" onclick="openCreateModal()" style="font-size: 18px; padding: 14px 28px;">
+          <span class="material-symbols-outlined">add_circle</span> 新規案件を登録する
         </button>
-
-        <div class="upload-box" 
-             id="dropZone_${record.rowNumber}" 
-             style="cursor: pointer;"
-             ondragover="event.preventDefault(); event.stopPropagation(); this.classList.add('dragover')" 
-             ondragenter="event.preventDefault(); event.stopPropagation(); this.classList.add('dragover')"
-             ondragleave="event.preventDefault(); event.stopPropagation(); this.classList.remove('dragover')" 
-             ondrop="event.preventDefault(); event.stopPropagation(); this.classList.remove('dragover'); handleDrop(event, ${record.rowNumber})">
-          
-          <div class="pc-only" onclick="document.getElementById('files_${record.rowNumber}').click()">
-            <span class="material-symbols-outlined" style="font-size:40px; color:var(--text-sub);">cloud_upload</span>
-            <div class="drop-zone-text">ファイルをドラッグ＆ドロップ</div>
-            <div style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
-          </div>
-          
-          <button type="button" class="btn btn-secondary" onclick="document.getElementById('files_${record.rowNumber}').click()" style="margin:0 auto; padding:8px 16px; background:#fff; border:1px solid var(--border);">
-            <span class="material-symbols-outlined">add_circle</span> ファイルを選択
-          </button>
-          
-          <input type="file" id="files_${record.rowNumber}" multiple style="display:none;" onchange="handleFileSelect(this, ${record.rowNumber})">
-          
-          <div id="fileList_${record.rowNumber}" class="file-list"></div>
-
-          <div class="upload-controls" style="margin-top:20px; border-top:1px solid var(--border); padding-top:15px;">
-            <div class="input-row">
-              <label>担当者</label>
-              <select id="uploader_${record.rowNumber}">${createOptions(appConfig.uploaders)}</select>
-            </div>
-            <div class="input-row">
-              <label>種別</label>
-              <select id="fileType_${record.rowNumber}">${createOptions(appConfig.fileTypes)}</select>
-            </div>
-          </div>
-
-          <div class="upload-footer">
-            <button type="button" class="btn btn-primary" onclick="handleUpload(${record.rowNumber}, this)">
-              <span class="material-symbols-outlined">cloud_upload</span> アップロードを開始
-            </button>
-            <button type="button" class="btn btn-secondary" onclick="clearFiles(${record.rowNumber})" style="background:transparent; border:none; color:var(--text-sub); font-size:12px;">
-              選択をすべて解除
-            </button>
-          </div>
-          <div id="status_${record.rowNumber}" style="font-size:12px; margin-top:10px; font-weight:bold; color:var(--primary);"></div>
-        </div>
       </div>
-    `;
-    container.appendChild(item);
 
-    const workContainer = document.getElementById(`workFields_${record.rowNumber}`);
-    for(let i=1; i<=4; i++) {
-      const rawDate = record['施工日'+i];
-      const dateVal = parseDate(rawDate);
-      
-      const div = document.createElement("div");
-      div.className = "work-section";
-      div.innerHTML = `
-        <div>
-          <label>工事内容 ${i}</label>
-          <select id="工事内容${i}_${record.rowNumber}">
-            ${createOptions(appConfig.workOptions, record['工事内容'+i])}
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">発注元で絞り込み</label>
+          <select id="filterClient" style="width: 100%; background-color: #fafafa;"><option value="">すべて</option></select>
+        </div>
+
+        <div style="flex: 1; min-width: 120px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">施工月</label>
+          <select id="filterMonth" style="width: 100%; background-color: #fafafa;">
+            <option value="">すべて</option>
+            <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+            <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+            <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+            <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
           </select>
         </div>
-        <div>
-          <label>施工予定日 ${i}</label>
-          <input type="date" id="施工日${i}_${record.rowNumber}" value="${dateVal}">
+
+        <div style="flex: 2; min-width: 250px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">キーワード検索（案件名、担当者など）</label>
+          <input type="text" id="searchValue" placeholder="文字を入力（Enterキーでも検索できます）" style="width: 100%;">
         </div>
-      `;
-      workContainer.appendChild(div);
-    }
-  });
-}
 
-function createOptions(list, selected="") {
-  if(!list) return "";
-  return list.map(opt => `<option value="${opt}" ${opt==selected?'selected':''}>${opt}</option>`).join("");
-}
-
-// 保存処理
-async function saveRecord(rowNumber, btnEl) {
-  const originalHtml = btnEl.innerHTML;
-  btnEl.disabled = true;
-  btnEl.innerHTML = '<span class="material-symbols-outlined spinning">sync</span> 保存中...';
-  
-  const formData = { rowNumber: rowNumber };
-  const fields = ["工事内容1","工事内容2","工事内容3","工事内容4","施工日1","施工日2","施工日3","施工日4","検査日","備考"];
-  
-  fields.forEach(f => {
-    const el = document.getElementById(`${f}_${rowNumber}`);
-    if (el) formData[f] = el.value;
-  });
-
-  try {
-    const msg = await apiCall("updateRecord", { rowNumber: rowNumber, formData: formData });
-    alert(msg);
-    btnEl.disabled = false;
-    btnEl.innerHTML = originalHtml;
-  } catch (err) {
-    alert("保存に失敗しました: " + err.message);
-    btnEl.disabled = false;
-    btnEl.innerHTML = originalHtml;
-  }
-}
-
-// --- アップロード用ヘルパー関数群 ---
-
-function handleFileSelect(input, rowNumber) {
-  if (input.files && input.files.length > 0) {
-    addFilesToList(Array.from(input.files), rowNumber);
-    input.value = ""; 
-  }
-}
-
-function handleDrop(event, rowNumber) {
-  event.preventDefault();
-  event.stopPropagation();
-  const files = event.dataTransfer.files;
-  if (files.length > 0) {
-    addFilesToList(Array.from(files), rowNumber);
-  }
-}
-
-function addFilesToList(files, rowNumber) {
-  if (!selectedFilesMap[rowNumber]) selectedFilesMap[rowNumber] = [];
-  files.forEach(file => {
-    const isDuplicate = selectedFilesMap[rowNumber].some(f => f.name === file.name && f.size === file.size);
-    if (!isDuplicate) selectedFilesMap[rowNumber].push(file);
-  });
-  renderFileList(rowNumber);
-}
-
-function renderFileList(rowNumber) {
-  const listDiv = document.getElementById(`fileList_${rowNumber}`);
-  const files = selectedFilesMap[rowNumber] || [];
-  if (files.length === 0) {
-    listDiv.innerHTML = "";
-    return;
-  }
-  listDiv.innerHTML = files.map((file, index) => `
-    <div class="file-item">
-      <span class="material-symbols-outlined" style="font-size:18px; margin-right:8px;">description</span>
-      <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</span>
-      <span class="material-symbols-outlined" style="color:#ef4444; cursor:pointer;" onclick="removeFile(${rowNumber}, ${index})">cancel</span>
+        <div style="min-width: 140px;">
+          <button id="searchBtn" class="btn btn-primary" onclick="search()" style="width: 100%; padding: 13px; font-size:18px;">
+            <span id="searchIcon" class="material-symbols-outlined">search</span> 検索する
+          </button>
+        </div>
+      </div>
     </div>
-  `).join("");
-}
 
-function removeFile(rowNumber, index) {
-  selectedFilesMap[rowNumber].splice(index, 1);
-  renderFileList(rowNumber);
-}
+    <div id="searchCount" style="margin-bottom: 12px; font-weight: bold; font-size: 16px; padding-left: 4px;"></div>
+    <div id="results"></div>
+  </div>
 
-function clearFiles(rowNumber) {
-  selectedFilesMap[rowNumber] = [];
-  renderFileList(rowNumber);
-  const status = document.getElementById(`status_${rowNumber}`);
-  if(status) status.textContent = "";
-}
+<div id="createModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <h2 style="margin-top: 0; margin-bottom: 24px; color: #1e293b; border-bottom: 3px solid var(--success); padding-bottom: 10px; display:flex; align-items:center; gap:8px;">
+        <span class="material-symbols-outlined" style="color:var(--success); font-size:32px;">assignment_add</span> 新規案件の登録
+      </h2>
+      
+      <form id="createProjectForm" onsubmit="handleCreateSubmit(event)">
+        <div class="form-group">
+          <label>発注元 <span class="badge-required">必須</span></label>
+          <select name="発注元" id="addClientSelect" required style="width:100%;"></select>
+        </div>
 
-// アップロード実行
-async function handleUpload(rowNumber, btn) {
-  const files = selectedFilesMap[rowNumber];
-  const status = document.getElementById(`status_${rowNumber}`);
-  const uploader = document.getElementById(`uploader_${rowNumber}`).value;
-  const fileType = document.getElementById(`fileType_${rowNumber}`).value;
-  
-  if (!files || files.length === 0) return alert("ファイルを選択してください");
-  
-  btn.disabled = true;
-  const originalHtml = btn.innerHTML;
-  btn.innerHTML = '<span class="material-symbols-outlined spinning">sync</span> アップロード中...';
-  status.textContent = "ファイルを読み込み中...";
-  
-  const filesData = [];
-  for (const file of files) {
-    const reader = new FileReader();
-    const res = await new Promise(r => {
-      reader.onload = e => r({data: e.target.result, mimeType: file.type, name: file.name});
-      reader.readAsDataURL(file);
+        <div class="form-group">
+          <label>案件名 <span class="badge-required">必須</span></label>
+          <input type="text" name="案件名" placeholder="例：〇〇様邸新築工事" required>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+          <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #475569; display: flex; align-items: center; gap: 6px;">
+            <span class="material-symbols-outlined" style="font-size: 20px; color: var(--primary);">calendar_month</span> 工事予定・担当割当
+          </h3>
+
+          <div class="work-input-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div class="form-group" style="margin:0;">
+              <label>施工予定日 1 <span id="newDaySpan_1" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label>
+              <input type="date" name="施工日1" onchange="updateInputWeekday(this, 'newDaySpan_1')">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>工事内容 1 <span class="badge-required">必須</span></label>
+              <select name="工事内容1" id="newWorkContent_1" required style="width:100%;"></select>
+            </div>
+            <div class="form-group" style="grid-column: span 2; margin:0;">
+              <label>工事担当者 1</label>
+              <select name="工事担当1" id="newWorker_1" style="width:100%;"></select>
+            </div>
+          </div>
+
+          <div id="addWorkGroup_2" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group" style="margin:0;">
+              <label>施工予定日 2 <span id="newDaySpan_2" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label>
+              <input type="date" name="施工日2" onchange="updateInputWeekday(this, 'newDaySpan_2')">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>工事内容 2</label>
+              <select name="工事内容2" id="newWorkContent_2" style="width:100%;"></select>
+            </div>
+            <div class="form-group" style="grid-column: span 2; margin:0;">
+              <label>工事担当者 2</label>
+              <select name="工事担当2" id="newWorker_2" style="width:100%;"></select>
+            </div>
+          </div>
+
+          <div id="addWorkGroup_3" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group" style="margin:0;">
+              <label>施工予定日 3 <span id="newDaySpan_3" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label>
+              <input type="date" name="施工日3" onchange="updateInputWeekday(this, 'newDaySpan_3')">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>工事内容 3</label>
+              <select name="工事内容3" id="newWorkContent_3" style="width:100%;"></select>
+            </div>
+            <div class="form-group" style="grid-column: span 2; margin:0;">
+              <label>工事担当者 3</label>
+              <select name="工事担当3" id="newWorker_3" style="width:100%;"></select>
+            </div>
+          </div>
+
+          <div id="addWorkGroup_4" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group" style="margin:0;">
+              <label>施工予定日 4 <span id="newDaySpan_4" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label>
+              <input type="date" name="施工日4" onchange="updateInputWeekday(this, 'newDaySpan_4')">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>工事内容 4</label>
+              <select name="工事内容4" id="newWorkContent_4" style="width:100%;"></select>
+            </div>
+            <div class="form-group" style="grid-column: span 2; margin:0;">
+              <label>工事担当者 4</label>
+              <select name="工事担当4" id="newWorker_4" style="width:100%;"></select>
+            </div>
+          </div>
+
+          <button type="button" id="addWorkBtn" class="btn" style="margin-top:16px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="showNextWorkField()">
+            <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span> 施工日・工事内容・担当を追加
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label>所在地（住所）</label>
+          <input type="text" name="住所" placeholder="住所を入力してください">
+        </div>
+
+        <div class="form-group">
+          <label>🗺 緯度・経度</label>
+          <input type="text" name="緯度・経度" placeholder="例：36.84209,137.40605">
+        </div>
+
+        <div class="form-group">
+          <label>面 積</label>
+          <input type="text" name="専有面積・延床面積" placeholder="例：85㎡">
+        </div>
+
+        <div class="form-group">
+          <label>担当者</label>
+          <input type="text" name="担当者" placeholder="担当者名">
+        </div>
+
+        <div class="form-group">
+          <label>📳 連絡先</label>
+          <input type="text" name="連絡先" placeholder="電話番号など">
+        </div>
+
+        <div class="form-group">
+          <label>🔑 キーBOX</label>
+          <input type="text" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所">
+        </div>
+
+        <div class="form-group">
+          <label>備 考</label>
+          <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px; font-size:16px; font-family:inherit; box-sizing:border-box;"></textarea>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px;">
+          <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">閉じる</button>
+          <button type="submit" class="btn btn-success" style="padding: 12px 32px;">
+            <span class="material-symbols-outlined">cloud_sync</span> この内容で登録する
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script>
+    
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxk1Iu7URAnEtxG8v0K2WrD5qNhoLdUU6mWi5MCnFG3UC-wVVRY6MduQiIT80BdeRJ8/exec';
+    const CLIENT_ID = '302132186875-fr0lh20940o7k9jrdg3drm4n5r19lm99.apps.googleusercontent.com';
+    const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive';
+    let appConfig = {};
+    const selectedFilesMap = {};
+    const REDIRECT_URI = "my-first-app-atago-bfe9dq5s3rmsl-nine02yhkkm17ahmhLo.vercel.app";
+
+    // 💡 ＋ボタンで次の入力欄を展開する処理
+    window.showNextWorkField = function() {
+      if (typeof window.currentWorkCount === 'undefined') {
+        window.currentWorkCount = 1;
+      }
+    
+      if (window.currentWorkCount < 4) {
+        window.currentWorkCount++;
+        const targetGroup = document.getElementById('addWorkGroup_' + window.currentWorkCount);
+        if (targetGroup) {
+          // 競合を完全に上書きしてグリッド表示に変更
+          targetGroup.style.setProperty('display', 'grid', 'important');
+        }
+        if (window.currentWorkCount === 4) {
+          const addBtn = document.getElementById('addWorkBtn');
+          if (addBtn) addBtn.style.display = 'none';
+        }
+      }
+    };
+
+    // 💡 10大ファイル種別定義マッピング
+    const FILE_TYPES_DEF = {
+      "01": "QR", "02": "工程", "03": "平面", "04": "立面", "05": "注文",
+      "06": "駐車", "07": "写真", "08": "見積", "10": "地図", "20": "請求"
+    };
+
+    function getHashParams() {
+      const hash = window.location.hash.substring(1);
+      const params = {};
+      if (!hash) return params;
+      hash.split('&').forEach(pair => {
+        const [key, val] = pair.split('=');
+        params[key] = decodeURIComponent(val);
+      });
+      return params;
+    }
+
+    function redirectToLogin() {
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${encodeURIComponent(CLIENT_ID)}` +
+        `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+        `&response_type=token` +
+        `&scope=${encodeURIComponent(SCOPES)}` +
+        `&prompt=consent`;
+      window.location.href = authUrl;
+    }
+
+    async function apiCall(action, payload = {}) {
+      const loginId = localStorage.getItem('app_login_id');
+      const password = localStorage.getItem('app_login_password');
+      
+      payload.loginId = loginId;
+      payload.password = password;
+
+      const response = await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: action, payload: payload })
+      });
+      
+      if (!response.ok) throw new Error(`HTTPエラー! ステータス: ${response.status}`);
+      
+      const resData = await response.json();
+      if (resData.status === "error") {
+        throw new Error(resData.message);
+      }
+      return resData.data;
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (typeof GAS_URL === 'undefined' || !GAS_URL) {
+        alert("⚠️ 設定エラー\n\nJavaScript内で「GAS_URL」が定義されていません。\nURLを定義している行が消えていないか確認してください。");
+        return;
+      }
+
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("initLoader").style.display = "none";
+      document.getElementById("mainApp").style.display = "none";
+
+      const savedId = localStorage.getItem('app_login_id');
+      const savedPassword = localStorage.getItem('app_login_password');
+      
+      if (savedId && savedPassword) {
+        initializeApp(savedId, savedPassword);
+      } else {
+        document.getElementById("loginScreen").style.display = "flex";
+        const enterContainer = (e) => { if (e.key === "Enter") handleLoginSubmit(); };
+        document.getElementById("loginIdInput").addEventListener("keypress", enterContainer);
+        document.getElementById("loginPasswordInput").addEventListener("keypress", enterContainer);
+      }
     });
-    filesData.push(res);
-  }
-  
-  try {
-    const msg = await apiCall("uploadFiles", {
-      rowNumber: rowNumber,
-      uploader: uploader,
-      fileType: fileType,
-      filesData: filesData
+
+    function togglePasswordVisibility() {
+      const passInput = document.getElementById("loginPasswordInput");
+      const eyeIcon = document.getElementById("eyeIcon");
+      if (passInput.type === "password") {
+        passInput.type = "text";
+        eyeIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.822 7.822 3 3m-3-3a9.675 9.675 0 0 1-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />`;
+      } else {
+        passInput.type = "password";
+        eyeIcon.innerHTML = `
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+        `;
+      }
+    }
+
+    async function handleLoginSubmit() {
+      const idInput = document.getElementById("loginIdInput").value.trim();
+      const passwordInput = document.getElementById("loginPasswordInput").value.trim();
+      if (!idInput || !passwordInput) return alert("IDとパスワードを入力してください。");
+      
+      const btn = document.getElementById("loginBtn");
+      btn.disabled = true;
+      btn.textContent = "認証中...";
+      
+      localStorage.setItem('app_login_id', idInput);
+      localStorage.setItem('app_login_password', passwordInput);
+      document.getElementById("loginScreen").style.display = "none";
+      await initializeApp(idInput, passwordInput);
+    }
+
+    async function initializeApp(loginId, password) {
+      const loader = document.getElementById("initLoader");
+      loader.style.display = "flex";
+      document.getElementById("loaderText").textContent = "ログイン認証中 & データを読み込み中...";
+
+      try {
+        const data = await apiCall("loadAppDataMaster");
+        appConfig = data;
+        const select = document.getElementById("filterClient");
+        select.innerHTML = '<option value="">すべて</option>'; 
+        data.clientList.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = c;
+          select.appendChild(opt);
+        });
+        
+        loader.style.display = "none";
+        document.getElementById("mainApp").style.display = "block";
+      } catch (err) {
+        alert("ログインに失敗しました。\n\n理由: " + err.message);
+        localStorage.removeItem('app_login_id');
+        localStorage.removeItem('app_login_password');
+        window.location.reload();
+      }
+    }
+
+    async function search() {
+      const btn = document.getElementById("searchBtn");
+      const icon = document.getElementById("searchIcon");
+      const resultsDiv = document.getElementById("results");
+      
+      document.getElementById("mainApp").style.display = "none";
+      const loader = document.getElementById("initLoader");
+      loader.style.display = "flex";
+      document.getElementById("loaderText").textContent = "データを検索中...";
+      btn.disabled = true;
+
+      const client = document.getElementById("filterClient").value;
+      const month = document.getElementById("filterMonth").value;
+      let keyword = document.getElementById("searchValue").value;
+      if (keyword) {
+        keyword = keyword.replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).toLowerCase().trim();
+      }
+
+      try {
+        const records = await apiCall("searchRecordsExtended", {
+          client: client,
+          month: month,
+          keyword: keyword
+        });
+        
+        displayResults(records);
+        loader.style.display = "none";
+        document.getElementById("mainApp").style.display = "block";
+        btn.disabled = false;
+        resultsDiv.style.opacity = "1";
+      } catch (err) {
+        loader.style.display = "none";
+        document.getElementById("mainApp").style.display = "block";
+        btn.disabled = false;
+        resultsDiv.innerHTML = '<p style="color:red; text-align:center;">エラー: ' + err.message + '</p>';
+      }
+    }
+
+    // =================================================================
+    // 📅 曜日を自動計算するヘルパー関数
+    // =================================================================
+    function getWeekday(dateStr) {
+      if (!dateStr) return "";
+      const cleanDate = dateStr.split("T")[0].replace(/\//g, "-");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) return "";
+      const days = ["日", "月", "火", "水", "木", "金", "土"];
+      const date = new Date(cleanDate);
+      return isNaN(date.getTime()) ? "" : `(${days[date.getDay()]})`;
+    }
+
+    // 入力欄の日付が変わった時に、横の曜日をリアルタイム更新する関数
+    window.updateInputWeekday = function(inputEl, spanId) {
+      const span = document.getElementById(spanId);
+      if (span) {
+        span.textContent = getWeekday(inputEl.value);
+      }
+    };
+
+    // =================================================================
+    // 📊 検索結果リスト表示エリア（工事内容・日付・担当の3点セット版）
+    // =================================================================
+    function displayResults(records) {
+      const container = document.getElementById("results");
+      const countDiv = document.getElementById("searchCount");
+      container.innerHTML = "";
+      
+      if (!records || records.length === 0) {
+        countDiv.innerHTML = "条件に一致する案件は見つかりませんでした。";
+        return;
+      }
+      countDiv.innerHTML = `<span style="color:var(--primary); font-size: 18px;">${records.length}</span> 件の案件を表示中`;
+
+      records.forEach(record => {
+        const item = document.createElement("div");
+        item.className = "result-item";
+        
+        const parseDate = (d) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? d : "";
+
+        // 💡 【ファイルバッジ判別】
+        let badgeHtml = '<div style="margin-top:6px; margin-bottom:2px; display:flex; flex-wrap:wrap; gap:4px;">';
+        let hasBadge = false;
+        const allRecordValuesStr = JSON.stringify(record);
+
+        for (let code in FILE_TYPES_DEF) {
+          const typeName = FILE_TYPES_DEF[code]; 
+          const isTrueInKey = record[code] === true || record[code] === "TRUE" || record[code] === "〇" || record[code] === "1";
+          const isNameInKey = record[typeName] === true || record[typeName] === "TRUE" || record[typeName] === "〇" || record[typeName] === "1";
+          const isIncludedInText = allRecordValuesStr.includes(code) || allRecordValuesStr.includes(typeName);
+
+          if (isTrueInKey || isNameInKey || isIncludedInText) {
+            badgeHtml += `<span class="file-badge">${typeName}</span>`;
+            hasBadge = true;
+          }
+        }
+        if(!hasBadge) {
+          badgeHtml += `<span style="font-size:13px; color:#94a3b8; font-weight:normal;">📄 ファイルなし</span>`;
+        }
+        badgeHtml += '</div>';
+
+        // 💡 【アコーディオン表サマリー】「日付 / 工事内容 / 担当者」の順で上部に綺麗に表示
+        let workScheduleHtml = '<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">';
+        let hasAnyWork = false;
+        for (let i = 1; i <= 4; i++) {
+          const wContent = record['工事内容' + i];
+          const wDate = record['施工日' + i];
+          const wWorker = record['工事担当' + i] || record['担当者' + i] || ''; // スプレッドシート側の列名に依存
+          
+          if (wContent || wDate || wWorker) {
+            hasAnyWork = true;
+            const fDate = (wDate && /^\d{4}-\d{2}-\d{2}$/.test(wDate)) ? wDate.replace(/-/g, '/') : (wDate || "未定");
+            const wDay = getWeekday(wDate); 
+            workScheduleHtml += `
+              <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:14px; align-items:center; background:#f1f5f9; padding:6px 12px; border-radius:6px; width:fit-content;">
+                <span style="display:flex; align-items:center; gap:4px; color:#555;"><span class="material-symbols-outlined" style="font-size:16px;">calendar_month</span> ${fDate}${wDay}</span>
+                <span style="display:flex; align-items:center; gap:4px; font-weight:bold; color:#334155;"><span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);">construction</span> ${wContent || "内容未定"}</span>
+                ${wWorker ? `<span style="display:flex; align-items:center; gap:4px; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:bold;"><span class="material-symbols-outlined" style="font-size:14px;">person</span> ${wWorker}</span>` : ''}
+              </div>
+            `;
+          }
+        }
+        if(!hasAnyWork) {
+          workScheduleHtml += `<div style="font-size:14px; color:#94a3b8;">📅 工事予定なし</div>`;
+        }
+        workScheduleHtml += '</div>';
+
+        item.innerHTML = `
+          <div class="result-summary" onclick="this.parentElement.classList.toggle('is-open')">
+            <div class="summary-info" style="flex:1; padding-right:12px;">
+              <div class="row-meta">
+                <span class="badge-no">No.${record.No}</span>
+                <span style="font-size:14px; color:var(--text-sub); font-weight:bold;">${record.発注元}</span>
+              </div>
+              <span class="anken-title">${record.案件名}</span>
+              ${badgeHtml}
+              ${workScheduleHtml}
+            </div>
+            <span class="material-symbols-outlined expand-icon" style="transition: transform 0.3s; color:var(--text-sub); font-size:32px;">expand_more</span>
+          </div>
+          
+          <div class="result-details">
+            ${record.添付資料 ? `
+            <div style="display:flex; justify-content:between; align-items:center; background:#edf2f7; padding:12px; border-radius:8px; margin-bottom:16px;">
+              <div style="display:flex; align-items:center; gap:12px; flex:1;">
+                <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">cloud_done</span>
+                <div>
+                  <div style="font-weight:bold;">共有資料フォルダ</div>
+                  <div style="font-size:12px; color:var(--text-sub)">図面・写真・報告書</div>
+                </div>
+              </div>
+              <a href="${record.添付資料}" target="_blank" class="btn btn-primary" style="padding:8px 16px; font-size:14px;">
+                <span class="material-symbols-outlined" style="font-size:18px;">open_in_new</span> 開く
+              </a>
+            </div>
+            ` : `<div style="padding:14px; font-size:14px; color:var(--text-sub); background:#f1f5f9; border-radius:8px; margin-bottom:16px;">📁 フォルダ：未作成 (ファイルアップロードで自動生成)</div>`}
+
+            <div class="detail-card">
+              <div class="data-row-input" style="grid-column: span 2;">
+                <label>所在地（住所）</label>
+                <input type="text" id="住所_${record.rowNumber}" value="${record.住所 || ''}">
+              </div>
+              
+              <div class="data-row-input">
+                <label>担当者（元請窓口等）</label>
+                <input type="text" id="担当者_${record.rowNumber}" value="${record.担当者 || ''}">
+              </div>
+              <div class="data-row-input">
+                <label>連絡先</label>
+                <input type="text" id="連絡先_${record.rowNumber}" value="${record.連絡先 || ''}">
+              </div>
+              
+              <div class="data-row-input">
+                <label>面 積</label>
+                <input type="text" id="専有面積_${record.rowNumber}" value="${record.専有面積・延床面積 || ''}">
+              </div>
+              <div class="data-row-input">
+                <label>🔑 キーBOX情報（保管場所・暗証番号など）</label>
+                <input type="text" id="キーBOX_${record.rowNumber}" value="${record.キーBOX || ''}" placeholder="現場カギ情報を入力">
+              </div>
+              <div class="data-row-input">
+                <label>緯度・経度</label>
+                <input type="text" id="緯度・経度_${record.rowNumber}" value="${record.緯度・経度 || ''}" placeholder="例：36.84209,137.40605">
+              </div>
+
+              <div class="data-row-input" style="grid-column: span 2;">
+                <label>📝 備考メモ</label>
+                <textarea id="備考_${record.rowNumber}" rows="2" style="width:100%; border:1px solid #adb5bd; border-radius:6px; padding:10px; font-family:inherit; font-size:16px; box-sizing:border-box;" placeholder="特記情報を入力">${record.備考 || ""}</textarea>
+              </div>
+            </div>
+
+            <div style="margin-bottom:15px;">
+              <label style="font-weight:bold; display:block; margin-bottom:6px;">🔍 検査予定日時</label>
+              <input type="datetime-local" id="検査日_${record.rowNumber}" style="width:100%;" value="${record.検査日 || ''}">
+            </div>
+
+            <div id="workFields_${record.rowNumber}"></div>
+
+            <div class="upload-box" 
+                 id="dropZone_${record.rowNumber}" 
+                 style="cursor: pointer; margin-bottom:20px;"
+                 ondragover="event.preventDefault(); event.stopPropagation(); this.classList.add('dragover')" 
+                 ondragenter="event.preventDefault(); event.stopPropagation(); this.classList.add('dragover')"
+                 ondrop="event.preventDefault(); event.stopPropagation(); this.classList.remove('dragover'); handleDrop(event, ${record.rowNumber})">
+              
+              <div onclick="document.getElementById('files_${record.rowNumber}').click()">
+                <span class="material-symbols-outlined" style="font-size:40px; color:var(--text-sub);">cloud_upload</span>
+                <div style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
+                <div style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
+              </div>
+              
+              <button type="button" class="btn" onclick="document.getElementById('files_${record.rowNumber}').click()" style="margin:0 auto; padding:8px 16px; background:#fff; border:1px solid var(--border); color:var(--text-main);">
+                <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span> ファイルを選択
+              </button>
+              
+              <input type="file" id="files_${record.rowNumber}" multiple style="display:none;" onchange="handleFileSelect(this, ${record.rowNumber})">
+              <div id="fileList_${record.rowNumber}" class="file-list"></div>
+
+              <div style="margin-top:20px; border-top:1px solid var(--border); padding-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:12px; text-align:left;">
+                <div>
+                  <label style="font-size:12px; font-weight:bold; color:var(--text-sub);">担当者</label>
+                  <select id="uploader_${record.rowNumber}" style="width:100%; padding:6px; margin-top:4px;">${createOptions(appConfig.uploaders)}</select>
+                </div>
+                <div>
+                  <label style="font-size:12px; font-weight:bold; color:var(--text-sub);">種別</label>
+                  <select id="fileType_${record.rowNumber}" style="width:100%; padding:6px; margin-top:4px;">${createOptions(appConfig.fileTypes)}</select>
+                </div>
+              </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1px solid #eee; padding-top:12px;">
+                <button type="button" class="btn btn-primary" onclick="handleUpload(${record.rowNumber}, this)" style="padding:8px 16px; font-size:14px;">
+                  <span class="material-symbols-outlined" style="font-size:18px;">cloud_upload</span> アップロード開始
+                </button>
+                <button type="button" onclick="clearFiles(${record.rowNumber})" style="background:transparent; border:none; color:#ef4444; font-size:13px; cursor:pointer;">
+                  選択をすべて解除
+                </button>
+              </div>
+              <div id="status_${record.rowNumber}" style="font-size:13px; margin-top:10px; font-weight:bold; color:var(--primary); text-align:left;"></div>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveRecord(${record.rowNumber}, this)" style="width:100%; padding:14px; font-size:18px; margin-bottom:10px;">
+              <span class="material-symbols-outlined">save</span> この案件内容を更新して保存
+            </button>
+          </div>
+        `;
+        container.appendChild(item);
+
+        // 💡 【詳細欄】施工予定日のループ（日付 / 工事内容 / 工事担当 の3点セット表示・編集）
+        const workContainer = document.getElementById(`workFields_${record.rowNumber}`);
+        for(let i=1; i<=4; i++) {
+          const rawDate = record['施工日'+i];
+          const dateVal = parseDate(rawDate);
+          const dayStr = getWeekday(dateVal); 
+          const selectedWorker = record['工事担当'+i] || record['担当者'+i] || ''; // スプレッドシート側の値
+          
+          const div = document.createElement("div");
+          div.className = "work-section";
+          div.style.cssText = "display:flex; flex-direction:column; gap:8px; background:#f8fafc; padding:12px; border-radius:6px; margin-bottom:10px; border:1px solid #e2e8f0;";
+          div.innerHTML = `
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+              <div>
+                <label style="font-size:13px;">施工予定日 ${i} <span id="daySpan_${i}_${record.rowNumber}" style="font-weight:bold; color:var(--primary); margin-left:4px;">${dayStr}</span></label>
+                <input type="date" id="施工日${i}_${record.rowNumber}" value="${dateVal}" onchange="updateInputWeekday(this, 'daySpan_${i}_${record.rowNumber}')" style="width:100%;">
+              </div>
+              <div>
+                <label style="font-size:13px;">工事内容 ${i}</label>
+                <select id="工事内容${i}_${record.rowNumber}" style="width:100%;">
+                  ${createOptions(appConfig.workOptions, record['工事内容'+i])}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:13px;">工事担当者 ${i}</label>
+              <select id="工事担当${i}_${record.rowNumber}" style="width:100%;">
+                <option value="">選択してください</option>
+                ${createOptions(appConfig.uploaders, selectedWorker)}
+              </select>
+            </div>
+          `;
+          workContainer.appendChild(div);
+        }
+      });
+    }
+    
+    function createOptions(list, selected="") {
+      if(!list) return "";
+      return list.map(opt => `<option value="${opt}" ${opt==selected?'selected':''}>${opt}</option>`).join("");
+    }
+
+    /**
+     * 💡 保存処理（拡張した「住所」「専有面積」「担当者」「連絡先」「キーBOX」をマッピング網羅）
+     */
+    async function saveRecord(rowNumber, btnEl) {
+      const originalHtml = btnEl.innerHTML;
+      btnEl.disabled = true;
+      btnEl.innerHTML = '<span class="material-symbols-outlined spinning">sync</span> 保存中...';
+      
+      const formData = { rowNumber: rowNumber };
+      
+      // 💡 GASに送信する対象フィールドに新項目を完全網羅
+      const fields = [
+        "工事担当者1","工事担当者2","工事担当者3","工事担当者4",
+        "工事内容1","工事内容2","工事内容3","工事内容4",
+        "施工日1","施工日2","施工日3","施工日4",
+        "検査日","備考","住所","緯度・経度","専有面積・延床面積","担当者","連絡先","キーBOX"
+      ];
+      
+      fields.forEach(f => {
+        const el = document.getElementById(`${f}_${rowNumber}`);
+        if (el) formData[f] = el.value;
+      });
+
+      try {
+        const msg = await apiCall("updateRecord", { rowNumber: rowNumber, formData: formData });
+        alert(msg);
+        btnEl.disabled = false;
+        btnEl.innerHTML = originalHtml;
+      } catch (err) {
+        alert("保存に失敗しました: " + err.message);
+        btnEl.disabled = false;
+        btnEl.innerHTML = originalHtml;
+      }
+    }
+
+    function openCreateModal() {
+      // 1. 発注元リストの生成
+      const addSelect = document.getElementById("addClientSelect");
+      addSelect.innerHTML = '<option value="">選択してください</option>';
+      if (appConfig && appConfig.clientList) {
+        appConfig.clientList.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = c;
+          addSelect.appendChild(opt);
+        });
+      }
+
+      // 2. 💡 工事内容・工事担当者プルダウンの動的生成 (1〜4のセット)
+      for (let i = 1; i <= 4; i++) {
+        // 工事内容の選択肢
+        const contentSelect = document.getElementById(`newWorkContent_${i}`);
+        if (contentSelect) {
+          // 1つ目は必須、2〜4は任意なので空の選択肢を先頭に入れる
+          const defaultOpt = i === 1 ? '<option value="">選択してください</option>' : '<option value="">(未定)</option>';
+          contentSelect.innerHTML = defaultOpt + createOptions(appConfig.workOptions);
+        }
+        
+        // 工事担当者の選択肢（ファイルアップロード者と同じリストを使用）
+        const workerSelect = document.getElementById(`newWorker_${i}`);
+        if (workerSelect) {
+          workerSelect.innerHTML = '<option value="">選択してください</option>' + createOptions(appConfig.uploaders);
+        }
+        
+        // 曜日表示をクリア
+        const daySpan = document.getElementById(`newDaySpan_${i}`);
+        if (daySpan) daySpan.textContent = '';
+      }
+
+      // 3. 💡 ＋ボタンの表示と非表示エリアのリセット
+      window.currentWorkCount = 1;
+      document.getElementById('addWorkGroup_2').style.display = 'none';
+      document.getElementById('addWorkGroup_3').style.display = 'none';
+      document.getElementById('addWorkGroup_4').style.display = 'none';
+      document.getElementById('addWorkBtn').style.display = 'flex';
+
+      // 4. モーダルを表示
+      document.getElementById("createModal").style.display = "flex";
+    }
+    
+    function closeCreateModal() {
+      document.getElementById("createProjectForm").reset();
+      document.getElementById("createModal").style.display = "none";
+    }
+
+    async function handleCreateSubmit(event) {
+      event.preventDefault();
+      const form = document.getElementById("createProjectForm");
+      const formDataObj = {};
+      const inputs = form.querySelectorAll("input, select, textarea");
+      
+      inputs.forEach(input => {
+        if (input.name) formDataObj[input.name] = input.value.trim();
+      });
+
+      document.getElementById("mainApp").style.display = "none";
+      const loader = document.getElementById("initLoader");
+      loader.style.display = "flex";
+      document.getElementById("loaderText").textContent = "新しい案件を登録しています...";
+
+      try {
+        const result = await apiCall("createRecord", { formData: formDataObj });
+        alert(`案件の登録が完了しました！\n自動採番されたNoは【 No.${result.newNo} 】です。`);
+        closeCreateModal();
+        window.location.reload();
+      } catch (err) {
+        alert("登録に失敗しました。\n理由: " + err.message);
+        loader.style.display = "none";
+        document.getElementById("mainApp").style.display = "block";
+      }
+    }
+
+    function handleFileSelect(input, rowNumber) {
+      if (input.files && input.files.length > 0) {
+        addFilesToList(Array.from(input.files), rowNumber);
+        input.value = ""; 
+      }
+    }
+
+    function handleDrop(event, rowNumber) {
+      event.preventDefault();
+      event.stopPropagation();
+      const files = event.dataTransfer.files;
+      if (files.length > 0) {
+        addFilesToList(Array.from(files), rowNumber);
+      }
+    }
+
+    function addFilesToList(files, rowNumber) {
+      if (!selectedFilesMap[rowNumber]) selectedFilesMap[rowNumber] = [];
+      files.forEach(file => {
+        const isDuplicate = selectedFilesMap[rowNumber].some(f => f.name === file.name && f.size === file.size);
+        if (!isDuplicate) selectedFilesMap[rowNumber].push(file);
+      });
+      renderFileList(rowNumber);
+    }
+
+    function renderFileList(rowNumber) {
+      const listDiv = document.getElementById(`fileList_${rowNumber}`);
+      const files = selectedFilesMap[rowNumber] || [];
+      if (files.length === 0) {
+        listDiv.innerHTML = "";
+        return;
+      }
+      listDiv.innerHTML = files.map((file, index) => `
+        <div class="file-item">
+          <span class="material-symbols-outlined" style="font-size:18px; margin-right:8px;">description</span>
+          <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</span>
+          <span class="material-symbols-outlined" style="color:#ef4444; cursor:pointer;" onclick="removeFile(${rowNumber}, ${index})">cancel</span>
+        </div>
+      `).join("");
+    }
+
+    function removeFile(rowNumber, index) {
+      selectedFilesMap[rowNumber].splice(index, 1);
+      renderFileList(rowNumber);
+    }
+
+    function clearFiles(rowNumber) {
+      selectedFilesMap[rowNumber] = [];
+      renderFileList(rowNumber);
+      const status = document.getElementById(`status_${rowNumber}`);
+      if(status) status.textContent = "";
+    }
+
+    async function handleUpload(rowNumber, btn) {
+      const files = selectedFilesMap[rowNumber];
+      const status = document.getElementById(`status_${rowNumber}`);
+      const uploader = document.getElementById(`uploader_${rowNumber}`).value;
+      const fileType = document.getElementById(`fileType_${rowNumber}`).value;
+      
+      if (!files || files.length === 0) return alert("ファイルを選択してください");
+      
+      btn.disabled = true;
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = '<span class="material-symbols-outlined spinning">sync</span> アップロード中...';
+      status.textContent = "ファイルを読み込み中...";
+      
+      const filesData = [];
+      for (const file of files) {
+        const reader = new FileReader();
+        const res = await new Promise(r => {
+          reader.onload = e => r({data: e.target.result, mimeType: file.type, name: file.name});
+          reader.readAsDataURL(file);
+        });
+        filesData.push(res);
+      }
+      
+      try {
+        const res = await apiCall("uploadFiles", {
+          rowNumber: rowNumber,
+          uploader: uploader,
+          fileType: fileType,
+          filesData: filesData
+        });
+        status.textContent = "✅ アップロード完了しました";
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        clearFiles(rowNumber);
+      } catch (err) {
+        status.textContent = "❌ エラー: " + err.message;
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    }
+      
+    document.getElementById("searchValue").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        search();
+      }
     });
-    status.textContent = "✅ " + msg;
-    btn.disabled = false;
-    btn.innerHTML = originalHtml;
-    clearFiles(rowNumber);
-  } catch (err) {
-    status.textContent = "❌ エラー: " + err.message;
-    btn.disabled = false;
-    btn.innerHTML = originalHtml;
-  }
-}
-  
-// 💡 フリーワード入力欄でEnterキーが押されたら検索を実行する
-document.getElementById("searchValue").addEventListener("keypress", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault(); // 画面全体の予期せぬリロードを防ぐ
-    search();
-  }
-});
-</script>
+  </script>
 </body>
 </html>
