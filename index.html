@@ -11,8 +11,8 @@
     :root {
       --primary: #4a90e2;
       --primary-hover: #357abd;
-      --cloud-blue: #0284c7;
-      --cloud-blue-hover: #0369a1;
+      --success: #2ecc71;
+      --success-hover: #27ae60;
       --cloud-grad: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); /* クラウド風グラデーション */
       --text-main: #222222;
       --text-sub: #555555;
@@ -46,7 +46,7 @@
       background: #fdfdfd;
     }
 
-.btn {
+    .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -54,24 +54,15 @@
       font-weight: bold;
       cursor: pointer;
       border: none;
-      border-radius: 6px;
-      padding: 10px 20px;
+      border-radius: 8px;
+      padding: 12px 24px;
       font-size: 16px;
       transition: all 0.2s;
     }
     .btn-primary { background-color: var(--primary); color: white; }
     .btn-primary:hover { background-color: var(--primary-hover); }
-    
-    /* 📄 クラウド保存っぽさを出したボタンデザイン */
-    .btn-success { 
-      background: var(--cloud-grad); 
-      color: white; 
-      box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
-    }
-    .btn-success:hover { 
-      opacity: 0.9;
-      box-shadow: 0 2px 6px rgba(79, 172, 254, 0.2);
-    }
+    .btn-success { background-color: var(--success); color: white; }
+    .btn-success:hover { background-color: var(--success-hover); }
     .btn-secondary { background-color: #bdc3c7; color: white; }
 
     /* 🔒 ログイン画面 */
