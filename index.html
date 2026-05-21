@@ -1074,17 +1074,21 @@
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "修正データを保存中...";
 
+      // 💡 緯度と経度を結合してGAS側の仕様「緯度・経度」に変換
+      const lat = document.getElementById(`緯度_${rNum}`).value;
+      const lng = document.getElementById(`経度_${rNum}`).value;
+      const latlng = (lat || lng) ? `${lat},${lng}` : "";
+
       const fData = {
         No: rNum,
         住所: document.getElementById(`住所_${rNum}`).value,
-        専有面積: document.getElementById(`専有面積_${rNum}`).value,
+        "専有面積・延床面積": document.getElementById(`専有面積_${rNum}`).value, // 💡 GAS側の項目名へ変更
         キーBOX: document.getElementById(`キーBOX_${rNum}`).value,
-        緯度: document.getElementById(`緯度_${rNum}`).value,
-        経度: document.getElementById(`経度_${rNum}`).value,
+        "緯度・経度": latlng, // 💡 結合した値を渡す
         検査日: document.getElementById(`検査日_${rNum}`).value,
         備考: document.getElementById(`備考_${rNum}`).value,
         
-        // システム管理項目
+        // システム管理項目（※GAS側のupdateRecordのuFieldsリストにも追加が必要であれば適宜追加してください）
         システムID: document.getElementById(`edit_システムID_${rNum}`).value,
         物件ID: document.getElementById(`edit_物件ID_${rNum}`).value,
         着工日: document.getElementById(`edit_着工日_${rNum}`).value,
