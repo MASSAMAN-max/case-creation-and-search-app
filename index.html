@@ -483,6 +483,7 @@
       if (savedId && savedPassword) {
         initializeApp(savedId, savedPassword);
       } else {
+        document.getElementById("initLoader").style.display = "none";
         document.getElementById("loginScreen").style.display = "flex";
         const enterContainer = (e) => { if (e.key === "Enter") handleLoginSubmit(); };
         document.getElementById("loginIdInput").addEventListener("keypress", enterContainer);
