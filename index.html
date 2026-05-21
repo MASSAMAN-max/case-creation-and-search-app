@@ -92,8 +92,8 @@
     .work-section select, .work-section input { width: 100%; padding: 10px; }
 
     /* 📂 アップロード */
-    .upload-box { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s; margin-top: 15px; }
-    .upload-box.dragover { border-color: var(--primary); background: #e0f2fe; }
+    .uploadbox { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s; margin-top: 15px; }
+    .uploadbox.dragover { border-color: var(--primary); background: #e0f2fe; }
     .file-item { display: flex; align-items: center; background: white; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 6px; font-size: 14px; }
 
     /* 📄 存在するファイル種別だけがピッと出るバッジスタイル */
@@ -403,7 +403,7 @@
 
         <div class="form-group">
           <label>📂 添付ファイル</label>
-          <div class="upload-box" id="createUploadBox" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, 'NEW_PROJECT')">
+          <div class="uploadbox" id="createUploadBox" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, 'NEW_PROJECT')">
             <span class="drag-drop-text">ファイルをここにドラッグ＆ドロップまたは<br></span>
             <button type="button" class="btn btn-secondary" onclick="document.getElementById('createFileInput').click()">ファイルを選択</button>
             <input type="file" id="createFileInput" multiple style="display:none;" onchange="handleFileSelect(event, 'NEW_PROJECT')">
@@ -831,7 +831,7 @@
               </div>
             </div>
 
-            <div class="upload-box" id="uploadBox_${record.No}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, '${record.No}')">
+            <div class="uploadbox" id="uploadBox_${record.No}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, '${record.No}')">
               <span class="drag-drop-text">ファイルをここにドラッグ＆ドロップまたは<br></span>
               <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput_${record.No}').click()">ファイルを選択</button>
               <input type="file" id="fileInput_${record.No}" multiple style="display:none;" onchange="handleFileSelect(event, '${record.No}')">
