@@ -1056,7 +1056,7 @@
       document.getElementById("loaderText").textContent = "新規案件をスプレッドシートへ書き込み中...";
 
       try {
-        await apiCall("createRecordExtended", payload);
+        await apiCall("createRecordExtended", { fData: payload });
         alert("新規案件の登録が完了しました。");
         closeCreateModal();
         search();
