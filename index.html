@@ -1066,8 +1066,8 @@
       }
     }
 
-    // =================================================================
-    // 💾 詳細データ修正保存処理（updateRecord連動）
+// =================================================================
+    // 💾 詳細データ修正保存処理（最新合体版）
     // =================================================================
     window.saveRecord = async function(rNum) {
       const loader = document.getElementById("initLoader");
@@ -1082,13 +1082,13 @@
       const fData = {
         No: rNum,
         住所: document.getElementById(`住所_${rNum}`).value,
-        "専有面積・延床面積": document.getElementById(`専有面積_${rNum}`).value, // 💡 GAS側の項目名へ変更
+        "専有面積・延床面積": document.getElementById(`専有面積_${rNum}`).value, // 💡 GAS側の項目名
         キーBOX: document.getElementById(`キーBOX_${rNum}`).value,
-        "緯度・経度": latlng, // 💡 結合した値を渡す
+        "緯度・経度": latlng, // 💡 結合した値をセット
         検査日: document.getElementById(`検査日_${rNum}`).value,
         備考: document.getElementById(`備考_${rNum}`).value,
         
-        // システム管理項目（※GAS側のupdateRecordのuFieldsリストにも追加が必要であれば適宜追加してください）
+        // システム管理項目
         システムID: document.getElementById(`edit_システムID_${rNum}`).value,
         物件ID: document.getElementById(`edit_物件ID_${rNum}`).value,
         着工日: document.getElementById(`edit_着工日_${rNum}`).value,
@@ -1139,6 +1139,7 @@
       }
 
       try {
+        // 💡 いただいた正しい引数形式 { rNum: rNum, fData: fData } で呼び出します
         await apiCall("updateRecordExtended", { rNum: rNum, fData: fData });
         alert("案件の変更内容を保存しました。");
         selectedFilesMap[rNum] = [];
