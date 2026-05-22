@@ -336,18 +336,14 @@
 
         <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <div>
-            <label>緯度</label>
-            <input type="text" name="緯度" placeholder="例：36.84209">
-          </div>
-          <div>
-            <label>経度</label>
-            <input type="text" name="経度" placeholder="例：137.40605">
+            <label>緯度経度</label>
+            <input type="text" name="緯度経度" placeholder="例：36.84209">
           </div>
         </div>
 
         <div class="form-group">
-          <label>面 積</label>
-          <input type="text" name="専有面積" placeholder="例：85㎡">
+          <label>延床面積</label>
+          <input type="text" name="延床面積" placeholder="例：85㎡">
         </div>
 
         <div class="form-group">
@@ -692,10 +688,10 @@
         // 担当者オプション生成
         let staffOptionsHtml = '<option value="">選択してください</option>';
         let staffExist = false;
+        // staffListが文字列でも動くよう両対応する
         (appConfig.staffList || []).forEach(s => {
-          const selected = (s.name === record.担当者) ? 'selected' : '';
-          if(selected) staffExist = true;
-          staffOptionsHtml += `<option value="${s.name}" ${selected}>${s.name}</option>`;
+          const sName = (typeof s === 'object') ? s.name : s;
+          staffSel.innerHTML += `<option value="${sName}">${sName}</option>`;
         });
         if(record.担当者 && !staffExist) {
           staffOptionsHtml += `<option value="${record.担当者}" selected>${record.担当者}</option>`;
@@ -724,8 +720,8 @@
                 <input type="text" id="住所_${record.No}" value="${record.住所 || ''}">
               </div>
               <div class="data-row-input">
-                <label>専有面積・延床面積</label>
-                <input type="text" id="専有面積_${record.No}" value="${record.専有面積 || ''}">
+                <label>延床面積</label>
+                <input type="text" id="延床面積_${record.No}" value="${record.延床面積 || ''}">
               </div>
               <div class="data-row-input">
                 <label>🔑 キーBOX</label>
@@ -733,12 +729,8 @@
               </div>
               
               <div class="data-row-input">
-                <label>緯度</label>
-                <input type="text" id="緯度_${record.No}" value="${record.緯度 || ''}">
-              </div>
-              <div class="data-row-input">
-                <label>経度</label>
-                <input type="text" id="経度_${record.No}" value="${record.経度 || ''}">
+                <label>緯度経度</label>
+                <input type="text" id="緯度経度{record.No}" value="${record.緯度経度 || ''}">
               </div>
 
               <div class="data-row-input">
@@ -839,7 +831,7 @@
             </div>
 
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-              <button class="btn btn-success" onclick="saveRecord('${record.No}')" style="padding: 10px 24px;">
+              <button class="btn btn-success" onclick="saveRecord('${record.No}', ${record.rowNumber})" style="padding: 10px 24px;">
                 <span class="material-symbols-outlined">save</span> 更新して保存
               </button>
             </div>
@@ -893,8 +885,10 @@
         phoneInput.value = "";
         phoneInput.readOnly = false;
       } else {
-        const matched = (appConfig.staffList || []).find(s => s.name === selectEl.value);
-        phoneInput.value = matched ? matched.phone : "";
+        const matched = (appConfig.staffList || []).find(s => 
+          (typeof s === 'object' ? s.name : s) === selectEl.value
+        );
+        phoneInput.value = (matched && typeof matched === 'object') ? matched.phone : "";
         phoneInput.readOnly = matched ? true : false;
       }
     };
@@ -1066,25 +1060,20 @@
       }
     }
 
-// =================================================================
+    // =================================================================
     // 💾 詳細データ修正保存処理（最新合体版）
     // =================================================================
-    window.saveRecord = async function(rNum) {
+    window.saveRecord = async function(rNum, rowNumber) {
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "修正データを保存中...";
-
-      // 💡 緯度と経度を結合してGAS側の仕様「緯度・経度」に変換
-      const lat = document.getElementById(`緯度_${rNum}`).value;
-      const lng = document.getElementById(`経度_${rNum}`).value;
-      const latlng = (lat || lng) ? `${lat},${lng}` : "";
-
+      
       const fData = {
         No: rNum,
         住所: document.getElementById(`住所_${rNum}`).value,
-        "専有面積・延床面積": document.getElementById(`専有面積_${rNum}`).value, // 💡 GAS側の項目名
+        延床面積: document.getElementById(`延床面積_${rNum}`).value, 
         キーBOX: document.getElementById(`キーBOX_${rNum}`).value,
-        "緯度・経度": latlng, // 💡 結合した値をセット
+        緯度経度: document.getElementById(`緯度経度_${rNum}`).value.replace(/\s+/g, ""),
         検査日: document.getElementById(`検査日_${rNum}`).value,
         備考: document.getElementById(`備考_${rNum}`).value,
         
@@ -1139,8 +1128,7 @@
       }
 
       try {
-        // 💡 いただいた正しい引数形式 { rNum: rNum, fData: fData } で呼び出します
-        await apiCall("updateRecordExtended", { rNum: rNum, fData: fData });
+        await apiCall("updateRecordExtended", { rNum: rowNumber, fData: fData }); 
         alert("案件の変更内容を保存しました。");
         selectedFilesMap[rNum] = [];
         search();
