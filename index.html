@@ -688,11 +688,21 @@
         // 担当者オプション生成
         let staffOptionsHtml = '<option value="">選択してください</option>';
         let staffExist = false;
+        
         // staffListが文字列でも動くよう両対応する
         (appConfig.staffList || []).forEach(s => {
-          const sName = (typeof s === 'object') ? s.name : s;
-          staffSel.innerHTML += `<option value="${sName}">${sName}</option>`;
+          // 💡 オブジェクトなら s.name、文字列なら s 自体を取得
+          const sName = (s && typeof s === 'object') ? s.name : s;
+          
+          // 💡 現在のレコードの担当者と一致するかチェック
+          const isSelected = (sName === record.担当者);
+          if (isSelected) staffExist = true; // マスタに存在したフラグを立てる
+          
+          // 💡 staffSel ではなく staffOptionsHtml に追加していく
+          staffOptionsHtml += `<option value="${sName}" ${isSelected ? 'selected' : ''}>${sName}</option>`;
         });
+        
+        // マスタにない担当者がレコードに入っていた場合の救済策
         if(record.担当者 && !staffExist) {
           staffOptionsHtml += `<option value="${record.担当者}" selected>${record.担当者}</option>`;
         }
