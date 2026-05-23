@@ -968,29 +968,18 @@
       selectedFilesMap["NEW_PROJECT"] = [];
       document.getElementById("createFileList").innerHTML = "";
     
-      // プルダウンマスター割当
       initSelectWithOptions("addClientSelect", appConfig.clientList, "発注元");
-    
-      // ✅ null/undefined/文字列混在に対応した防御的な変換
-      const workerNameList = (appConfig.staffList || [])
-        .filter(s => s != null)                               // null・undefined を除外
-        .map(s => (typeof s === 'object') ? s.name : String(s)) // オブジェクトなら.name、文字列ならそのまま
-        .filter(name => name && name.trim() !== '');           // 空文字を除外
     
       for (let i = 1; i <= 4; i++) {
         initSelectWithOptions(`newWorkContent_${i}`, appConfig.workContentList, "工事内容");
-        initSelectWithOptions(`newWorker_${i}`, workerNameList, "工事担当者");
+        initSelectWithOptions(`newWorker_${i}`, appConfig.workerList, "工事担当者"); // ✅ シンプルに戻す
       }
     
-      // 担当者セレクト（連絡先自動反映あり）
       const staffSel = document.getElementById("addStaffSelect");
       staffSel.innerHTML = '<option value="">選択してください</option>';
-      (appConfig.staffList || [])
-        .filter(s => s != null)
-        .forEach(s => {
-          const name = (typeof s === 'object') ? s.name : String(s);
-          if (name) staffSel.innerHTML += `<option value="${name}">${name}</option>`;
-        });
+      (appConfig.staffList || []).forEach(s => {
+        staffSel.innerHTML += `<option value="${s.name}">${s.name}</option>`;
+      });
       staffSel.innerHTML += `<option value="(新規担当者)" style="color:var(--primary); font-weight:bold;">(新規担当者)</option>`;
     
       window.currentWorkCount = 1;
@@ -1004,7 +993,6 @@
         document.getElementById(`newWorkerInputGroup_${i}`).style.display = "none";
       }
     };
-
     function initSelectWithOptions(elementId, dataList, suffix) {
       const el = document.getElementById(elementId);
       if(!el) return;
