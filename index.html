@@ -524,9 +524,9 @@
         appConfig = data;
         
         // 💡 ログインユーザー名の画面端常時表示処理
-        if(data.userName) {
-          document.getElementById("userDisplayLabel").textContent = `ログインユーザー: ${data.userName} 様`;
-          localStorage.setItem('app_login_userName', data.userName);
+        if (data.loginUser) {
+          document.getElementById("userDisplayLabel").textContent = `ログインユーザー: ${data.loginUser}`;
+          localStorage.setItem('app_login_userName', data.loginUser);
         }
 
         const select = document.getElementById("filterClient");
@@ -638,23 +638,20 @@
         
         const parseDate = (d) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d.split("T")[0])) ? d.split("T")[0] : "";
 
-        // 【ファイルバッジ判別】
+        // ✅ ファイルバッジ判別】保存済みファイル列のカンマ区切りコードだけを見る
+        const savedBadges = String(record.保存済みファイル || "")
+          .split(",").map(s => s.trim()).filter(Boolean);
+        
         let badgeHtml = '<div style="margin-top:6px; margin-bottom:2px; display:flex; flex-wrap:wrap; gap:4px;">';
         let hasBadge = false;
-        const allRecordValuesStr = JSON.stringify(record);
-
+        
         for (let code in FILE_TYPES_DEF) {
-          const typeName = FILE_TYPES_DEF[code]; 
-          const isTrueInKey = record[code] === true || record[code] === "TRUE" || record[code] === "〇" || record[code] === "1";
-          const isNameInKey = record[typeName] === true || record[typeName] === "TRUE" || record[typeName] === "〇" || record[typeName] === "1";
-          const isIncludedInText = allRecordValuesStr.includes(code) || allRecordValuesStr.includes(typeName);
-
-          if (isTrueInKey || isNameInKey || isIncludedInText) {
-            badgeHtml += `<span class="file-badge">${typeName}</span>`;
+          if (savedBadges.includes(code)) {
+            badgeHtml += `<span class="file-badge">${FILE_TYPES_DEF[code]}</span>`;
             hasBadge = true;
           }
         }
-        if(!hasBadge) {
+        if (!hasBadge) {
           badgeHtml += `<span style="font-size:13px; color:#94a3b8; font-weight:normal;">📄 ファイルなし</span>`;
         }
         badgeHtml += '</div>';
@@ -740,7 +737,7 @@
               
               <div class="data-row-input">
                 <label>緯度経度</label>
-                <input type="text" id="緯度経度{record.No}" value="${record.緯度経度 || ''}">
+                <input type="text" id="緯度経度_${record.No}" value="${record.緯度経度 || ''}">
               </div>
 
               <div class="data-row-input">
@@ -781,7 +778,7 @@
                     <div style="grid-column: span 2;">
                       <label>工事担当者 ${i}</label>
                       <select id="editWorker_${record.No}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkerGroup_${record.No}_${i}')">
-                        ${createOptionsHtml(appConfig.workerList || [], cWorker, '工事担当者')}
+                        ${createOptionsHtml(workerNameList, cWorker, '工事担当者')}
                       </select>
                       <div id="newEditWorkerGroup_${record.No}_${i}" style="display:none; margin-top:6px;">
                         <input type="text" id="newEditWorkerInput_${record.No}_${i}" placeholder="新規工事担当者">
@@ -973,11 +970,10 @@
 
       // プルダウンマスター割当
       initSelectWithOptions("addClientSelect", appConfig.clientList, "発注元");
-      for(let i=1; i<=4; i++) {
+      const workerNameList = (appConfig.staffList || []).map(s => s.name);
+      for (let i = 1; i <= 4; i++) {
         initSelectWithOptions(`newWorkContent_${i}`, appConfig.workContentList, "工事内容");
-        initSelectWithOptions(`newWorker_${i}`, appConfig.workerList, "工事担当者");
-        const span = document.getElementById(`newDaySpan_${i}`);
-        if(span) span.textContent = "";
+        initSelectWithOptions(`newWorker_${i}`, workerNameList, "工事担当者"); // ← 修正
       }
 
       const staffSel = document.getElementById("addStaffSelect");
