@@ -287,7 +287,7 @@
           <span class="material-symbols-outlined" style="color:var(--primary); font-size:30px;">saved_search</span> 案件登録&amp;検索アプリ
         </div>
         <button class="btn btn-success" onclick="openCreateModal()" style="font-size: 18px; padding: 14px 28px;">
-          <span class="material-symbols-outlined">add_circle</span> 新規案件を登録する
+          <span class="material-symbols-outlined">add_circle</span> 新規案件を登録
         </button>
       </div>
 
@@ -407,12 +407,11 @@
           <input type="text" name="住所" placeholder="住所を入力してください">
         </div>
 
-        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
           <div>
             <label>緯度経度</label>
             <input type="text" name="緯度経度" placeholder="例：36.84209">
           </div>
-        </div>
 
         <div class="form-group">
           <label>延床面積</label>
@@ -458,7 +457,7 @@
         <div class="form-group">
           <label>📂 添付ファイル</label>
           <div class="uploadbox" id="createUploadBox" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, 'NEW_PROJECT')">
-              <span class="material-symbols-outlined cloud-icon" style="font-size:20px; color:var(--primary)">cloud_upload</span>
+              <div class="material-symbols-outlined cloud-icon" style="font-size:40px; color:var(--primary)">cloud_upload</div>
               <div class="drag-drop-text" style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
               <div class="drag-drop-text" style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
             <button type="button" class="btn btn-secondary" onclick="document.getElementById('createFileInput').click()">ファイルを選択</button>
@@ -469,8 +468,8 @@
         
         <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px;">
           <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">閉じる</button>
-          <button type="submit" class="btn btn-success" style="padding: 12px 32px;">
-            <span class="material-symbols-outlined">cloud_sync</span> この内容で登録する
+          <button type="submit" class="btn btn-success" style="padding: 10px 24px;">
+            <span class="material-symbols-outlined">save</span> この内容で登録する
           </button>
         </div>
       </form>
