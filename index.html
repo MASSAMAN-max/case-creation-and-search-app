@@ -403,23 +403,22 @@
         </div>
 
         <div class="form-group">
-          <label>所在地（住所）</label>
+          <label>🗺 所在地（住所）</label>
           <input type="text" name="住所" placeholder="住所を入力してください">
         </div>
 
         <div class="form-group">
-          <div>
-            <label>緯度経度</label>
-            <input type="text" name="緯度経度" placeholder="例：36.84209">
-          </div>
+          <label>🌎 緯度経度</label>
+          <input type="text" name="緯度経度" placeholder="例：36.84209">
+        </div>
 
         <div class="form-group">
-          <label>延床面積</label>
+          <label>📐 延床面積</label>
           <input type="text" name="延床面積" placeholder="例：85㎡">
         </div>
 
         <div class="form-group">
-          <label>担当者</label>
+          <label>👮 担当者</label>
           <select name="担当者" id="addStaffSelect" style="width:100%;" onchange="handleStaffChange(this, 'addPhoneInput', 'newStaffInputGroup')"></select>
           <div id="newStaffInputGroup" style="display: none; margin-top: 8px;">
             <input type="text" id="newStaffInput" placeholder="新規担当者名を入力してください">
@@ -427,7 +426,7 @@
         </div>
 
         <div class="form-group">
-          <label>📳 連絡先</label>
+          <label>📞 連絡先</label>
           <input type="text" name="連絡先" id="addPhoneInput" placeholder="担当者を選択すると自動反映されます">
         </div>
 
@@ -437,7 +436,7 @@
         </div>
 
         <div class="form-group">
-          <label>備 考</label>
+          <label>📝 備 考</label>
           <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px; font-size:16px; font-family:inherit; box-sizing:border-box;"></textarea>
         </div>
         
@@ -457,7 +456,9 @@
         <div class="form-group">
           <label>📂 添付ファイル</label>
           <div class="uploadbox" id="createUploadBox" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, 'NEW_PROJECT')">
+            <div>
               <div class="material-symbols-outlined cloud-icon" style="font-size:40px; color:var(--primary)">cloud_upload</div>
+            </div>
               <div class="drag-drop-text" style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
               <div class="drag-drop-text" style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
             <button type="button" class="btn btn-secondary" onclick="document.getElementById('createFileInput').click()">ファイルを選択</button>
@@ -466,7 +467,7 @@
           </div>
         </div>
         
-        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px;">
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 32px;">
           <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">閉じる</button>
           <button type="submit" class="btn btn-success" style="padding: 10px 24px;">
             <span class="material-symbols-outlined">save</span> この内容で登録する
@@ -848,7 +849,9 @@
             </div>
 
             <div class="uploadbox" id="uploadBox_${record.No}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, '${record.No}')">
-              <span class="material-symbols-outlined cloud-icon" style="font-size:40px; color:var(--primary)">cloud_upload</span>
+              <div>
+                <span class="material-symbols-outlined cloud-icon" style="font-size:40px; color:var(--primary)">cloud_upload</span>
+              </div>
               <div class="drag-drop-text" style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
               <div class="drag-drop-text" style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
               <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput_${record.No}').click()">ファイルを選択</button>
