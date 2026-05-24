@@ -796,14 +796,14 @@
                       </select>
                       <div id="newEditWorkContentGroup_${record.No}_${i}" style="display:none; margin-top:6px;">
                         <input type="text" id="newEditWorkContentInput_${record.No}_${i}" placeholder="新規工事内容">
-                      </div>
+                    </div>
+                    <div>
                       <label>工事担当者 ${i}</label>
                       <select id="editWorker_${record.No}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkerGroup_${record.No}_${i}')">
                         ${createOptionsHtml(appConfig.workerList, cWorker, '工事担当者')}
                       </select>
                       <div id="newEditWorkerGroup_${record.No}_${i}" style="display:none; margin-top:6px;">
                         <input type="text" id="newEditWorkerInput_${record.No}_${i}" placeholder="新規工事担当者">
-                      </div>
                     </div>
                   </div>`;
               }).join('')}
