@@ -96,6 +96,21 @@
       color: var(--primary);       /* 雲の色をメインカラー（青系）に変えます */
     }
     .cloud-icon {transition: transform 0.2s ease, color 0.2s ease; }/* マウスを離したときにフワッと滑らかに戻るための設定 */
+
+
+
+    .drive-open-icon {
+      cursor: pointer;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+    
+    .drive-open-icon:hover {
+      transform: translateY(-6px);
+      color: var(--primary);
+    }
+
+
+    
     
     .file-item { display: flex; align-items: center; background: white; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 6px; font-size: 14px; }
     .file-badge { display: inline-block; padding: 4px 12px; margin: 2px; border-radius: 6px; font-size: 14px; font-weight: bold; border: 1px solid #90caf9; background-color: #e3f2fd; color: #0d47a1; box-shadow: 0 2px 4px rgba(13,71,161,0.08); }
@@ -697,8 +712,28 @@
                 <div style="display:flex; align-items:center; gap:12px; flex:1;">
                   <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">cloud_done</span>
                   <div>
-                    <div style="font-weight:bold;">共有資料フォルダ</div>
-                    <div style="font-size:12px; color:var(--text-sub)">図面・写真・報告書</div>
+                    <div style="font-weight:bold;">資料フォルダ参照</div>
+                    <span class="material-symbols-outlined drive-open-icon">
+                      open_in_new
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+
+
+
+
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#edf2f7; padding:12px; border-radius:8px; margin-bottom:16px;">
+                <div style="display:flex; align-items:center; gap:12px; flex:1;">
+                  <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">
+                    cloud_done
+                  </span>
+                  <div>
+                    <div style="font-weight:bold;">資料フォルダ参照</div> 
+                    <span class="material-symbols-outlined drive-open-icon">
+                      open_in_new
+                    </span>
                   </div>
                 </div>
               </div>
