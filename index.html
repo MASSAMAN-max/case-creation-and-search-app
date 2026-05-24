@@ -458,6 +458,7 @@
         <div class="form-group">
           <label>📂 添付ファイル</label>
           <div class="uploadbox" id="createUploadBox" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, 'NEW_PROJECT')">
+              <span class="material-symbols-outlined cloud-icon" style="font-size:20px; color:var(--primary)">cloud_upload</span>
               <div class="drag-drop-text" style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
               <div class="drag-drop-text" style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
             <button type="button" class="btn btn-secondary" onclick="document.getElementById('createFileInput').click()">ファイルを選択</button>
@@ -858,7 +859,7 @@
 
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
               <button class="btn btn-success" onclick="saveRecord('${record.No}', ${record.rowNumber})" style="padding: 10px 24px;">
-                <span class="material-symbols-outlined">save</span> 更新して保存
+                <span class="material-symbols-outlined">cloud_sync</span> 更新して保存
               </button>
             </div>
           </div>
