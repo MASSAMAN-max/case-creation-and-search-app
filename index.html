@@ -699,14 +699,8 @@
         } else {
           driveLinkHtml = `
             <div class="drive-folder-link-disabled">
-              <span class="material-symbols-outlined cloud-icon">
-                cloud_upload
-              </span>
-              フォルダ未作成
-            </div>
-        
+              <span class="material-symbols-outlined cloud-icon">cloud_upload</span>
               <span>フォルダ未作成</span>
-        
             </div>`;
         }
 
@@ -834,7 +828,7 @@
             </div>
 
             <div class="inner-accordion" style="margin-top:16px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
-              <div class="inner-accordion-summary" onclick="toggleInnerAccordion(this)" style="cursor:pointer; background:#e2e8f0; padding:12px; font-weight:bold; display:flex; justify-content:between; align-items:center; font-size:14px; color:#334155;">
+              <div class="inner-accordion-summary" onclick="toggleInnerAccordion(this)" style="cursor:pointer; background:#e2e8f0; padding:12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#334155;">
                 <span style="display:flex; align-items:center; gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">admin_panel_settings</span> 詳細システム管理項目 (ID・日程情報)</span>
                 <span class="material-symbols-outlined inner-expand-icon" style="transition:transform 0.2s;">expand_more</span>
               </div>
@@ -852,27 +846,16 @@
             </div>
 
             <div class="uploadbox" id="uploadBox_${record.No}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, '${record.No}')">
-            <div>
-            <span class="material-symbols-outlined cloud-icon"
-                  style="font-size:40px; color:var(--text-sub);">
-              cloud_upload
-            </span>
-            </div>
-            <div>
+              <div>
+                <span class="material-symbols-outlined cloud-icon" style="font-size:40px; color:var(--primary)">cloud_upload</span>
+              </div>
+
               <div class="drag-drop-text" style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
               <div class="drag-drop-text" style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
               <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput_${record.No}').click()">ファイルを選択</button>
               <input type="file" id="fileInput_${record.No}" multiple style="display:none;" onchange="handleFileSelect(event, '${record.No}')">
               <div id="fileList_${record.No}" style="margin-top:10px;"></div>
             </div>
-
-
-              <div onclick="document.getElementById('files_${record.rowNumber}').click()">
-                <span class="material-symbols-outlined" style="font-size:40px; ccolor:var(--primary);">cloud_upload</span>
-                <div style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
-                <div style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
-              </div>
-            
 
             <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
               <button class="btn btn-success" onclick="saveRecord('${record.No}', ${record.rowNumber})" style="padding: 10px 24px;">
