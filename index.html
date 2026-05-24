@@ -672,30 +672,47 @@
         // ✅ ドライブフォルダリンク
         let driveLinkHtml = '';
         
-        // Google DriveロゴSVG（カラー）
-        const driveLogoSvg = `<svg class="drive-icon" ... </svg>`;
         const folderUrl = encodeURI(String(record.添付資料 || "").trim());
+        
+        // ☁️ Cloud SVG
+        const cloudSvg = `
+        <svg class="cloud-icon" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M7 18C4.79086 18 3 16.2091 3 14C3 11.9835 4.49122 10.3151 6.43223 10.0397C7.24338 7.68959 9.47594 6 12.1 6C15.2847 6 17.9 8.61533 17.9 11.8C19.6864 12.2262 21 13.8337 21 15.7C21 17.8805 19.1805 19.7 17 19.7H7Z"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+        </svg>`;
         
         if (folderUrl) {
           driveLinkHtml = `
-            <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link">
-              ${driveLogoSvg}
-              <span style="display:flex; flex-direction:column; line-height:1.3;">
-                <span style="font-size:11px; color:#5f6368; font-weight:normal;">Googleドライブ</span>
-                <span style="font-size:14px; color:#1a73e8; font-weight:bold;">
-                  📁 関連ファイルフォルダを開く
-                </span>
+            <a href="${folderUrl}"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="drive-folder-link">
+        
+              ${cloudSvg}
+        
+              <span class="folder-emoji">📁</span>
+        
+              <span class="drive-link-text">
+                関連ファイルフォルダを開く
               </span>
-              <span class="material-symbols-outlined"
-                style="font-size:16px; color:#1a73e8; margin-left:4px;">
+        
+              <span class="material-symbols-outlined drive-open-icon">
                 open_in_new
               </span>
+        
             </a>`;
         } else {
           driveLinkHtml = `
             <div class="drive-folder-link-disabled">
-              ${driveLogoSvg}
-              <span style="font-size:13px;">フォルダURLが未設定です</span>
+        
+              ${cloudSvg}
+        
+              <span>フォルダ未作成</span>
+        
             </div>`;
         }
 
