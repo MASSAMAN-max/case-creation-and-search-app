@@ -86,9 +86,18 @@
     .work-section select, .work-section input { width: 100%; padding: 10px; }
 
     .uploadbox { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s; margin-top: 15px; }
-    .uploadbox.dragover { border-color: var(--primary); background: #e0f2fe; }
+    /* 元々あるエリア全体の変化 */
+    .uploadbox.dragover { 
+      border-color: var(--primary); 
+      background: #e0f2fe; 
+    }
+    .uploadbox.dragover .cloud-icon {
+      transform: translateY(-6px); /* 雲を少し上に浮かせます */
+      color: var(--primary);       /* 雲の色をメインカラー（青系）に変えます */
+    }
+    .cloud-icon {transition: transform 0.2s ease, color 0.2s ease; }/* マウスを離したときにフワッと滑らかに戻るための設定 */
+    
     .file-item { display: flex; align-items: center; background: white; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 6px; font-size: 14px; }
-
     .file-badge { display: inline-block; padding: 4px 12px; margin: 2px; border-radius: 6px; font-size: 14px; font-weight: bold; border: 1px solid #90caf9; background-color: #e3f2fd; color: #0d47a1; box-shadow: 0 2px 4px rgba(13,71,161,0.08); }
 
     /* ☁️ Cloud Folder Link */
@@ -668,6 +677,14 @@
             stroke-linecap="round"
             stroke-linejoin="round"/>
         </svg>`;
+
+        const cloudSvgup = `
+        <svg class="cloud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17.5 19H9a7 7 0 1 1 6.71-4.91" />
+          <path d="M22 13.5A3.5 3.5 0 0 0 18.5 10c-.41 0-.8.07-1.17.2" />
+          <polyline points="12 10 12 21" />
+          <polyline points="9 13 12 10 15 13" />
+        </svg>`;
         
         if (folderUrl) {
           driveLinkHtml = `
@@ -840,8 +857,10 @@
             </div>
 
             <div class="uploadbox" id="uploadBox_${record.No}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, '${record.No}')">
-            ${cloudSvg}
-              <span class="drag-drop-text">ファイルをここにドラッグ＆ドロップまたは<br></span>
+            <div>
+              ${cloudSvgup}
+            </div>
+              <span class="drag-drop-text">ファイルをここにドラッグ＆ドロップ<br>または<br></span>
               <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput_${record.No}').click()">ファイルを選択</button>
               <input type="file" id="fileInput_${record.No}" multiple style="display:none;" onchange="handleFileSelect(event, '${record.No}')">
               <div id="fileList_${record.No}" style="margin-top:10px;"></div>
