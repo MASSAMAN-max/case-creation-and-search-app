@@ -788,8 +788,7 @@
                     <div>
                       <label>施工予定日 ${i} <span id="editDaySpan_${record.No}_${i}" style="font-weight:bold; color:var(--primary);">${getWeekday(cDate)}</span></label>
                       <input type="date" id="editWorkDate_${record.No}_${i}" value="${cDate}" onchange="updateInputWeekday(this, 'editDaySpan_${record.No}_${i}')">
-                    </div>
-                    
+                    </div>    
                     <div>
                       <label>工事内容 ${i}</label>
                       <select id="editWorkContent_${record.No}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkContentGroup_${record.No}_${i}')">
@@ -799,7 +798,6 @@
                         <input type="text" id="newEditWorkContentInput_${record.No}_${i}" placeholder="新規工事内容">
                       </div>
                     </div>
-                
                     <div>
                       <label>工事担当者 ${i}</label>
                       <select id="editWorker_${record.No}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkerGroup_${record.No}_${i}')">
@@ -828,13 +826,13 @@
                 <span style="display:flex; align-items:center; gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">admin_panel_settings</span> 詳細システム管理項目 (ID・日程情報)</span>
                 <span class="material-symbols-outlined inner-expand-icon" style="transition:transform 0.2s;">expand_more</span>
               </div>
-              <div class="inner-accordion-details" style="display:none; padding:16px; background:#f8fafc; border-top:1px solid #cbd5e1;">
+              <div class="work-section-details" style="display:none; padding:16px; background:#f8fafc; border-top:1px solid #cbd5e1;">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                   <div class="data-row-input"><label>システムID</label><input type="text" id="edit_システムID_${record.No}" value="${record.システムID || ''}"></div>
                   <div class="data-row-input"><label>物件ID</label><input type="text" id="edit_物件ID_${record.No}" value="${record.物件ID || ''}"></div>
                   <div class="data-row-input"><label>着工日</label><input type="date" id="edit_着工日_${record.No}" value="${parseDate(record.着工日)}"></div>
                   <div class="data-row-input"><label>完成日</label><input type="date" id="edit_完成日_${record.No}" value="${parseDate(record.完成日)}"></div>
-                  <div class="data-row-input" style="grid-column: span 2;"><label>引渡日</label><input type="date" id="edit_引渡日_${record.No}" value="${parseDate(record.引渡日)}"></div>
+                  <div class="data-row-input"><label>引渡日</label><input type="date" id="edit_引渡日_${record.No}" value="${parseDate(record.引渡日)}"></div>
                 </div>
               </div>
             </div>
