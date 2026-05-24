@@ -789,6 +789,7 @@
                       <label>施工予定日 ${i} <span id="editDaySpan_${record.No}_${i}" style="font-weight:bold; color:var(--primary);">${getWeekday(cDate)}</span></label>
                       <input type="date" id="editWorkDate_${record.No}_${i}" value="${cDate}" onchange="updateInputWeekday(this, 'editDaySpan_${record.No}_${i}')">
                     </div>
+                    
                     <div>
                       <label>工事内容 ${i}</label>
                       <select id="editWorkContent_${record.No}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkContentGroup_${record.No}_${i}')">
@@ -796,7 +797,9 @@
                       </select>
                       <div id="newEditWorkContentGroup_${record.No}_${i}" style="display:none; margin-top:6px;">
                         <input type="text" id="newEditWorkContentInput_${record.No}_${i}" placeholder="新規工事内容">
+                      </div>
                     </div>
+                
                     <div>
                       <label>工事担当者 ${i}</label>
                       <select id="editWorker_${record.No}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkerGroup_${record.No}_${i}')">
@@ -804,7 +807,8 @@
                       </select>
                       <div id="newEditWorkerGroup_${record.No}_${i}" style="display:none; margin-top:6px;">
                         <input type="text" id="newEditWorkerInput_${record.No}_${i}" placeholder="新規工事担当者">
-                    </div>
+                      </div>
+                    </div> 
                   </div>`;
               }).join('')}
             </div>
