@@ -680,25 +680,6 @@
         
         const folderUrl = encodeURI(String(record.添付資料 || "").trim());
         
-        // ☁️ Cloud SVG
-        const cloudSvg = `
-        <svg class="cloud-icon" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M7 18C4.79086 18 3 16.2091 3 14C3 11.9835 4.49122 10.3151 6.43223 10.0397C7.24338 7.68959 9.47594 6 12.1 6C15.2847 6 17.9 8.61533 17.9 11.8C19.6864 12.2262 21 13.8337 21 15.7C21 17.8805 19.1805 19.7 17 19.7H7Z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"/>
-        </svg>`;
-        
-         // ☁️ Cloud SVG Up
-        const cloudSvgup = `
-        <svg class="cloud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2" />
-          <path d="M12 12v9" />
-          <path d="m16 16-4-4-4 4" />
-        </svg>`;
-        
         if (folderUrl) {
           driveLinkHtml = `
             <a href="${folderUrl}"
@@ -726,15 +707,9 @@
 
               <div style="display:flex; justify-content:space-between; align-items:center; background:#edf2f7; padding:12px; border-radius:8px; margin-bottom:16px;">
                 <div style="display:flex; align-items:center; gap:12px; flex:1;">
-                  <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">
-                    cloud_done
-                  </span>
-                  <div>
-                    <div style="font-weight:bold;">資料フォルダ参照</div> 
-                    <span class="material-symbols-outlined drive-open-icon">
-                      open_in_new
-                    </span>
-                  </div>
+                  <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">cloud_done</span>
+                    <span style="font-weight:bold;">資料フォルダ参照</span> 
+                    <span class="material-symbols-outlined drive-open-icon">open_in_new</span>
                 </div>
               </div>
 
@@ -912,14 +887,12 @@
               </div>
             </div>
 
+            <div class="uploadbox" id="uploadBox_${record.No}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, '${record.No}')">
+            <div>
             <span class="material-symbols-outlined cloud-icon"
                   style="font-size:40px; color:var(--text-sub);">
               cloud_upload
             </span>
-
-            <div class="uploadbox" id="uploadBox_${record.No}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, '${record.No}')">
-            <div>
-              ${cloudSvgup}
             </div>
               <span class="drag-drop-text">ファイルをここにドラッグ＆ドロップ<br>または<br></span>
               <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput_${record.No}').click()">ファイルを選択</button>
