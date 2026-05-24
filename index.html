@@ -154,11 +154,9 @@
     
     /* ☁️ */
     .cloud-icon {
-      width: 48px;
-      height: 48px;
-    
-    　/*color: #60a5fa;*/
-      color: #3498db;
+      width: 28px;
+      height: 28px;
+    　color: #60a5fa;
       flex-shrink: 0;
     }
     
@@ -211,7 +209,7 @@
     .form-group input, .form-group select, .form-group textarea { width: 100%; }
     .badge-required { background-color: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-left: 8px; vertical-align: middle; }
 
-    @media (max-width: 600px) {
+    @media (max-width: 780px) {
       .drag-drop-text { display: none; }
       .detail-card, .work-section { grid-template-columns: 1fr; }
       .work-section div[style*="grid-column: span 2"] { grid-column: span 1 !important; }
@@ -669,7 +667,7 @@
         
         // ☁️ Cloud SVG
         const cloudSvg = `
-        <svg class="cloud-icon" viewBox="0 0 24 24" fill="none">
+        <svg class="cloud-icon" width="48" height="48" viewBox="0 0 24 24" fill="none">
           <path
             d="M7 18C4.79086 18 3 16.2091 3 14C3 11.9835 4.49122 10.3151 6.43223 10.0397C7.24338 7.68959 9.47594 6 12.1 6C15.2847 6 17.9 8.61533 17.9 11.8C19.6864 12.2262 21 13.8337 21 15.7C21 17.8805 19.1805 19.7 17 19.7H7Z"
             stroke="currentColor"
@@ -680,10 +678,47 @@
         
          // ☁️ Cloud SVG Up
         const cloudSvgup = `
-        <svg class="cloud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 5c-3.1 0-5.8 2.2-6.4 5.3C3.7 10.7 2 12.6 2 15c0 2.8 2.2 5 5 5h4 M13 20h4c2.8 0 5-2.2 5-5 0-2.3-1.5-4.2-3.6-4.8C17.8 7.2 15.1 5 12 5z" />
-          <polyline points="9 14 12 11 15 14" />
-          <line x1="12" y1="11" x2="12" y2="21" />
+        <svg class="cloud-icon" viewBox="0 0 110 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#5CC8F5"/>
+              <stop offset="100%" stop-color="#1565C0"/>
+            </linearGradient>
+          </defs>
+        
+          <!-- 雲の形：左大バンプ＋右小バンプ -->
+          <path d="
+            M 13,78
+            Q 8,78 8,62
+            Q 6,34 28,25
+            Q 40,12 55,25
+            Q 61,36 69,27
+            Q 82,12 94,34
+            Q 100,46 100,62
+            Q 100,78 91,78
+            L 13,78 Z
+          "
+            stroke="url(#cloudGrad)"
+            stroke-width="6.5"
+            stroke-linejoin="round"
+          />
+        
+          <!-- 上向き矢印（V字ヘッド） -->
+          <polyline
+            points="40,70 52,49 64,70"
+            stroke="url(#cloudGrad)"
+            stroke-width="6.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        
+          <!-- 矢印の縦軸 -->
+          <line x1="52" y1="49" x2="52" y2="77"
+            stroke="url(#cloudGrad)" stroke-width="6.5" stroke-linecap="round"/>
+        
+          <!-- 矢印のベースライン -->
+          <line x1="37" y1="77" x2="67" y2="77"
+            stroke="url(#cloudGrad)" stroke-width="6.5" stroke-linecap="round"/>
         </svg>`;
         
         if (folderUrl) {
