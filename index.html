@@ -827,9 +827,11 @@
                 <span class="material-symbols-outlined inner-expand-icon" style="transition:transform 0.2s;">expand_more</span>
               </div>
               <div class="inner-accordion-details" style="display:none; padding:16px; background:#f8fafc; border-top:1px solid #cbd5e1;">
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                   <div class="data-row-input"><label>システムID</label><input type="text" id="edit_システムID_${record.No}" value="${record.システムID || ''}"></div>
                   <div class="data-row-input"><label>物件ID</label><input type="text" id="edit_物件ID_${record.No}" value="${record.物件ID || ''}"></div>
+                </div>    
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
                   <div class="data-row-input"><label>着工日</label><input type="date" id="edit_着工日_${record.No}" value="${parseDate(record.着工日)}"></div>
                   <div class="data-row-input"><label>完成日</label><input type="date" id="edit_完成日_${record.No}" value="${parseDate(record.完成日)}"></div>
                   <div class="data-row-input"><label>引渡日</label><input type="date" id="edit_引渡日_${record.No}" value="${parseDate(record.引渡日)}"></div>
@@ -838,6 +840,7 @@
             </div>
 
             <div class="uploadbox" id="uploadBox_${record.No}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, '${record.No}')">
+            ${cloudSvg}
               <span class="drag-drop-text">ファイルをここにドラッグ＆ドロップまたは<br></span>
               <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput_${record.No}').click()">ファイルを選択</button>
               <input type="file" id="fileInput_${record.No}" multiple style="display:none;" onchange="handleFileSelect(event, '${record.No}')">
