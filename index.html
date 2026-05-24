@@ -91,53 +91,121 @@
 
     .file-badge { display: inline-block; padding: 4px 12px; margin: 2px; border-radius: 6px; font-size: 14px; font-weight: bold; border: 1px solid #90caf9; background-color: #e3f2fd; color: #0d47a1; box-shadow: 0 2px 4px rgba(13,71,161,0.08); }
 
-    /* ☁️ ドライブフォルダーリンク */
+    /* ☁️ Cloud Drive Link */
     .drive-folder-link {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+    
       margin-top: 10px;
-      padding: 9px 16px;
-      background: linear-gradient(135deg, #e8f0fe 0%, #f0f4ff 100%);
-      border: 1.5px solid #aecbfa;
-      border-radius: 10px;
+      padding: 12px 18px;
+    
+      background:
+        linear-gradient(180deg,
+          rgba(255,255,255,0.95) 0%,
+          rgba(240,247,255,0.92) 100%);
+    
+      backdrop-filter: blur(10px);
+    
+      border: 1px solid rgba(174,203,250,0.55);
+      border-radius: 16px;
+    
       text-decoration: none;
       color: #1a73e8;
-      font-weight: bold;
+    
+      font-weight: 600;
       font-size: 14px;
-      transition: all 0.2s;
-      box-shadow: 0 2px 6px rgba(26,115,232,0.10);
-      cursor: pointer;
+    
+      box-shadow:
+        0 4px 14px rgba(26,115,232,0.08),
+        inset 0 1px 0 rgba(255,255,255,0.8);
+    
+      transition: all 0.22s ease;
+    
+      position: relative;
+      overflow: hidden;
     }
+    
+    /* 光の流れ */
+    .drive-folder-link::before {
+      content: "";
+    
+      position: absolute;
+      top: 0;
+      left: -120%;
+    
+      width: 80%;
+      height: 100%;
+    
+      background:
+        linear-gradient(
+          120deg,
+          transparent 0%,
+          rgba(255,255,255,0.45) 50%,
+          transparent 100%
+        );
+    
+      transition: left 0.7s ease;
+    }
+    
+    .drive-folder-link:hover::before {
+      left: 140%;
+    }
+    
     .drive-folder-link:hover {
-      background: linear-gradient(135deg, #d2e3fc 0%, #e8eeff 100%);
-      border-color: #1a73e8;
-      box-shadow: 0 4px 12px rgba(26,115,232,0.18);
       transform: translateY(-1px);
+    
+      background:
+        linear-gradient(180deg,
+          rgba(255,255,255,1) 0%,
+          rgba(232,242,255,0.96) 100%);
+    
+      border-color: rgba(66,133,244,0.45);
+    
+      box-shadow:
+        0 8px 24px rgba(26,115,232,0.14),
+        inset 0 1px 0 rgba(255,255,255,0.9);
     }
+    
+    /* Google Drive icon */
     .drive-folder-link .drive-icon {
       width: 22px;
       height: 22px;
       flex-shrink: 0;
+    
+      filter:
+        drop-shadow(0 1px 2px rgba(0,0,0,0.08));
     }
+    
+    /* disabled */
     .drive-folder-link-disabled {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+    
       margin-top: 10px;
-      padding: 9px 16px;
-      background: #f1f5f9;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 10px;
+      padding: 12px 18px;
+    
+      background:
+        linear-gradient(180deg,
+          rgba(248,250,252,0.95) 0%,
+          rgba(241,245,249,0.92) 100%);
+    
+      border: 1px solid rgba(226,232,240,0.9);
+      border-radius: 16px;
+    
       color: #94a3b8;
+    
       font-size: 13px;
-      font-weight: bold;
+      font-weight: 600;
+    
+      opacity: 0.85;
     }
+    
     .drive-folder-link-disabled .drive-icon {
       width: 22px;
       height: 22px;
-      flex-shrink: 0;
-      opacity: 0.4;
+      opacity: 0.45;
     }
 
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 5000; display: flex; align-items: center; justify-content: center; }
