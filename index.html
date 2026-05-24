@@ -91,7 +91,7 @@
 
     .file-badge { display: inline-block; padding: 4px 12px; margin: 2px; border-radius: 6px; font-size: 14px; font-weight: bold; border: 1px solid #90caf9; background-color: #e3f2fd; color: #0d47a1; box-shadow: 0 2px 4px rgba(13,71,161,0.08); }
 
-    /* ☁️ Cloud Drive Link */
+    /* ☁️ Cloud Folder Link */
     .drive-folder-link {
       display: inline-flex;
       align-items: center;
@@ -101,113 +101,106 @@
       padding: 12px 18px;
     
       background:
-        linear-gradient(180deg,
-          rgba(255,255,255,0.95) 0%,
-          rgba(240,247,255,0.92) 100%);
-    
-      backdrop-filter: blur(10px);
-    
-      border: 1px solid rgba(174,203,250,0.55);
-      border-radius: 16px;
-    
-      text-decoration: none;
-      color: #1a73e8;
-    
-      font-weight: 600;
-      font-size: 14px;
-    
-      box-shadow:
-        0 4px 14px rgba(26,115,232,0.08),
-        inset 0 1px 0 rgba(255,255,255,0.8);
-    
-      transition: all 0.22s ease;
-    
-      position: relative;
-      overflow: hidden;
-    }
-    
-    /* 光の流れ */
-    .drive-folder-link::before {
-      content: "";
-    
-      position: absolute;
-      top: 0;
-      left: -120%;
-    
-      width: 80%;
-      height: 100%;
-    
-      background:
         linear-gradient(
-          120deg,
-          transparent 0%,
-          rgba(255,255,255,0.45) 50%,
-          transparent 100%
+          180deg,
+          rgba(255,255,255,0.95) 0%,
+          rgba(240,247,255,0.92) 100%
         );
     
-      transition: left 0.7s ease;
-    }
+      border: 1px solid rgba(147,197,253,0.55);
+      border-radius: 18px;
     
-    .drive-folder-link:hover::before {
-      left: 140%;
+      text-decoration: none;
+      color: #2563eb;
+    
+      font-weight: 700;
+      font-size: 15px;
+    
+      box-shadow:
+        0 4px 12px rgba(37,99,235,0.08),
+        inset 0 1px 0 rgba(255,255,255,0.9);
+    
+      backdrop-filter: blur(8px);
+    
+      transition: all 0.2s ease;
+    
+      overflow: hidden;
     }
     
     .drive-folder-link:hover {
       transform: translateY(-1px);
     
       background:
-        linear-gradient(180deg,
+        linear-gradient(
+          180deg,
           rgba(255,255,255,1) 0%,
-          rgba(232,242,255,0.96) 100%);
-    
-      border-color: rgba(66,133,244,0.45);
+          rgba(232,242,255,0.98) 100%
+        );
     
       box-shadow:
-        0 8px 24px rgba(26,115,232,0.14),
-        inset 0 1px 0 rgba(255,255,255,0.9);
+        0 8px 20px rgba(37,99,235,0.12);
+    
+      border-color: rgba(59,130,246,0.7);
     }
     
-    /* Google Drive icon */
-    .drive-folder-link .drive-icon {
-      width: 22px;
-      height: 22px;
-      flex-shrink: 0;
+    /* ☁️ */
+    .cloud-icon {
+      width: 26px;
+      height: 26px;
     
-      filter:
-        drop-shadow(0 1px 2px rgba(0,0,0,0.08));
+      color: #60a5fa;
+    
+      flex-shrink: 0;
+    }
+    
+    /* 📁 */
+    .folder-emoji {
+      font-size: 24px;
+      line-height: 1;
+    }
+    
+    /* text */
+    .drive-link-text {
+      color: #2563eb;
+      font-size: 15px;
+      font-weight: 700;
+    
+      letter-spacing: 0.2px;
+    }
+    
+    /* ↗ */
+    .drive-open-icon {
+      font-size: 18px !important;
+    
+      color: #3b82f6;
+    
+      margin-left: 2px;
     }
     
     /* disabled */
     .drive-folder-link-disabled {
       display: inline-flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     
       margin-top: 10px;
       padding: 12px 18px;
     
-      background:
-        linear-gradient(180deg,
-          rgba(248,250,252,0.95) 0%,
-          rgba(241,245,249,0.92) 100%);
+      background: #f8fafc;
     
-      border: 1px solid rgba(226,232,240,0.9);
-      border-radius: 16px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 18px;
     
       color: #94a3b8;
     
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
-    
-      opacity: 0.85;
     }
     
-    .drive-folder-link-disabled .drive-icon {
-      width: 22px;
-      height: 22px;
-      opacity: 0.45;
+    .drive-folder-link-disabled .cloud-icon {
+      color: #cbd5e1;
     }
-
+    
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 5000; display: flex; align-items: center; justify-content: center; }
     .modal-content { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 600px; box-sizing: border-box; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
     .form-group { margin-bottom: 18px; }
