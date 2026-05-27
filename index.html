@@ -712,7 +712,7 @@
         for (let i = 1; i <= 4; i++) {
           const wContent = record['工事内容' + i];
           const wDate = record['施工日' + i];
-          const wWorker = record['工事担当' + i] || record['担当者' + i] || '';
+          const wWorker = record['工事担当者' + i] || '';
           if (wContent || wDate || wWorker) {
             hasAnyWork = true;
             const fDate = (wDate && /^\d{4}-\d{2}-\d{2}$/.test(wDate.split("T")[0])) ? wDate.split("T")[0].replace(/-/g, '/') : (wDate || "未定");
