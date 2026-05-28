@@ -262,7 +262,7 @@
     </div>
   </div>
 
-  <div id="initLoader" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #ffffff; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 120px;">
+  <div id="initLoader" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #ffffff; z-index: 9999; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 120px;">
     <div style="width: 100%; max-width: 350px; text-align: center;">
       <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 24px; height: 50px;">
         <div style="width: 6px; height: 16px; background: linear-gradient(to bottom, #4a90e2, #9b59b6); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite;"></div>
@@ -372,7 +372,7 @@
             </div>
             <div class="form-group" style="grid-column: span 2; margin:0;">
               <label>工事担当者 1</label>
-              <select name="工事担当1" id="newWorker_1" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_1')"></select>
+              <select name="工事担当者1" id="newWorker_1" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_1')"></select>
               <div id="newWorkerInputGroup_1" style="display: none; margin-top: 6px;">
                 <input type="text" id="newWorkerInput_1" placeholder="新規工事担当者名を入力">
               </div>
@@ -382,19 +382,19 @@
           <div id="addWorkGroup_2" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;"><label>施工予定日 2 <span id="newDaySpan_2" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label><input type="date" name="施工日2" onchange="updateInputWeekday(this, 'newDaySpan_2')"></div>
             <div class="form-group" style="margin:0;"><label>工事内容 2</label><select name="工事内容2" id="newWorkContent_2" style="width:100%;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_2')"></select><div id="newWorkContentInputGroup_2" style="display: none; margin-top: 6px;"><input type="text" id="newWorkContentInput_2" placeholder="新規工事内容を入力"></div></div>
-            <div class="form-group" style="grid-column: span 2; margin:0;"><label>工事担当者 2</label><select name="工事担当2" id="newWorker_2" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_2')"></select><div id="newWorkerInputGroup_2" style="display: none; margin-top: 6px;"><input type="text" id="newWorkerInput_2" placeholder="新規工事担当者名を入力"></div></div>
+            <div class="form-group" style="grid-column: span 2; margin:0;"><label>工事担当者 2</label><select name="工事担当者2" id="newWorker_2" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_2')"></select><div id="newWorkerInputGroup_2" style="display: none; margin-top: 6px;"><input type="text" id="newWorkerInput_2" placeholder="新規工事担当者名を入力"></div></div>
           </div>
 
           <div id="addWorkGroup_3" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;"><label>施工予定日 3 <span id="newDaySpan_3" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label><input type="date" name="施工日3" onchange="updateInputWeekday(this, 'newDaySpan_3')"></div>
             <div class="form-group" style="margin:0;"><label>工事内容 3</label><select name="工事内容3" id="newWorkContent_3" style="width:100%;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_3')"></select><div id="newWorkContentInputGroup_3" style="display: none; margin-top: 6px;"><input type="text" id="newWorkContentInput_3" placeholder="新規工事内容を入力"></div></div>
-            <div class="form-group" style="grid-column: span 2; margin:0;"><label>工事担当者 3</label><select name="工事担当3" id="newWorker_3" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_3')"></select><div id="newWorkerInputGroup_3" style="display: none; margin-top: 6px;"><input type="text" id="newWorkerInput_3" placeholder="新規工事担当者名を入力"></div></div>
+            <div class="form-group" style="grid-column: span 2; margin:0;"><label>工事担当者 3</label><select name="工事担当者3" id="newWorker_3" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_3')"></select><div id="newWorkerInputGroup_3" style="display: none; margin-top: 6px;"><input type="text" id="newWorkerInput_3" placeholder="新規工事担当者名を入力"></div></div>
           </div>
 
           <div id="addWorkGroup_4" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;"><label>施工予定日 4 <span id="newDaySpan_4" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label><input type="date" name="施工日4" onchange="updateInputWeekday(this, 'newDaySpan_4')"></div>
             <div class="form-group" style="margin:0;"><label>工事内容 4</label><select name="工事内容4" id="newWorkContent_4" style="width:100%;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_4')"></select><div id="newWorkContentInputGroup_4" style="display: none; margin-top: 6px;"><input type="text" id="newWorkContentInput_4" placeholder="新規工事内容を入力"></div></div>
-            <div class="form-group" style="grid-column: span 2; margin:0;"><label>工事担当者 4</label><select name="工事担当4" id="newWorker_4" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_4')"></select><div id="newWorkerInputGroup_4" style="display: none; margin-top: 6px;"><input type="text" id="newWorkerInput_4" placeholder="新規工事担当者名を入力"></div></div>
+            <div class="form-group" style="grid-column: span 2; margin:0;"><label>工事担当者 4</label><select name="工事担当者4" id="newWorker_4" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_4')"></select><div id="newWorkerInputGroup_4" style="display: none; margin-top: 6px;"><input type="text" id="newWorkerInput_4" placeholder="新規工事担当者名を入力"></div></div>
           </div>
 
           <button type="button" id="addWorkBtn" class="btn" style="margin-top:16px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="showNextWorkField()">
@@ -481,14 +481,14 @@
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbzDU-eldEfHba9IA1vXFZDogvozxKlUOfp_e3XMjOZFj519yFskQrvykhzgp3G18Uic6w/exec';
     let appConfig = {};
     const selectedFilesMap = {};
-
+    let currentWorkCount = 1;
+    
     window.showNextWorkField = function() {
-      if (typeof window.currentWorkCount === 'undefined') window.currentWorkCount = 1;
-      if (window.currentWorkCount < 4) {
-        window.currentWorkCount++;
-        const targetGroup = document.getElementById('addWorkGroup_' + window.currentWorkCount);
+      if (currentWorkCount < 4) {
+        currentWorkCount++;
+        const targetGroup = document.getElementById('addWorkGroup_' + currentWorkCount);
         if (targetGroup) targetGroup.style.setProperty('display', 'grid', 'important');
-        if (window.currentWorkCount === 4) {
+        if (currentWorkCount === 4) {
           const addBtn = document.getElementById('addWorkBtn');
           if (addBtn) addBtn.style.display = 'none';
         }
@@ -523,14 +523,14 @@
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
-      if (typeof GAS_URL === 'undefined' || !GAS_URL) {
-        alert("設定エラー: GAS_URLが定義されていません。");
+      if (!GAS_URL) {
+        alert("設定エラー: GAS_URLが設定されていません。");
         return;
       }
       const savedId = localStorage.getItem('app_login_id');
       const savedPassword = localStorage.getItem('app_login_password');
       if (savedId && savedPassword) {
-        initializeApp(savedId, savedPassword);
+        initializeApp();
       } else {
         document.getElementById("initLoader").style.display = "none";
         document.getElementById("loginScreen").style.display = "flex";
@@ -561,10 +561,10 @@
       localStorage.setItem('app_login_id', id);
       localStorage.setItem('app_login_password', pw);
       document.getElementById("loginScreen").style.display = "none";
-      await initializeApp(id, pw);
+      await initializeApp();
     }
 
-    async function initializeApp(loginId, password) {
+    async function initializeApp() {
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "ログイン認証中 & データを読み込み中...";
@@ -596,7 +596,6 @@
     async function search() {
       const btn = document.getElementById("searchBtn");
       const resultsDiv = document.getElementById("results");
-      document.getElementById("mainApp").style.display = "none";
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "データを検索中...";
@@ -609,12 +608,10 @@
         const records = await apiCall("searchRecordsExtended", { client, month, keyword });
         displayResults(records);
         loader.style.display = "none";
-        document.getElementById("mainApp").style.display = "block";
         btn.disabled = false;
         resultsDiv.style.opacity = "1";
       } catch (err) {
         loader.style.display = "none";
-        document.getElementById("mainApp").style.display = "block";
         btn.disabled = false;
         resultsDiv.innerHTML = '<p style="color:red; text-align:center;">エラー: ' + err.message + '</p>';
       }
@@ -680,7 +677,7 @@
         // ✅ ドライブフォルダリンク
         let driveLinkHtml = '';
         
-        const folderUrl = encodeURI(String(record.添付資料 || "").trim());
+        const folderUrl = String(record.添付資料 || "").trim();
         
         if (folderUrl) {
           driveLinkHtml = `
@@ -791,7 +788,7 @@
               ${[1, 2, 3, 4].map(i => {
                 const cContent = record['工事内容' + i] || '';
                 const cDate = parseDate(record['施工日' + i]);
-                const cWorker = record['工事担当' + i] || '';
+                const cWorker = record['工事担当者' + i] || '';
                 return `
                   <div class="work-section">
                     <div>
@@ -989,7 +986,7 @@
       (appConfig.staffList || []).forEach(s => { staffSel.innerHTML += `<option value="${s.name}">${s.name}</option>`; });
       staffSel.innerHTML += `<option value="(新規担当者)" style="color:var(--primary); font-weight:bold;">(新規担当者)</option>`;
 
-      window.currentWorkCount = 1;
+      currentWorkCount = 1;
       [2, 3, 4].forEach(i => document.getElementById('addWorkGroup_' + i).style.display = 'none');
       document.getElementById("addWorkBtn").style.display = 'flex';
       document.getElementById("newMediaInputGroup").style.display = "none";
@@ -1035,8 +1032,8 @@
           payload["工事内容" + i] = document.getElementById(`newWorkContentInput_${i}`).value.trim();
           payload["isNewWorkContent"] = true;
         }
-        if (payload["工事担当" + i] === "(新規工事担当者)") {
-          payload["工事担当" + i] = document.getElementById(`newWorkerInput_${i}`).value.trim();
+        if (payload["工事担当者" + i] === "(新規工事担当者)") {
+          payload["工事担当者" + i] = document.getElementById(`newWorkerInput_${i}`).value.trim();
           payload["isNewWorker"] = true;
         }
       }
@@ -1053,11 +1050,12 @@
       payload["更新日時"] = nowStr;
 
       const files = selectedFilesMap["NEW_PROJECT"] || [];
-      payload.files = [];
       if (files.length > 0) {
         document.getElementById("initLoader").style.display = "flex";
         document.getElementById("loaderText").textContent = "ファイルを処理中...";
-        for (const file of files) payload.files.push(await fileToBase64(file));
+        payload.files = await Promise.all(files.map(fileToBase64));
+      } else {
+        payload.files = [];
       }
 
       const loader = document.getElementById("initLoader");
@@ -1100,10 +1098,22 @@
 
       for (let i = 1; i <= 4; i++) {
         fData["施工日" + i] = document.getElementById(`editWorkDate_${rNum}_${i}`).value;
+      
         const cSel = document.getElementById(`editWorkContent_${rNum}_${i}`);
-        fData["工事内容" + i] = cSel.value === "(新規工事内容)" ? (fData["isNewWorkContent"] = true, document.getElementById(`newEditWorkContentInput_${rNum}_${i}`).value.trim()) : cSel.value;
+        if (cSel.value === "(新規工事内容)") {
+          fData["工事内容" + i] = document.getElementById(`newEditWorkContentInput_${rNum}_${i}`).value.trim();
+          fData["isNewWorkContent"] = true;
+        } else {
+          fData["工事内容" + i] = cSel.value;
+        }
+      
         const wSel = document.getElementById(`editWorker_${rNum}_${i}`);
-        fData["工事担当" + i] = wSel.value === "(新規工事担当者)" ? (fData["isNewWorker"] = true, document.getElementById(`newEditWorkerInput_${rNum}_${i}`).value.trim()) : wSel.value;
+        if (wSel.value === "(新規工事担当者)") {
+          fData["工事担当者" + i] = document.getElementById(`newEditWorkerInput_${rNum}_${i}`).value.trim();
+          fData["isNewWorker"] = true;
+        } else {
+          fData["工事担当者" + i] = wSel.value;
+        }
       }
 
       const staffSel = document.getElementById(`editStaffSelect_${rNum}`);
@@ -1115,10 +1125,11 @@
       fData["更新日時"] = getNowDateTimeString();
 
       const files = selectedFilesMap[rNum] || [];
-      fData.files = [];
       if (files.length > 0) {
         document.getElementById("loaderText").textContent = "修正ファイルを処理中...";
-        for (const file of files) fData.files.push(await fileToBase64(file));
+        fData.files = await Promise.all(files.map(fileToBase64));
+      } else {
+        fData.files = [];
       }
 
       try {
@@ -1127,8 +1138,9 @@
         selectedFilesMap[rNum] = [];
         search();
       } catch (err) {
-        loader.style.display = "none";
         alert("保存エラー: " + err.message);
+      } finally {
+        loader.style.display = "none";
       }
     };
   </script>
