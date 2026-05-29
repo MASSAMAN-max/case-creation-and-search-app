@@ -1068,7 +1068,6 @@
         await apiCall("createRecordExtended", { fData: payload });
         alert("新規案件の登録が完了しました。");
         closeCreateModal();
-        search();
       } catch (err) {
         loader.style.display = "none";
         alert("登録エラー: " + err.message);
