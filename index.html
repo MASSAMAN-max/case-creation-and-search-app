@@ -609,19 +609,40 @@
       if (span) span.textContent = getWeekday(inputEl.value);
     };
 
+    // 📊 検索結果内のセレクトボックス生成（オブジェクト対応版）
     function createOptionsHtml(masterList, currentVal, suffix) {
       let html = '<option value="">選択してください</option>';
       let exist = false;
+      
       (masterList || []).forEach(v => {
-        const sel = (v === currentVal) ? 'selected' : '';
+        // 要素がオブジェクトなら .name や .value を取得、なければそのまま使用
+        const val = (v && typeof v === 'object') ? (v.name || v.value || Object.values(v)[0]) : v;
+        
+        const sel = (val === currentVal) ? 'selected' : '';
         if(sel) exist = true;
-        html += `<option value="${v}" ${sel}>${v}</option>`;
+        html += `<option value="${val}" ${sel}>${val}</option>`;
       });
+      
       if(currentVal && !exist) html += `<option value="${currentVal}" selected>${currentVal}</option>`;
       html += `<option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix})</option>`;
       return html;
     }
 
+    // ➕ 新規登録モーダル内のセレクトボックス生成（オブジェクト対応版）
+    function initSelectWithOptions(elementId, dataList, suffix) {
+      const el = document.getElementById(elementId);
+      if(!el) return;
+      el.innerHTML = '<option value="">選択してください</option>';
+      
+      (dataList || []).forEach(v => {
+        // 要素がオブジェクトなら .name や .value を取得、なければそのまま使用
+        const val = (v && typeof v === 'object') ? (v.name || v.value || Object.values(v)[0]) : v;
+        
+        el.innerHTML += `<option value="${val}">${val}</option>`;
+      });
+      
+      el.innerHTML += `<option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix})</option>`;
+    }
     // =================================================================
     // 📊 検索結果リスト表示
     // =================================================================
