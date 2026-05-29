@@ -996,14 +996,6 @@
       }
     };
 
-    function initSelectWithOptions(elementId, dataList, suffix) {
-      const el = document.getElementById(elementId);
-      if(!el) return;
-      el.innerHTML = '<option value="">選択してください</option>';
-      (dataList || []).forEach(v => { el.innerHTML += `<option value="${v}">${v}</option>`; });
-      el.innerHTML += `<option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix})</option>`;
-    }
-
     window.closeCreateModal = function() { document.getElementById("createModal").style.display = "none"; };
 
     // =================================================================
@@ -1063,7 +1055,7 @@
         await apiCall("createRecordExtended", { fData: payload });
         alert("新規案件の登録が完了しました。");
         closeCreateModal();
-        search();
+        //search();
       } catch (err) {
         loader.style.display = "none";
         alert("登録エラー: " + err.message);
