@@ -518,6 +518,16 @@
       });
     });
 
+    // 🦺 担当者データから安全に名前を取り出すヘルパー
+    function getStaffName(s) {
+      if (!s || s === "undefined" || s === "null") return "";
+      if (typeof s === 'object') {
+        // 想定されるプロパティ名を片っ端からチェックし、なければ最初の値を返す
+        return s.name || s.氏名 || s.担当者名 || s.value || Object.values(s)[0] || "";
+      }
+      return String(s); // 単なる文字列ならそのまま返す
+    }
+
     function togglePasswordVisibility() {
       const p = document.getElementById("loginPasswordInput");
       const icon = document.getElementById("eyeIcon");
@@ -724,26 +734,21 @@
         if(!hasAnyWork) workScheduleHtml += `<div style="font-size:14px; color:#94a3b8;">📅 工事予定なし</div>`;
         workScheduleHtml += '</div>';
 
-      // 担当者セレクトボックスの生成（undefined・オブジェクト対策版）
+        // 🔄 担当者セレクトボックスの生成（ヘルパー適用版）
         let staffOptionsHtml = '<option value="">選択してください</option>';
         let staffExist = false;
         
         (appConfig.managerList || []).forEach(s => {
-          // オブジェクトなら .name や .value を取得、なければそのまま使用
-          const sName = (s && typeof s === 'object') ? (s.name || s.value || Object.values(s)[0]) : s;
-          
-          // 有効な値のときのみ選択肢を追加
-          if (sName && sName !== "undefined") {
+          const sName = getStaffName(s);
+          if (sName) {
             const isSel = (sName === record.担当者);
             if (isSel) staffExist = true;
             staffOptionsHtml += `<option value="${sName}" ${isSel ? 'selected' : ''}>${sName}</option>`;
           }
         });
         
-        // スプレッドシート側の値が空、または文字列の "undefined" になっている場合の対策
         const currentStaff = (record.担当者 && record.担当者 !== "undefined" && record.担当者 !== "null") ? record.担当者 : "";
         if(currentStaff && !staffExist) staffOptionsHtml += `<option value="${currentStaff}" selected>${currentStaff}</option>`;
-        
         staffOptionsHtml += `<option value="(新規担当者)" style="color:var(--primary); font-weight:bold;">(新規担当者)</option>`;
 
         item.innerHTML = `
@@ -918,9 +923,9 @@
       if (selectEl.value === "(新規担当者)") {
         phoneInput.value = ""; phoneInput.readOnly = false;
       } else {
-        const matched = (appConfig.managerList || []).find(s => (typeof s === 'object' ? s.name : s) === selectEl.value);
-        phoneInput.value = (matched && typeof matched === 'object') ? matched.phone : "";
-        phoneInput.readOnly = !!matched;
+        const matched = (appConfig.managerList || []).find(s => getStaffName(s) === selectEl.value);
+        phoneInput.value = (matched && typeof matched === 'object') ? (matched.phone || matched.連絡先 || "") : "";
+        phoneInput.readOnly = !!(matched && typeof matched === 'object' && (matched.phone || matched.連絡先));
       }
     };
 
@@ -930,8 +935,8 @@
       if (selectEl.value === "(新規担当者)") {
         phoneInput.value = "";
       } else {
-        const matched = (appConfig.managerList || []).find(s => s.name === selectEl.value);
-        phoneInput.value = matched ? matched.phone : "";
+        const matched = (appConfig.managerList || []).find(s => getStaffName(s) === selectEl.value);
+        phoneInput.value = (matched && typeof matched === 'object') ? (matched.phone || matched.連絡先 || "") : "";
       }
     };
 
@@ -990,9 +995,13 @@
         initSelectWithOptions(`newWorker_${i}`, appConfig.userList, "工事担当者");
       }
 
+      // 🔄 新規登録モーダル内の担当者マスタ展開（ヘルパー適用版）
       const staffSel = document.getElementById("addStaffSelect");
       staffSel.innerHTML = '<option value="">選択してください</option>';
-      (appConfig.managerList || []).forEach(s => { staffSel.innerHTML += `<option value="${s.name}">${s.name}</option>`; });
+      (appConfig.managerList || []).forEach(s => { 
+        const sName = getStaffName(s);
+        if (sName) staffSel.innerHTML += `<option value="${sName}">${sName}</option>`; 
+      });
       staffSel.innerHTML += `<option value="(新規担当者)" style="color:var(--primary); font-weight:bold;">(新規担当者)</option>`;
 
       currentWorkCount = 1;
