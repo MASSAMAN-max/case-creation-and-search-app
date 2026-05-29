@@ -1092,28 +1092,47 @@
         }
       }
 
+      // ✅ 担当者マスタ・新規担当者の入力取得
       const staffSel = document.getElementById(`editStaffSelect_${rNum}`);
-      fData["担当者"] = staffSel.value === "(新規担当者)" ? (fData["isNewStaff"] = true, document.getElementById(`newEditStaffInput_${rNum}`).value.trim()) : staffSel.value;
-      fData["連絡先"] = document.getElementById(`editPhoneInput_${rNum}`).value;
-      fData["loginUser"] = localStorage.getItem('app_login_userName') || '';
+      if (staffSel && staffSel.value === "(新規担当者)") {
+        fData["担当者"] = document.getElementById(`newEditStaffInput_${rNum}`).value.trim();
+        fData["isNewStaff"] = true;
+      } else if (staffSel) {
+        fData["担当者"] = staffSel.value;
+      }
+      
+      const phoneInput = document.getElementById(`editPhoneInput_${rNum}`);
+      if (phoneInput) {
+        fData["連絡先"] = phoneInput.value.trim();
+      }
 
+      // ✅ システム共通項目の設定
+      fData["loginUser"] = localStorage.getItem('app_login_userName') || '';
+      fData["更新日時"] = getNowDateTimeString();
+
+      // ✅ 編集エリアで追加選択された添付ファイルのBase64処理
       const files = selectedFilesMap[rNum] || [];
       if (files.length > 0) {
-        document.getElementById("loaderText").textContent = "修正ファイルを処理中...";
+        document.getElementById("loaderText").textContent = "ファイルを処理中...";
         fData.files = await Promise.all(files.map(fileToBase64));
       } else {
         fData.files = [];
       }
 
       try {
-        await apiCall("updateRecordExtended", { rNum: rowNumber, fData: fData });
-        alert("案件の変更内容を保存しました。");
+        // GAS側の「updateRecordExtended」アクションを呼び出し
+        await apiCall("updateRecordExtended", { fData: fData, rowNumber: rowNumber });
+        alert("修正データの保存が完了しました。");
+        
+        // 当該レコードの選択中ファイルキューをクリア
         selectedFilesMap[rNum] = [];
+        renderFileList(rNum);
+        
+        // 画面を再検索して最新の状態に更新
         search();
       } catch (err) {
-        alert("保存エラー: " + err.message);
-      } finally {
         loader.style.display = "none";
+        alert("保存エラー: " + err.message);
       }
     };
   </script>
