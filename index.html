@@ -538,6 +538,9 @@
         document.getElementById("loginIdInput").addEventListener("keypress", enter);
         document.getElementById("loginPasswordInput").addEventListener("keypress", enter);
       }
+      document.getElementById("searchValue").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") search();
+      });
     });
 
     function togglePasswordVisibility() {
@@ -1044,10 +1047,9 @@
 
       payload["loginUser"] = localStorage.getItem('app_login_userName') || '';
 
-      // ✅ [変更2] 作成日時・更新日時を両方 yyyy-mm-dd HH:MM:SS で設定
+      //  作成日時 yyyy-mm-dd HH:MM:SS で設定
       const nowStr = getNowDateTimeString();
       payload["作成日時"] = nowStr;
-      payload["更新日時"] = nowStr;
 
       const files = selectedFilesMap["NEW_PROJECT"] || [];
       if (files.length > 0) {
@@ -1120,9 +1122,6 @@
       fData["担当者"] = staffSel.value === "(新規担当者)" ? (fData["isNewStaff"] = true, document.getElementById(`newEditStaffInput_${rNum}`).value.trim()) : staffSel.value;
       fData["連絡先"] = document.getElementById(`editPhoneInput_${rNum}`).value;
       fData["loginUser"] = localStorage.getItem('app_login_userName') || '';
-
-      // ✅ [変更2] 更新日時のみ yyyy-mm-dd HH:MM:SS で設定（作成日時は上書きしない）
-      fData["更新日時"] = getNowDateTimeString();
 
       const files = selectedFilesMap[rNum] || [];
       if (files.length > 0) {
