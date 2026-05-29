@@ -785,7 +785,7 @@
                     <div>
                       <label>工事担当者 ${i}</label>
                       <select id="editWorker_${record.No}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkerGroup_${record.No}_${i}')">
-                        ${createOptionsHtml(appConfig.workerList, cWorker, '工事担当者')}
+                        ${createOptionsHtml(appConfig.userList, cWorker, '工事担当者')}
                       </select>
                       <div id="newEditWorkerGroup_${record.No}_${i}" style="display:none; margin-top:6px;">
                         <input type="text" id="newEditWorkerInput_${record.No}_${i}" placeholder="新規工事担当者">
@@ -956,7 +956,7 @@
 
       for (let i = 1; i <= 4; i++) {
         initSelectWithOptions(`newWorkContent_${i}`, appConfig.workContentList, "工事内容");
-        initSelectWithOptions(`newWorker_${i}`, appConfig.workerList, "工事担当者");
+        initSelectWithOptions(`newWorker_${i}`, appConfig.userList, "工事担当者");
       }
 
       const staffSel = document.getElementById("addStaffSelect");
