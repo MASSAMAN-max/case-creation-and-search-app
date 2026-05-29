@@ -705,7 +705,7 @@
 
         let staffOptionsHtml = '<option value="">選択してください</option>';
         let staffExist = false;
-        (appConfig.userList || []).forEach(s => {
+        (appConfig.managerList || []).forEach(s => {
           const sName = (s && typeof s === 'object') ? s.name : s;
           const isSel = (sName === record.担当者);
           if (isSel) staffExist = true;
@@ -886,7 +886,7 @@
       if (selectEl.value === "(新規担当者)") {
         phoneInput.value = ""; phoneInput.readOnly = false;
       } else {
-        const matched = (appConfig.userList || []).find(s => (typeof s === 'object' ? s.name : s) === selectEl.value);
+        const matched = (appConfig.managerList || []).find(s => (typeof s === 'object' ? s.name : s) === selectEl.value);
         phoneInput.value = (matched && typeof matched === 'object') ? matched.phone : "";
         phoneInput.readOnly = !!matched;
       }
@@ -898,7 +898,7 @@
       if (selectEl.value === "(新規担当者)") {
         phoneInput.value = "";
       } else {
-        const matched = (appConfig.userList || []).find(s => s.name === selectEl.value);
+        const matched = (appConfig.managerList || []).find(s => s.name === selectEl.value);
         phoneInput.value = matched ? matched.phone : "";
       }
     };
@@ -950,7 +950,6 @@
       selectedFilesMap["NEW_PROJECT"] = [];
       document.getElementById("createFileList").innerHTML = "";
 
-      // ✅ [変更1] 受注媒体プルダウン初期化（appConfig.mediaListを使用）
       initSelectWithOptions("addMediaSelect", appConfig.mediaList || [], "受注媒体");
       initSelectWithOptions("addClientSelect", appConfig.clientList, "発注元");
 
@@ -961,7 +960,7 @@
 
       const staffSel = document.getElementById("addStaffSelect");
       staffSel.innerHTML = '<option value="">選択してください</option>';
-      (appConfig.userList || []).forEach(s => { staffSel.innerHTML += `<option value="${s.name}">${s.name}</option>`; });
+      (appConfig.managerList || []).forEach(s => { staffSel.innerHTML += `<option value="${s.name}">${s.name}</option>`; });
       staffSel.innerHTML += `<option value="(新規担当者)" style="color:var(--primary); font-weight:bold;">(新規担当者)</option>`;
 
       currentWorkCount = 1;
