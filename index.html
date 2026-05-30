@@ -281,16 +281,28 @@
           <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">発注元で絞り込み</label>
           <select id="filterClient" style="width: 100%; background-color: #fafafa;"><option value="">すべて</option></select>
         </div>
-        <div style="flex: 1; min-width: 120px;">
+        <!-- 月範囲選択 -->
+        <div style="flex: 1; min-width: 160px;">
           <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">施工月</label>
           <select id="filterMonth" style="width: 100%; background-color: #fafafa;">
             <option value="">すべて</option>
+            <option value="undefined">未定</option>
             <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
             <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
             <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
             <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
           </select>
         </div>
+        <!-- 日付範囲選択 -->
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">施工日（開始）</label>
+          <input type="date" id="filterStartDate" style="width: 100%;" onchange="handleStartDateChange()">
+        </div>
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">施工日（終了）</label>
+          <input type="date" id="filterEndDate" style="width: 100%;">
+        </div>
+        
         <div style="flex: 2; min-width: 250px;">
           <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">キーワード検索（No、案件名など）</label>
           <input type="text" id="searchValue" placeholder="文字を入力（Enterキーでも検索できます）" style="width: 100%;">
@@ -316,7 +328,7 @@
       
       <form id="createProjectForm" onsubmit="handleCreateSubmit(event)">
 
-        <!-- ✅ [変更1] 受注媒体：プルダウン選択形式 -->
+        <!--  受注媒体：プルダウン選択形式 -->
         <div class="form-group">
           <label>受注媒体 <span class="badge-required">必須</span></label>
           <select name="受注媒体" id="addMediaSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newMediaInputGroup')"></select>
@@ -592,6 +604,7 @@
       }
     }
 
+    // ✅ 修正後
     async function search() {
       const btn = document.getElementById("searchBtn");
       const resultsDiv = document.getElementById("results");
@@ -599,12 +612,17 @@
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "データを検索中...";
       btn.disabled = true;
+      
       const client = document.getElementById("filterClient").value;
       const month = document.getElementById("filterMonth").value;
+      const startDate = document.getElementById("filterStartDate").value;
+      const endDate = document.getElementById("filterEndDate").value;
+      
       let keyword = document.getElementById("searchValue").value;
       if (keyword) keyword = keyword.replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).toLowerCase().trim();
+      
       try {
-        const records = await apiCall("searchRecordsExtended", { client, month, keyword });
+        const records = await apiCall("searchRecordsExtended", { client, month, keyword, startDate, endDate });
         displayResults(records);
         loader.style.display = "none";
         btn.disabled = false;
@@ -638,7 +656,6 @@
       (masterList || []).forEach(v => {
         // 要素がオブジェクトなら .name や .value を取得、なければそのまま使用
         const val = (v && typeof v === 'object') ? (v.name || v.value || Object.values(v)[0]) : v;
-        
         const sel = (val === currentVal) ? 'selected' : '';
         if(sel) exist = true;
         html += `<option value="${val}" ${sel}>${val}</option>`;
@@ -881,6 +898,16 @@
         container.appendChild(item);
       });
     }
+
+    // ✅ 新規関数：開始日が変更されたら終了日に自動代入
+    window.handleStartDateChange = function() {
+      const startDate = document.getElementById("filterStartDate").value;
+      const endDate = document.getElementById("filterEndDate").value;
+      // 開始日が入力され、終了日が空の場合は開始日と同じ値を代入
+      if (startDate && !endDate) {
+        document.getElementById("filterEndDate").value = startDate;
+      }
+    };
 
     window.toggleInnerAccordion = function(el) {
       const details = el.nextElementSibling;
@@ -1204,11 +1231,9 @@
         // GAS側の「updateRecordExtended」アクションを呼び出し
         await apiCall("updateRecordExtended", { fData: fData, rNum: rowNumber });
         alert("修正データの保存が完了しました。");
-        
         // 当該レコードの選択中ファイルキューをクリア
         selectedFilesMap[rNum] = [];
         renderFileList(rNum);
-        
         // 画面を再検索して最新の状態に更新
         search();
       } catch (err) {
