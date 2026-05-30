@@ -256,9 +256,12 @@
           <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">キーワード検索（No、案件名など）</label>
           <input type="text" id="searchValue" placeholder="文字を入力（Enterキーでも検索できます）" style="width: 100%;">
         </div>
-        <div style="min-width: 140px;">
-          <button id="searchBtn" class="btn btn-primary" onclick="search()" style="width: 100%; padding: 13px; font-size:18px;">
-            <span id="searchIcon" class="material-symbols-outlined">search</span> 検索する
+        <div style="display: flex; gap: 8px; min-width: 280px;">
+          <button id="searchBtn" class="btn btn-primary" onclick="search()" style="flex: 1; padding: 13px; font-size:18px;">
+            <span class="material-symbols-outlined">search</span> 検索する
+          </button>
+          <button id="clearBtn" class="btn btn-secondary" onclick="clearSearchFilters()" style="flex: 1; padding: 13px; font-size:18px;">
+            <span class="material-symbols-outlined">clear</span> クリア
           </button>
         </div>
       </div>
@@ -1187,5 +1190,19 @@
       }
     };
   </script>
+  <!-- ✅ 追加：トップへ戻るボタン -->
+  <button id="scrollToTopBtn" 
+          onclick="scrollToTop()" 
+          style="position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; border-radius: 50%; background-color: var(--primary); color: white; border: none; cursor: pointer; display: none; z-index: 999; box-shadow: 0 4px 12px rgba(74,144,226,0.3); transition: all 0.3s ease; align-items: center; justify-content: center;">
+    <span class="material-symbols-outlined" style="font-size: 24px;">arrow_upward</span>
+  </button>
+  
+  <style>
+    #scrollToTopBtn:hover {
+      background-color: var(--primary-hover);
+      box-shadow: 0 6px 16px rgba(74,144,226,0.4);
+      transform: translateY(-3px);
+    }
+  </style>
 </body>
 </html>
