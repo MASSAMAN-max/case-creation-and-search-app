@@ -100,29 +100,18 @@
 
     .uploadbox { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s; margin-top: 15px; }
     /* 元々あるエリア全体の変化 */
-    .uploadbox.dragover { 
-      border-color: var(--primary); 
-      background: #e0f2fe; 
-    }
+    .uploadbox.dragover {  border-color: var(--primary);  background: #e0f2fe;  }
     .uploadbox.dragover .cloud-icon {
       transform: translateY(-6px); /* 雲を少し上に浮かせます */
       color: var(--primary);       /* 雲の色をメインカラー（青系）に変えます */
     }
     .cloud-icon {transition: transform 0.2s ease, color 0.2s ease; }/* マウスを離したときにフワッと滑らかに戻るための設定 */
 
-    .drive-open-icon {
-      cursor: pointer;
-      transition: transform 0.2s ease, color 0.2s ease;
-    }
-    
-    .drive-open-icon:hover {
-      transform: translateY(-6px);
-      color: var(--primary);
-    }
+    .drive-open-icon { cursor: pointer; transition: transform 0.2s ease, color 0.2s ease; }
+    .drive-open-icon: hover { transform: translateY(-6px); color: var(--primary); }
     
     .file-item { display: flex; align-items: center; background: white; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 6px; font-size: 14px; }
     .file-badge { display: inline-block; padding: 4px 12px; margin: 2px; border-radius: 6px; font-size: 14px; font-weight: bold; border: 1px solid #90caf9; background-color: #e3f2fd; color: #0d47a1; box-shadow: 0 2px 4px rgba(13,71,161,0.08); }
-
     /* ☁️ Cloud Folder Link */
     .drive-folder-link {
       display: inline-flex;
@@ -130,21 +119,14 @@
       gap: 12px;
       margin-top: 10px;
       padding: 12px 18px;
-      background:
-        linear-gradient(
-          180deg,
-          rgba(255,255,255,0.95) 0%,
-          rgba(240,247,255,0.92) 100%
-        );
+      background: linear-gradient( 180deg, rgba(255,255,255,0.95) 0%, rgba(240,247,255,0.92) 100% );
       border: 1px solid rgba(147,197,253,0.55);
       border-radius: 18px;
       text-decoration: none;
       color: #2563eb;
       font-weight: 700;
       font-size: 15px;
-      box-shadow:
-        0 4px 12px rgba(37,99,235,0.08),
-        inset 0 1px 0 rgba(255,255,255,0.9);
+      box-shadow: 0 4px 12px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
       backdrop-filter: blur(8px);
       transition: all 0.2s ease;
       overflow: hidden;
@@ -152,39 +134,17 @@
     
     .drive-folder-link:hover {
       transform: translateY(-1px);
-      background:
-        linear-gradient(
-          180deg,
-          rgba(255,255,255,1) 0%,
-          rgba(232,242,255,0.98) 100%
-        );
-      box-shadow:
-        0 8px 20px rgba(37,99,235,0.12);
+      background: linear-gradient( 180deg, rgba(255,255,255,1) 0%, rgba(232,242,255,0.98) 100% );
+      box-shadow: 0 8px 20px rgba(37,99,235,0.12);
       border-color: rgba(59,130,246,0.7);
     }
     
     /* ☁️ */
-    .cloud-icon {
-      width: 28px;
-      height: 28px;
-    　color: #60a5fa;
-      flex-shrink: 0;
-    }
-    
+    .cloud-icon {width: 28px;height: 28px;color: #60a5fa;flex-shrink: 0;}
     /* text */
-    .drive-link-text {
-      color: #2563eb;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: 0.2px;
-    }
-    
+    .drive-link-text { color: #2563eb; font-size: 15px; font-weight: 700; letter-spacing: 0.2px; }
     /* ↗ */
-    .drive-open-icon {
-      font-size: 18px !important;
-      color: #3b82f6;
-      margin-left: 2px;
-    }
+    .drive-open-icon { font-size: 18px !important; color: #3b82f6; margin-left: 2px; }
     
     /* disabled */
     .drive-folder-link-disabled {
@@ -280,18 +240,6 @@
         <div style="flex: 1; min-width: 200px;">
           <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">発注元で絞り込み</label>
           <select id="filterClient" style="width: 100%; background-color: #fafafa;"><option value="">すべて</option></select>
-        </div>
-        <!-- 月範囲選択 -->
-        <div style="flex: 1; min-width: 160px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">施工月</label>
-          <select id="filterMonth" style="width: 100%; background-color: #fafafa;">
-            <option value="">すべて</option>
-            <option value="undefined">未定</option>
-            <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
-            <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
-            <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
-            <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
-          </select>
         </div>
         <!-- 日付範囲選択 -->
         <div style="flex: 1; min-width: 200px;">
@@ -604,7 +552,7 @@
       }
     }
 
-    // ✅ 修正後
+    // ✅ 修正後（月検索削除版）
     async function search() {
       const btn = document.getElementById("searchBtn");
       const resultsDiv = document.getElementById("results");
@@ -614,7 +562,6 @@
       btn.disabled = true;
       
       const client = document.getElementById("filterClient").value;
-      const month = document.getElementById("filterMonth").value;
       const startDate = document.getElementById("filterStartDate").value;
       const endDate = document.getElementById("filterEndDate").value;
       
@@ -622,7 +569,7 @@
       if (keyword) keyword = keyword.replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).toLowerCase().trim();
       
       try {
-        const records = await apiCall("searchRecordsExtended", { client, month, keyword, startDate, endDate });
+        const records = await apiCall("searchRecordsExtended", { client, keyword, startDate, endDate });
         displayResults(records);
         loader.style.display = "none";
         btn.disabled = false;
@@ -1150,7 +1097,6 @@
         loader.style.display = "none";
         alert("新規案件の登録が完了しました。");
         closeCreateModal();
-        //search();
       } catch (err) {
         loader.style.display = "none";
         alert("登録エラー: " + err.message);
