@@ -739,12 +739,10 @@
         let staffExist = false;
         
         (appConfig.managerList || []).forEach(s => {
-          const sName = getStaffName(s);
-          if (sName) {
-            const isSel = (sName === record.担当者);
-            if (isSel) staffExist = true;
-            staffOptionsHtml += `<option value="${sName}" ${isSel ? 'selected' : ''}>${sName}</option>`;
-          }
+          const sName = (s && typeof s === 'object') ? s.name : s;
+          const isSel = (sName === record.担当者);
+          if (isSel) staffExist = true;
+          staffOptionsHtml += `<option value="${sName}" ${isSel ? 'selected' : ''}>${sName}</option>`;
         });
         
         const currentStaff = (record.担当者 && record.担当者 !== "undefined" && record.担当者 !== "null") ? record.担当者 : "";
@@ -923,9 +921,12 @@
       if (selectEl.value === "(新規担当者)") {
         phoneInput.value = ""; phoneInput.readOnly = false;
       } else {
-        const matched = (appConfig.managerList || []).find(s => getStaffName(s) === selectEl.value);
-        phoneInput.value = (matched && typeof matched === 'object') ? (matched.phone || matched.連絡先 || "") : "";
-        phoneInput.readOnly = !!(matched && typeof matched === 'object' && (matched.phone || matched.連絡先));
+      const matched = (appConfig.managerList || []).find(s => {
+        const sName = (typeof s === 'object') ? s.name : s;
+        return sName === selectEl.value;
+      });
+      phoneInput.value = (matched && typeof matched === 'object') ? matched.phone : "";
+      phoneInput.readOnly = !!matched;
       }
     };
 
