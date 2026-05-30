@@ -97,8 +97,9 @@
     .work-section { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; background: #fff; border: 2px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-bottom: 10px; }
     .work-section label { display: block; font-size: 13px; color: var(--text-sub); font-weight: bold; margin-bottom: 4px; }
     .work-section select, .work-section input { width: 100%; padding: 10px; }
-
-    .uploadbox { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s; margin-top: 15px; }
+    
+    .uploadbox { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s; margin-top: 15px;
+                 display: flex; flex-direction: column; align-items: center; justify-content: center;}
     /* 元々あるエリア全体の変化 */
     .uploadbox.dragover {  border-color: var(--primary);  background: #e0f2fe;  }
     .uploadbox.dragover .cloud-icon {
@@ -140,12 +141,12 @@
     }
     
     /* ☁️ */
-    .cloud-icon {width: 28px;height: 28px;color: #60a5fa;flex-shrink: 0;}
+    .cloud-icon {font-size: 40px !important; width: 28px;height: 28px;color: #60a5fa;flex-shrink: 0; display: inline-block;
+                 line-height: 1; letter-spacing: normal;  width: 40px; height: 40px; margin: 0 auto;}
     /* text */
     .drive-link-text { color: #2563eb; font-size: 15px; font-weight: 700; letter-spacing: 0.2px; }
     /* ↗ */
     .drive-open-icon { font-size: 18px !important; color: #3b82f6; margin-left: 2px; }
-    
     /* disabled */
     .drive-folder-link-disabled {
       display: inline-flex;
@@ -825,9 +826,7 @@
             </div>
 
             <div class="uploadbox" id="uploadBox_${record.No}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, '${record.No}')">
-              <div>
-                <div class="material-symbols-outlined cloud-icon" style="font-size:40px; transform: translateX(20px) color:var(--primary)">cloud_upload</div>
-              </div>
+              <span class="material-symbols-outlined cloud-icon">cloud_upload</span>
               <div class="drag-drop-text" style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
               <div class="drag-drop-text" style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
               <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput_${record.No}').click()">ファイルを選択</button>
