@@ -71,7 +71,7 @@
     /* 📝 フォーム共通：ラベルのレイアウトを一括設定 */
     .form-group label { display: flex; align-items: center; gap: 4px; font-weight: bold; margin-bottom: 20px; }
     /* 🎨 フォーム共通：ラベル横のアイコンデザインを一括設定 */
-    .form-group label .material-symbols-outlined { font-size: 20px; color: var(--primary); transform: translateY(4px); }
+    .form-group label .material-symbols-outlined { font-size: 20px; color: var(--primary); transform: translateY(5px); }
     /* ☁️ アップロードボックス内のテキスト微調整（お好みで） */
     .drag-drop-text { text-align: center; }
 
@@ -826,7 +826,7 @@
 
             <div class="uploadbox" id="uploadBox_${record.No}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, '${record.No}')">
               <div>
-                <span class="material-symbols-outlined cloud-icon" style="font-size:40px; color:var(--primary)">cloud_upload</span>
+                <div class="material-symbols-outlined cloud-icon" style="font-size:40px; transform: translateX(4px) color:var(--primary)">cloud_upload</div>
               </div>
               <div class="drag-drop-text" style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
               <div class="drag-drop-text" style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
