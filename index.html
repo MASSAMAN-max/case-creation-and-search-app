@@ -71,7 +71,7 @@
     /* 📝 フォーム共通：ラベルのレイアウトを一括設定 */
     .form-group label { display: flex; align-items: center; gap: 4px; font-weight: bold; margin-bottom: 20px; }
     /* 🎨 フォーム共通：ラベル横のアイコンデザインを一括設定 */
-    .form-group label .material-symbols-outlined { font-size: 15px; color: var(--primary); }/* アプリのテーマカラーに自動で揃います */
+    .form-group label .material-symbols-outlined { font-size: 20px; color: var(--primary); }/* アプリのテーマカラーに自動で揃います */
     /* ☁️ アップロードボックス内のテキスト微調整（お好みで） */
     .drag-drop-text { text-align: center; }
 
@@ -388,22 +388,22 @@
         </div>
 
         <div class="form-group">
-          <label><span class="material-symbols-outlined">home</span>所在地（住所）</label>
+          <label><span class="material-symbols-outlined">home</span> 所在地（住所）</label>
           <input type="text" name="住所">
         </div>
 
         <div class="form-group">
-          <label><span class="material-symbols-outlined">pin_drop</span>緯度経度</label>
+          <label><span class="material-symbols-outlined">pin_drop</span> 緯度経度</label>
           <input type="text" name="緯度経度" placeholder="例：36.8420,137.4060" style="width: 100%;">
         </div>
 
         <div class="form-group">
-          <label><span class="material-symbols-outlined">square_foot</span>延床面積</label>
+          <label><span class="material-symbols-outlined">square_foot</span> 延床面積</label>
           <input type="text" name="延床面積" placeholder="例：85㎡">
         </div>
 
         <div class="form-group">
-          <label><span class="material-symbols-outlined">person</span>担当者</label>
+          <label><span class="material-symbols-outlined">person</span> 担当者</label>
           <select name="担当者" id="addStaffSelect" style="width:100%;" onchange="handleStaffChange(this, 'addPhoneInput', 'newStaffInputGroup')"></select>
           <div id="newStaffInputGroup" style="display: none; margin-top: 8px;">
             <input type="text" id="newStaffInput" placeholder="新規担当者名を入力してください">
@@ -411,23 +411,23 @@
         </div>
 
         <div class="form-group">
-          <label><span class="material-symbols-outlined">phone</span>連絡先</label>
+          <label><span class="material-symbols-outlined">phone</span> 連絡先</label>
           <input type="text" name="連絡先" id="addPhoneInput" placeholder="担当者を選択すると自動反映されます">
         </div>
 
         <div class="form-group">
-          <label><span class="material-symbols-outlined">key</span>キーBOX</label>
+          <label><span class="material-symbols-outlined">key</span> キーBOX</label>
           <input type="text" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所">
         </div>
 
         <div class="form-group">
-          <label><span class="material-symbols-outlined">notes</span>備 考</label>
+          <label><span class="material-symbols-outlined">notes</span> 備 考</label>
           <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px; font-size:16px; font-family:inherit; box-sizing:border-box;"></textarea>
         </div>
         
         <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
           <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #334155; font-weight: bold; display: flex; align-items: center; gap: 6px;">
-            <span class="material-symbols-outlined" style="font-size: 20px; color: var(--text-sub);">admin_panel_settings</span> システム管理項目
+            <span class="material-symbols-outlined" style="font-size: 20px; color: var(--text-sub);">admin_panel_settings</span> システム管理項目他
           </h3>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;"><label>システムID</label><input type="text" name="システムID" placeholder="システムID"></div>
@@ -703,18 +703,9 @@
           driveLinkHtml = `
             <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link"
                style="display:flex; align-items:center; gap:12px; background:#edf2f7; padding:12px; border-radius:8px; margin-bottom:16px;">
-            
-              <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">
-                cloud_done
-              </span>
-            
-              <span style="font-weight:bold; flex:1;">
-                資料フォルダ参照
-              </span>
-            
-              <span class="material-symbols-outlined drive-open-icon">
-                open_in_new
-              </span>
+              <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">cloud_done</span>
+              <span style="font-weight:bold; flex:1;">資料フォルダ参照</span>
+              <span class="material-symbols-outlined drive-open-icon">open_in_new</span>
             </a>`;
         } else {
           driveLinkHtml = `
@@ -790,7 +781,7 @@
                 <input type="text" id="延床面積_${record.No}" value="${record.延床面積 || ''}">
               </div>
               <div class="data-row-input" style="grid-column: span 2;">
-                <label>🔑 キーBOX</label>
+                <label>キーBOX</label>
                 <input type="text" id="キーBOX_${record.No}" value="${record.キーBOX || ''}">
               </div>
               <div class="data-row-input" style="grid-column: span 2;">
@@ -803,7 +794,7 @@
                 </div>
               </div>
               <div class="data-row-input" style="grid-column: span 2;">
-                <label>📳 連絡先</label>
+                <label>連絡先</label>
                 <input type="text" id="editPhoneInput_${record.No}" value="${record.連絡先 || ''}">
               </div>
             </div>
@@ -853,7 +844,7 @@
 
             <div class="inner-accordion" style="margin-top:16px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
               <div class="inner-accordion-summary" onclick="toggleInnerAccordion(this)" style="cursor:pointer; background:#e2e8f0; padding:12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#334155;">
-                <span style="display:flex; align-items:center; gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">admin_panel_settings</span> 詳細システム管理項目 (ID・日程情報)</span>
+                <span style="display:flex; align-items:center; gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">admin_panel_settings</span> システム管理項目他)</span>
                 <span class="material-symbols-outlined inner-expand-icon" style="transition:transform 0.2s;">expand_more</span>
               </div>
               <div class="inner-accordion-details" style="display:none; padding:16px; background:#f8fafc; border-top:1px solid #cbd5e1;">
