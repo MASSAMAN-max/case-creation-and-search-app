@@ -488,6 +488,7 @@
       document.getElementById("searchValue").addEventListener("keydown", function(e) {
         if (e.key === "Enter") search();
       });
+      window.addEventListener("scroll", handleScroll);
     });
 
     // 🦺 担当者データから安全に名前を取り出すヘルパー
@@ -848,6 +849,32 @@
       });
     }
 
+    // ✅ 新規関数：検索条件をリセット
+    window.clearSearchFilters = function() {
+      document.getElementById("filterClient").value = "";
+      document.getElementById("filterStartDate").value = "";
+      document.getElementById("filterEndDate").value = "";
+      document.getElementById("searchValue").value = "";
+      
+      document.getElementById("results").innerHTML = "";
+      document.getElementById("searchCount").innerHTML = "";
+    };
+
+    // ✅ 新規関数：トップへスクロール
+    window.scrollToTop = function() {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    
+    // ✅ 新規関数：スクロール位置でボタンを表示/非表示
+    window.handleScroll = function() {
+      const scrollToTopBtn = document.getElementById("scrollToTopBtn");
+      if (window.scrollY > 300) {
+        scrollToTopBtn.style.display = "flex";
+      } else {
+        scrollToTopBtn.style.display = "none";
+      }
+    };
+    
     // ✅ 新規関数：開始日が変更されたら終了日に自動代入
     window.handleStartDateChange = function() {
       const startDate = document.getElementById("filterStartDate").value;
