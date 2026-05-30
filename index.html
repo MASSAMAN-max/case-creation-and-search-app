@@ -1200,7 +1200,7 @@
 
       try {
         // GAS側の「updateRecordExtended」アクションを呼び出し
-        await apiCall("updateRecordExtended", { fData: fData, rowNumber: rowNumber });
+        await apiCall("updateRecordExtended", { fData: fData, rNum: rowNumber });
         alert("修正データの保存が完了しました。");
         
         // 当該レコードの選択中ファイルキューをクリア
