@@ -72,7 +72,7 @@
     /* 📝 フォーム共通：ラベルのレイアウトを一括設定.form-group label { display: flex; align-items: center; gap: 4px; font-weight: bold; margin-bottom: 8px; } */
     .form-group label { display: flex; align-items: center; font-weight: bold; margin-bottom: 8px; white-space: nowrap; }
     /* 🎨 フォーム共通：ラベル横のアイコンデザインを一括設定.form-group label .material-symbols-outlined { font-size: 21px; gap: 4px; color: var(--primary); transform: translateY(5px); } */
-    .form-group label .material-symbols-outlined { font-size: 21px; gap: 10px; color: var(--primary); transform: translateY(5px); }
+    .form-group label .material-symbols-outlined { font-size: 21px; color: var(--primary); transform: translateY(5px); }
     /* ☁️ アップロードボックス内のテキスト微調整（お好みで） */
     .drag-drop-text { text-align: center; }
 
@@ -336,7 +336,7 @@
           <div id="dynamicWorkFieldsContainer"></div>
         
           <button type="button" id="addWorkBtn" class="btn" style="margin-top:16px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="showNextWorkField()">
-            <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span> 施工日・工事内容・担当を追加
+            <span class="material-symbols-outlined" style="font-size:18px; translateY(5px); ">add_circle</span> 施工日・工事内容・担当を追加
           </button>
         </div>
 
@@ -387,17 +387,15 @@
             <div class="form-group" style="margin:0;"><label>物件ID</label><input type="text" name="物件ID" placeholder="物件ID"></div>
               <!-- ✅ 検査日：時刻選択付き -->
             <div style="grid-column: span 2;">
-              <div class="form-group">
-                <label><span class="material-symbols-outlined">Engineering</span>検査日（時刻指定）</label>
-                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
-                  <input type="date" id="newInspectionDate" name="検査日" placeholder="日付を選択">
-                  <select id="newInspectionHour" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
-                    <option value="">時</option>
-                  </select>
-                  <select id="newInspectionMinute" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
-                    <option value="">分</option>
-                  </select>
-                </div>
+              <label>検査日（時刻指定）</label>
+              <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
+                <input type="date" id="newInspectionDate" name="検査日" placeholder="日付を選択">
+                <select id="newInspectionHour" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
+                  <option value="">時</option>
+                </select>
+                <select id="newInspectionMinute" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
+                  <option value="">分</option>
+                </select>
               </div>
             </div>
             <div class="form-group" style="margin:0;"><label>着工日</label><input type="date" name="着工日"></div>
@@ -450,14 +448,14 @@
           <div ${idAttribute} style="${displayStyle} grid-template-columns: 1fr; gap: 12px;">
             <div class="form-group" style="grid-column: span 2;">
               <label>
-                <span class="material-symbols-outlined">calendar_month</span><span>施工予定日 ${i}</span>
+                <span class="material-symbols-outlined">calendar_month</span><span> 施工予定日 ${i}</span>
                 <span id="newDaySpan_${i}" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span>
               </label>
               <input type="date" name="施工日${i}" onchange="updateInputWeekday(this, 'newDaySpan_${i}')" ${requiredAttr}>
             </div>
             
             <div class="form-group" style="grid-column: span 2;">
-              <label><span class="material-symbols-outlined">Vacuum</span><span>工事内容 ${i}</span>${badgeHtml}</label>
+              <label><span class="material-symbols-outlined">Vacuum</span><span> 工事内容 ${i}</span>${badgeHtml}</label>
               <select name="工事内容${i}" id="newWorkContent_${i}" ${requiredAttr} style="width:100%;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_${i}')"></select>
               <div id="newWorkContentInputGroup_${i}" style="display: none; margin-top: 6px;">
                 <input type="text" id="newWorkContentInput_${i}" placeholder="新規工事内容を入力">
@@ -465,7 +463,7 @@
             </div>
             
             <div class="form-group" style="grid-column: span 2;">
-              <label><span class="material-symbols-outlined">Supervisor_Account</span><span>工事担当者 ${i}</span></label>
+              <label><span class="material-symbols-outlined">Supervisor_Account</span><span> 工事担当者 ${i}</span></label>
               <select name="工事担当者${i}" id="newWorker_${i}" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_${i}')"></select>
               <div id="newWorkerInputGroup_${i}" style="display: none; margin-top: 6px;">
                 <input type="text" id="newWorkerInput_${i}" placeholder="新規工事担当者名を入力">
