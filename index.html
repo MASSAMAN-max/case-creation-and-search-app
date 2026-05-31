@@ -258,7 +258,7 @@
     <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 24px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f0f2f5; padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
         <div style="font-size: 22px; font-weight: bold; color: #1e293b; display:flex; align-items:center; gap:8px;">
-          <span class="material-symbols-outlined" style="color:var(--primary); font-size:30px;">Assignment_Globe</span> 案件管理アプリ
+          <span class="material-symbols-outlined" style="color:var(--primary); font-size:34px;">Assignment_Globe</span> 案件管理アプリ
         </div>
         <button class="btn btn-success" onclick="openCreateModal()" style="font-size: 18px; padding: 14px 28px;">
           <span class="material-symbols-outlined">add_circle</span> 新規案件を登録
@@ -340,13 +340,10 @@
               <input type="date" name="施工日1" onchange="updateInputWeekday(this, 'newDaySpan_1')">
             </div>
 
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">phone</span> 連絡先</label>
-          <input type="text" name="連絡先" id="addPhoneInput" placeholder="担当者を選択すると自動反映されます">
-        </div>
+
 
             <div class="form-group">
-              <label><span class="material-symbols-outlined">construction</span> <span>工事内容 1</span><span class="badge-required">必須</span></label>
+              <label><span class="material-symbols-outlined">Vacuum</span><span>工事内容 1</span><span class="badge-required">必須</span></label>
               <select name="工事内容1" id="newWorkContent_1" required style="width:100%;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_1')"></select>
               <div id="newWorkContentInputGroup_1" style="display: none; margin-top: 6px;">
                 <input type="text" id="newWorkContentInput_1" placeholder="新規工事内容を入力">
@@ -360,13 +357,22 @@
                 <input type="text" id="newWorkContentInput_1" placeholder="新規工事内容を入力">
               </div>
             </div>-->
-            <div class="form-group" style="grid-column: span 1; margin:0;">
-              <label>工事担当者 1</label>
+
+            <div class="form-group">
+              <label><span class="material-symbols-outlined">person</span><span>工事担当者 1</span></label>
               <select name="工事担当者1" id="newWorker_1" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_1')"></select>
               <div id="newWorkerInputGroup_1" style="display: none; margin-top: 6px;">
                 <input type="text" id="newWorkerInput_1" placeholder="新規工事担当者名を入力">
               </div>
             </div>
+            
+        <!--<div class="form-group" style="grid-column: span 1; margin:0;">
+              <label>工事担当者 1</label>
+              <select name="工事担当者1" id="newWorker_1" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_1')"></select>
+              <div id="newWorkerInputGroup_1" style="display: none; margin-top: 6px;">
+                <input type="text" id="newWorkerInput_1" placeholder="新規工事担当者名を入力">
+              </div>
+            </div>-->
           </div>
 
           <div id="addWorkGroup_2" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr; gap: 12px;">
