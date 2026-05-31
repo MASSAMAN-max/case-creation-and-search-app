@@ -532,7 +532,7 @@
       if (newMinuteSel) newMinuteSel.innerHTML = minutes.join('');
     };
     
-    // ✅ 新規関数：検索結果の時刻セレクトを初期化（recordNo付き）
+    // ✅ 修正後（時刻値を保持）
     window.initializeInspectionTimeSelectsForRecord = function(recordNo) {
       // 時間（0～23）
       const hours = ['<option value="">時</option>'];
@@ -548,19 +548,17 @@
       
       const hourSel = document.getElementById(`検査日時_${recordNo}`);
       const minuteSel = document.getElementById(`検査日分_${recordNo}`);
+      
+      // ✅ 既存値を保存してからHTMLを更新
+      const existingHour = hourSel ? hourSel.value : '';
+      const existingMinute = minuteSel ? minuteSel.value : '';
+      
       if (hourSel) hourSel.innerHTML = hours.join('');
       if (minuteSel) minuteSel.innerHTML = minutes.join('');
       
-      // 既存値があれば設定
-      const inspectionDateStr = document.getElementById(`検査日_${recordNo}`).value;
-      if (inspectionDateStr && inspectionDateStr.includes('T')) {
-        const timeParts = inspectionDateStr.split('T')[1];
-        if (timeParts) {
-          const [hour, minute] = timeParts.split(':');
-          if (hour) hourSel.value = hour;
-          if (minute) minuteSel.value = minute.substring(0, 2);
-        }
-      }
+      // ✅ 既存値を復元
+      if (hourSel && existingHour) hourSel.value = existingHour;
+      if (minuteSel && existingMinute) minuteSel.value = existingMinute;
     };
 
     // 🦺 担当者データから安全に名前を取り出すヘルパー
@@ -925,6 +923,26 @@
           </div>
         `;
         container.appendChild(item);
+          if (record.検査日 && typeof record.検査日 === "string" && record.検査日.includes('T')) {
+            const timeParts = record.検査日.split('T')[1];
+            if (timeParts) {
+              const [hour, minute] = timeParts.split(':');
+              const hourSel = document.getElementById(`検査日時_${record.No}`);
+              const minuteSel = document.getElementById(`検査日分_${record.No}`);
+              
+              // セレクトボックスがDOMに追加されるまで少し待つ
+              setTimeout(() => {
+                if (hourSel && hour) hourSel.value = String(hour).padStart(2, '0');
+                if (minuteSel && minute) {
+                  const minuteVal = minute.substring(0, 2);
+                  // 15分単位に丸める（00→00, 01-07→00, 08-22→15, 23-37→30, 38-52→45, 53-59→00）
+                  const roundedMinute = Math.round(parseInt(minuteVal) / 15) * 15;
+                  const normalizedMinute = roundedMinute === 60 ? '00' : String(roundedMinute).padStart(2, '0');
+                  minuteSel.value = normalizedMinute;
+                }
+              }, 50);
+            }
+          }
         initializeInspectionTimeSelectsForRecord(record.No);
       });
     }
@@ -1157,7 +1175,6 @@
       const formData = new FormData(form);
       const payload = {};
       formData.forEach((value, key) => { payload[key] = value; });
-
       // ✅ [変更1] 受注媒体の新規入力処理
       if (payload["受注媒体"] === "(新規受注媒体)") {
         payload["受注媒体"] = document.getElementById("newMediaInput").value.trim();
@@ -1183,18 +1200,16 @@
       }
 
       payload["loginUser"] = localStorage.getItem('app_login_userName') || '';
-
-      //  作成日時 yyyy-mm-dd HH:MM:SS で設定
       const nowStr = getNowDateTimeString();
       payload["作成日時"] = nowStr;
     
-      // ✅ 追加：検査日＋時刻を結合
+      // ✅ 検査日＋時刻を結合（formDataの検査日を上書き）
       const inspectionDate = document.getElementById("newInspectionDate").value;
       const inspectionHour = document.getElementById("newInspectionHour").value;
       const inspectionMinute = document.getElementById("newInspectionMinute").value;
     
       if (inspectionDate) {
-        if (inspectionHour && inspectionMinute) {
+        if (inspectionHour !== "" && inspectionMinute !== "") {
           payload["検査日"] = `${inspectionDate}T${inspectionHour}:${inspectionMinute}`;
         } else {
           payload["検査日"] = inspectionDate;
@@ -1202,20 +1217,7 @@
       } else {
         payload["検査日"] = "";
       }
-
-      async function handleCreateSubmit(event) {
-        event.preventDefault();
-        const form = event.target;
-        const formData = new FormData(form);
-        const payload = {};
-        formData.forEach((value, key) => { payload[key] = value; });
-      
-        // ✅ [変更1] 受注媒体の新規入力処理
-        if (payload["受注媒体"] === "(新規受注媒体)") {
-          payload["受注媒体"] = document.getElementById("newMediaInput").value.trim();
-          payload["isNewMedia"] = true;
-        }
-      
+    
       const files = selectedFilesMap["NEW_PROJECT"] || [];
       if (files.length > 0) {
         document.getElementById("initLoader").style.display = "flex";
@@ -1224,11 +1226,11 @@
       } else {
         payload.files = [];
       }
-
+    
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "新規案件をスプレッドシートへ書き込み中...";
-
+    
       try {
         await apiCall("createRecordExtended", { fData: payload });
         loader.style.display = "none";
@@ -1262,13 +1264,13 @@
         引渡日: document.getElementById(`edit_引渡日_${rNum}`).value
       };
     
-      // ✅ 追加：検査日＋時刻を結合（従来の検査日参照は削除）
+      // ✅ 検査日＋時刻を結合（input + selectの値から組立）
       const inspectionDate = document.getElementById(`検査日_${rNum}`).value;
       const inspectionHour = document.getElementById(`検査日時_${rNum}`).value;
       const inspectionMinute = document.getElementById(`検査日分_${rNum}`).value;
     
       if (inspectionDate) {
-        if (inspectionHour && inspectionMinute) {
+        if (inspectionHour !== "" && inspectionMinute !== "") {
           fData["検査日"] = `${inspectionDate}T${inspectionHour}:${inspectionMinute}`;
         } else {
           fData["検査日"] = inspectionDate;
@@ -1277,7 +1279,7 @@
         fData["検査日"] = "";
       }
     
-      // 工事日程・内容・担当者の処理
+      // 工事日程・内容・担当者
       for (let i = 1; i <= 4; i++) {
         fData["施工日" + i] = document.getElementById(`editWorkDate_${rNum}_${i}`).value;
       
@@ -1298,7 +1300,6 @@
         }
       }
     
-      // ✅ 担当者マスタ・新規担当者の入力取得
       const staffSel = document.getElementById(`editStaffSelect_${rNum}`);
       if (staffSel && staffSel.value === "(新規担当者)") {
         fData["担当者"] = document.getElementById(`newEditStaffInput_${rNum}`).value.trim();
@@ -1312,11 +1313,9 @@
         fData["連絡先"] = phoneInput.value.trim();
       }
     
-      // ✅ システム共通項目の設定
       fData["loginUser"] = localStorage.getItem('app_login_userName') || '';
       fData["更新日時"] = getNowDateTimeString();
     
-      // ✅ 編集エリアで追加選択された添付ファイルのBase64処理
       const files = selectedFilesMap[rNum] || [];
       if (files.length > 0) {
         document.getElementById("loaderText").textContent = "ファイルを処理中...";
@@ -1326,15 +1325,10 @@
       }
     
       try {
-        // GAS側の「updateRecordExtended」アクションを呼び出し
         await apiCall("updateRecordExtended", { fData: fData, rNum: rowNumber });
         alert("修正データの保存が完了しました。");
-        
-        // 当該レコードの選択中ファイルキューをクリア
         selectedFilesMap[rNum] = [];
         renderFileList(rNum);
-        
-        // 画面を再検索して最新の状態に更新
         search();
       } catch (err) {
         loader.style.display = "none";
