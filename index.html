@@ -642,7 +642,14 @@
         loader.style.display = "none";
         document.getElementById("mainApp").style.display = "block";
       } catch (err) {
-        showToast("ログインに失敗しました。\n\n理由: " + err.message, true);
+        Swal.fire({
+          title: 'ログインに失敗しました。',
+          text: err.message,
+          icon: 'success',
+          confirmButtonColor: '#ef4444', 
+          confirmButtonText: 'OK'
+        });
+        //showToast("ログインに失敗しました。\n\n理由: " + err.message, true);
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
         localStorage.removeItem('app_login_userName');
