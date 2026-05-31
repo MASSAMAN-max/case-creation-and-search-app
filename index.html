@@ -130,7 +130,7 @@
       align-items: center;
       gap: 12px;
       margin-top: 10px;
-      padding: 12px 18px;
+      padding: 12px 20px;
       background: linear-gradient( 180deg, rgba(255,255,255,0.95) 0%, rgba(240,247,255,0.92) 100% );
       border: 1px solid rgba(147,197,253,0.55);
       border-radius: 18px;
@@ -150,10 +150,7 @@
       box-shadow: 0 8px 20px rgba(37,99,235,0.12);
       border-color: rgba(59,130,246,0.7);
     }
-    .drive-folder-link .drive-link-text {
-      font-weight: bold;
-      flex: 1;
-    }
+
 
     .drive-open-icon { cursor: pointer; transition: transform 0.2s ease, color 0.2s ease; }
     .drive-open-icon: hover { transform: translateY(-6px); color: var(--primary); }
@@ -679,12 +676,11 @@
         
         if (folderUrl) {
           driveLinkHtml = `
-            <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link"
-               style="display:flex; align-items:center; gap:12px; background:#edf2f7; padding:12px; border-radius:8px; margin-bottom:16px;">
-              <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">cloud_done</span>
-              <span style="font-weight:bold; flex:1;">資料フォルダ参照</span>
-              <span class="material-symbols-outlined drive-open-icon">open_in_new</span>
-            </a>`;
+<a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link">
+    <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">cloud_done</span>
+    <span style="font-weight:bold;">資料フォルダ参照</span>
+    <span class="material-symbols-outlined drive-open-icon">open_in_new</span>
+  </a>`;
         } else {
           driveLinkHtml = `
             <div class="drive-folder-link-disabled">
