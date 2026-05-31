@@ -185,6 +185,8 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       z-index: 9999;
+      max-width: 350px;       /* 横幅が広がりすぎないように制限 */
+      white-space: pre-wrap;  /* 改行文字や長文を自動で折り返す */
     }
     
     /* このクラスがつくと画面内にスッと現れる */
@@ -1389,8 +1391,6 @@
       transform: translateY(-3px);
     }
   </style>
-  
   <div id="toastNotification" class="toast-box"></div>
-  
 </body>
 </html>
