@@ -11,6 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
   <style>
     :root {
@@ -170,6 +171,26 @@
     }
     /* 無効化枠の中にあるアイコンは、小さく・薄く上書き */
     .drive-folder-link-disabled .cloud-icon {font-size: 20px !important;  width: 20px; height: 20px; color: #cbd5e1 !important;}
+
+    /* トースト通知のベース */
+    .toast-box {
+      position: fixed;
+      top: 20px;
+      right: -300px; /* 最初は画面の外に隠しておく */
+      background: #10b981; /* 成功時の緑色（エラー時は #ef4444 などに変えてもOK） */
+      color: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 9999;
+    }
+    
+    /* このクラスがつくと画面内にスッと現れる */
+    .toast-box.show {
+      right: 20px;
+    }
     
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 5000; display: flex; align-items: center; justify-content: center; }
     .modal-content { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 600px; box-sizing: border-box; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
@@ -489,7 +510,7 @@
 
     document.addEventListener("DOMContentLoaded", async () => {
       if (!GAS_URL) {
-        alert("設定エラー: GAS_URLが設定されていません。");
+        showToast("設定エラー: GAS_URLが設定されていません。", true);
         return;
       }
       initializeInspectionTimeSelects();
@@ -589,7 +610,7 @@
     async function handleLoginSubmit() {
       const id = document.getElementById("loginIdInput").value.trim();
       const pw = document.getElementById("loginPasswordInput").value.trim();
-      if (!id || !pw) return alert("IDとパスワードを入力してください。");
+      if (!id || !pw) return showToast("IDとパスワードを入力してください。", true);
       const btn = document.getElementById("loginBtn");
       btn.disabled = true; btn.textContent = "認証中...";
       localStorage.setItem('app_login_id', id);
@@ -619,7 +640,7 @@
         loader.style.display = "none";
         document.getElementById("mainApp").style.display = "block";
       } catch (err) {
-        alert("ログインに失敗しました。\n\n理由: " + err.message);
+        showToast("ログインに失敗しました。\n\n理由: " + err.message, true);
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
         localStorage.removeItem('app_login_userName');
@@ -1229,16 +1250,16 @@
     
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
-      document.getElementById("loaderText").textContent = "新規案件をスプレッドシートへ書き込み中...";
+      document.getElementById("loaderText").textContent = "新規案件を登録中...";
     
       try {
         await apiCall("createRecordExtended", { fData: payload });
         loader.style.display = "none";
-        alert("新規案件の登録が完了しました。");
+        showToast("新規案件の登録が完了しました。");
         closeCreateModal();
       } catch (err) {
         loader.style.display = "none";
-        alert("登録エラー: " + err.message);
+        showToast("登録エラー: " + err.message, true);
       }
     }
 
@@ -1326,15 +1347,33 @@
     
       try {
         await apiCall("updateRecordExtended", { fData: fData, rNum: rowNumber });
-        alert("修正データの保存が完了しました。");
+        showToast("データの修正が完了しました。");
         selectedFilesMap[rNum] = [];
         renderFileList(rNum);
         search();
       } catch (err) {
         loader.style.display = "none";
-        alert("保存エラー: " + err.message);
+        showToast("保存エラー: " + err.message, true);
       }
     };
+
+    function showToast(message, isError = false) {
+      const toast = document.getElementById("toastNotification");
+      toast.innerText = message;
+      
+      // エラーか成功かで色を変える（お好みで）
+      if (isError) {
+        toast.style.background = "#ef4444"; // 赤
+      } else {
+        toast.style.background = "#10b981"; // 緑
+      }
+      // 表示
+      toast.classList.add("show");
+      // 3秒後に自動で隠す
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3000);
+    }
   </script>
   <!-- ✅ 追加：トップへ戻るボタン -->
   <button id="scrollToTopBtn" 
@@ -1350,5 +1389,8 @@
       transform: translateY(-3px);
     }
   </style>
+  
+  <div id="toastNotification" class="toast-box"></div>
+  
 </body>
 </html>
