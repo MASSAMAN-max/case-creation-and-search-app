@@ -401,7 +401,19 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;"><label>システムID</label><input type="text" name="システムID" placeholder="システムID"></div>
             <div class="form-group" style="margin:0;"><label>物件ID</label><input type="text" name="物件ID" placeholder="物件ID"></div>
-            <div class="form-group" style="margin:0;"><label>検査日</label><input type="date" name="検査日"></div>
+              <!-- ✅ 検査日：時刻選択付き -->
+            <div style="grid-column: span 2;">
+              <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px;">検査日（時刻指定）</label>
+              <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
+                <input type="date" id="newInspectionDate" name="検査日" placeholder="日付を選択">
+                <select id="newInspectionHour" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
+                  <option value="">時</option>
+                </select>
+                <select id="newInspectionMinute" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
+                  <option value="">分</option>
+                </select>
+              </div>
+            </div>
             <div class="form-group" style="margin:0;"><label>着工日</label><input type="date" name="着工日"></div>
             <div class="form-group" style="margin:0;"><label>完成日</label><input type="date" name="完成日"></div>
             <div class="form-group" style="margin:0;"><label>引渡日</label><input type="date" name="引渡日"></div>
@@ -480,6 +492,7 @@
         alert("設定エラー: GAS_URLが設定されていません。");
         return;
       }
+      initializeInspectionTimeSelects();
       const savedId = localStorage.getItem('app_login_id');
       const savedPassword = localStorage.getItem('app_login_password');
       if (savedId && savedPassword) {
@@ -494,8 +507,61 @@
       document.getElementById("searchValue").addEventListener("keydown", function(e) {
         if (e.key === "Enter") search();
       });
+      
       window.addEventListener("scroll", handleScroll);
     });
+
+    // ✅ 新規関数：時刻セレクトボックスを初期化
+    window.initializeInspectionTimeSelects = function() {
+      // 時間（0～23）
+      const hours = ['<option value="">時</option>'];
+      for (let h = 0; h < 24; h++) {
+        hours.push(`<option value="${String(h).padStart(2, '0')}">${String(h).padStart(2, '0')}</option>`);
+      }
+      
+      // 分（0, 15, 30, 45）
+      const minutes = ['<option value="">分</option>'];
+      for (let m = 0; m < 60; m += 15) {
+        minutes.push(`<option value="${String(m).padStart(2, '0')}">${String(m).padStart(2, '0')}</option>`);
+      }
+      
+      // 新規登録モーダル内のセレクトに設定
+      const newHourSel = document.getElementById("newInspectionHour");
+      const newMinuteSel = document.getElementById("newInspectionMinute");
+      if (newHourSel) newHourSel.innerHTML = hours.join('');
+      if (newMinuteSel) newMinuteSel.innerHTML = minutes.join('');
+    };
+    
+    // ✅ 新規関数：検索結果の時刻セレクトを初期化（recordNo付き）
+    window.initializeInspectionTimeSelectsForRecord = function(recordNo) {
+      // 時間（0～23）
+      const hours = ['<option value="">時</option>'];
+      for (let h = 0; h < 24; h++) {
+        hours.push(`<option value="${String(h).padStart(2, '0')}">${String(h).padStart(2, '0')}</option>`);
+      }
+      
+      // 分（0, 15, 30, 45）
+      const minutes = ['<option value="">分</option>'];
+      for (let m = 0; m < 60; m += 15) {
+        minutes.push(`<option value="${String(m).padStart(2, '0')}">${String(m).padStart(2, '0')}</option>`);
+      }
+      
+      const hourSel = document.getElementById(`検査日時_${recordNo}`);
+      const minuteSel = document.getElementById(`検査日分_${recordNo}`);
+      if (hourSel) hourSel.innerHTML = hours.join('');
+      if (minuteSel) minuteSel.innerHTML = minutes.join('');
+      
+      // 既存値があれば設定
+      const inspectionDateStr = document.getElementById(`検査日_${recordNo}`).value;
+      if (inspectionDateStr && inspectionDateStr.includes('T')) {
+        const timeParts = inspectionDateStr.split('T')[1];
+        if (timeParts) {
+          const [hour, minute] = timeParts.split(':');
+          if (hour) hourSel.value = hour;
+          if (minute) minuteSel.value = minute.substring(0, 2);
+        }
+      }
+    };
 
     // 🦺 担当者データから安全に名前を取り出すヘルパー
     function getStaffName(s) {
@@ -676,11 +742,11 @@
         
         if (folderUrl) {
           driveLinkHtml = `
-<a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link">
-    <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">cloud_done</span>
-    <span style="font-weight:bold;">資料フォルダ参照</span>
-    <span class="material-symbols-outlined drive-open-icon">open_in_new</span>
-  </a>`;
+          <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link">
+            <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">cloud_done</span>
+            <span style="font-weight:bold;">資料フォルダ参照</span>
+            <span class="material-symbols-outlined drive-open-icon">open_in_new</span>
+          </a>`;
         } else {
           driveLinkHtml = `
             <div class="drive-folder-link-disabled">
@@ -807,8 +873,16 @@
             </div>
 
             <div class="form-group" style="margin-top:14px;">
-              <label style="font-weight:bold; font-size:14px; color:var(--text-sub);">検査日</label>
-              <input type="date" id="検査日_${record.No}" value="${parseDate(record.検査日)}">
+              <label style="font-weight:bold; font-size:14px; color:var(--text-sub);">検査日（時刻指定）</label>
+              <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
+                <input type="date" id="検査日_${record.No}" value="${parseDate(record.検査日)}">
+                <select id="検査日時_${record.No}" style="padding: 10px; border: 2px solid var(--border); border-radius: 8px; box-sizing: border-box;">
+                  <option value="">時</option>
+                </select>
+                <select id="検査日分_${record.No}" style="padding: 10px; border: 2px solid var(--border); border-radius: 8px; box-sizing: border-box;">
+                  <option value="">分</option>
+                </select>
+              </div>
             </div>
 
             <div class="form-group" style="margin-top:14px;">
@@ -851,6 +925,7 @@
           </div>
         `;
         container.appendChild(item);
+        initializeInspectionTimeSelectsForRecord(record.No);
       });
     }
 
@@ -1112,7 +1187,35 @@
       //  作成日時 yyyy-mm-dd HH:MM:SS で設定
       const nowStr = getNowDateTimeString();
       payload["作成日時"] = nowStr;
+    
+      // ✅ 追加：検査日＋時刻を結合
+      const inspectionDate = document.getElementById("newInspectionDate").value;
+      const inspectionHour = document.getElementById("newInspectionHour").value;
+      const inspectionMinute = document.getElementById("newInspectionMinute").value;
+    
+      if (inspectionDate) {
+        if (inspectionHour && inspectionMinute) {
+          payload["検査日"] = `${inspectionDate}T${inspectionHour}:${inspectionMinute}`;
+        } else {
+          payload["検査日"] = inspectionDate;
+        }
+      } else {
+        payload["検査日"] = "";
+      }
 
+      async function handleCreateSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const payload = {};
+        formData.forEach((value, key) => { payload[key] = value; });
+      
+        // ✅ [変更1] 受注媒体の新規入力処理
+        if (payload["受注媒体"] === "(新規受注媒体)") {
+          payload["受注媒体"] = document.getElementById("newMediaInput").value.trim();
+          payload["isNewMedia"] = true;
+        }
+      
       const files = selectedFilesMap["NEW_PROJECT"] || [];
       if (files.length > 0) {
         document.getElementById("initLoader").style.display = "flex";
@@ -1144,14 +1247,13 @@
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "修正データを保存中...";
-
+    
       const fData = {
         No: rNum,
         住所: document.getElementById(`住所_${rNum}`).value,
         延床面積: document.getElementById(`延床面積_${rNum}`).value,
         キーBOX: document.getElementById(`キーBOX_${rNum}`).value,
         緯度経度: document.getElementById(`緯度経度_${rNum}`).value.replace(/\s+/g, ""),
-        検査日: document.getElementById(`検査日_${rNum}`).value,
         備考: document.getElementById(`備考_${rNum}`).value,
         システムID: document.getElementById(`edit_システムID_${rNum}`).value,
         物件ID: document.getElementById(`edit_物件ID_${rNum}`).value,
@@ -1159,7 +1261,23 @@
         完成日: document.getElementById(`edit_完成日_${rNum}`).value,
         引渡日: document.getElementById(`edit_引渡日_${rNum}`).value
       };
-
+    
+      // ✅ 追加：検査日＋時刻を結合（従来の検査日参照は削除）
+      const inspectionDate = document.getElementById(`検査日_${rNum}`).value;
+      const inspectionHour = document.getElementById(`検査日時_${rNum}`).value;
+      const inspectionMinute = document.getElementById(`検査日分_${rNum}`).value;
+    
+      if (inspectionDate) {
+        if (inspectionHour && inspectionMinute) {
+          fData["検査日"] = `${inspectionDate}T${inspectionHour}:${inspectionMinute}`;
+        } else {
+          fData["検査日"] = inspectionDate;
+        }
+      } else {
+        fData["検査日"] = "";
+      }
+    
+      // 工事日程・内容・担当者の処理
       for (let i = 1; i <= 4; i++) {
         fData["施工日" + i] = document.getElementById(`editWorkDate_${rNum}_${i}`).value;
       
@@ -1179,7 +1297,7 @@
           fData["工事担当者" + i] = wSel.value;
         }
       }
-
+    
       // ✅ 担当者マスタ・新規担当者の入力取得
       const staffSel = document.getElementById(`editStaffSelect_${rNum}`);
       if (staffSel && staffSel.value === "(新規担当者)") {
@@ -1193,11 +1311,11 @@
       if (phoneInput) {
         fData["連絡先"] = phoneInput.value.trim();
       }
-
+    
       // ✅ システム共通項目の設定
       fData["loginUser"] = localStorage.getItem('app_login_userName') || '';
       fData["更新日時"] = getNowDateTimeString();
-
+    
       // ✅ 編集エリアで追加選択された添付ファイルのBase64処理
       const files = selectedFilesMap[rNum] || [];
       if (files.length > 0) {
@@ -1206,14 +1324,16 @@
       } else {
         fData.files = [];
       }
-
+    
       try {
         // GAS側の「updateRecordExtended」アクションを呼び出し
         await apiCall("updateRecordExtended", { fData: fData, rNum: rowNumber });
         alert("修正データの保存が完了しました。");
+        
         // 当該レコードの選択中ファイルキューをクリア
         selectedFilesMap[rNum] = [];
         renderFileList(rNum);
+        
         // 画面を再検索して最新の状態に更新
         search();
       } catch (err) {
