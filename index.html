@@ -642,17 +642,24 @@
         loader.style.display = "none";
         document.getElementById("mainApp").style.display = "block";
       } catch (err) {
-        Swal.fire({
+        // 1. ローダーを非表示にする（これをしないとアラートの裏でグルグルが残る場合があります）
+        loader.style.display = "none";
+
+        // 2. await を使ってユーザーがOKを押すのを待つ
+        await Swal.fire({
           title: 'ログインに失敗しました。',
           text: err.message,
-          icon: 'success',
+          icon: 'error', // 'success' から 'error' に修正
           confirmButtonColor: '#ef4444', 
           confirmButtonText: 'OK'
         });
+        
         //showToast("ログインに失敗しました。\n\n理由: " + err.message, true);
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
         localStorage.removeItem('app_login_userName');
+        
+        // 3. ユーザーがOKを押した後にリロードが走る
         window.location.reload();
       }
     }
