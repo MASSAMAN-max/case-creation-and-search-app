@@ -70,7 +70,7 @@
     .btn-secondary { background-color: #bdc3c7; color: white; }
     
     /* 📝 フォーム共通：ラベルのレイアウトを一括設定.form-group label { display: flex; align-items: center; gap: 4px; font-weight: bold; margin-bottom: 8px; } */
-    .form-group label { display: flex; align-items: center; gap: 14px; font-weight: bold; margin-bottom: 8px; }
+    .form-group label { display: flex; align-items: center; gap: 6px; font-weight: bold; margin-bottom: 8px; }
     /* 🎨 フォーム共通：ラベル横のアイコンデザインを一括設定.form-group label .material-symbols-outlined { font-size: 21px; gap: 4px; color: var(--primary); transform: translateY(5px); } */
     .form-group label .material-symbols-outlined { font-size: 21px; color: var(--primary); display: flex; align-items: center; }
     /* ☁️ アップロードボックス内のテキスト微調整（お好みで） */
@@ -378,15 +378,27 @@
               <input type="date" name="施工日2" onchange="updateInputWeekday(this, 'newDaySpan_2')">
             </div>
             
-            <div class="form-group" style="margin:0;"><label>工事内容 2</label><select name="工事内容2" id="newWorkContent_2" style="width:100%;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_2')"></select><div id="newWorkContentInputGroup_2" style="display: none; margin-top: 6px;"><input type="text" id="newWorkContentInput_2" placeholder="新規工事内容を入力"></div></div>
-            <div class="form-group" style="grid-column: span 1; margin:0;"><label>工事担当者 2</label><select name="工事担当者2" id="newWorker_2" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_2')"></select><div id="newWorkerInputGroup_2" style="display: none; margin-top: 6px;"><input type="text" id="newWorkerInput_2" placeholder="新規工事担当者名を入力"></div></div>
-          </div>
+            <div class="form-group">
+              <label><span class="material-symbols-outlined">Vacuum</span><span>工事内容 2</span></label>
+              <select name="工事内容2" id="newWorkContent_2" style="width:100%;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_2')"></select>
+              <div id="newWorkContentInputGroup_2" style="display: none; margin-top: 6px;"><input type="text" id="newWorkContentInput_2" placeholder="新規工事内容を入力">/div>
+            </div>
+              
+            <div class="form-group">
+              <label><span class="material-symbols-outlined">Productivity</span><span>工事担当者 2</span></label>
+              <select name="工事担当者2" id="newWorker_1" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_2')"></select>
+              <div id="newWorkerInputGroup_2" style="display: none; margin-top: 6px;">
+                <input type="text" id="newWorkerInput_2" placeholder="新規工事担当者名を入力">
+              </div>
+            </div>
+              
+           </div>
 
-          <div id="addWorkGroup_2" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr; gap: 12px;">
+          <!--<div id="addWorkGroup_2" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;"><label>施工予定日 2 <span id="newDaySpan_2" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label><input type="date" name="施工日2" onchange="updateInputWeekday(this, 'newDaySpan_2')"></div>
             <div class="form-group" style="margin:0;"><label>工事内容 2</label><select name="工事内容2" id="newWorkContent_2" style="width:100%;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_2')"></select><div id="newWorkContentInputGroup_2" style="display: none; margin-top: 6px;"><input type="text" id="newWorkContentInput_2" placeholder="新規工事内容を入力"></div></div>
             <div class="form-group" style="grid-column: span 1; margin:0;"><label>工事担当者 2</label><select name="工事担当者2" id="newWorker_2" style="width:100%;" onchange="toggleNewInput(this, 'newWorkerInputGroup_2')"></select><div id="newWorkerInputGroup_2" style="display: none; margin-top: 6px;"><input type="text" id="newWorkerInput_2" placeholder="新規工事担当者名を入力"></div></div>
-          </div>
+          </div>-->
 
           <div id="addWorkGroup_3" style="display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px; grid-template-columns: 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;"><label>施工予定日 3 <span id="newDaySpan_3" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span></label><input type="date" name="施工日3" onchange="updateInputWeekday(this, 'newDaySpan_3')"></div>
