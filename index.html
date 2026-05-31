@@ -151,7 +151,6 @@
       border-color: rgba(59,130,246,0.7);
     }
 
-
     .drive-open-icon { cursor: pointer; transition: transform 0.2s ease, color 0.2s ease; }
     .drive-open-icon: hover { transform: translateY(-6px); color: var(--primary); }
     
@@ -166,11 +165,11 @@
       border: 1px dashed #cbd5e1;
       border-radius: 18px;
       color: #94a3b8;
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 600;
     }
     /* 無効化枠の中にあるアイコンは、小さく・薄く上書き */
-    .drive-folder-link-disabled .cloud-icon {font-size: 14px !important;  width: 14px; height: 14px; color: #cbd5e1 !important;}
+    .drive-folder-link-disabled .cloud-icon {font-size: 16px !important;  width: 14px; height: 14px; color: #cbd5e1 !important;}
     
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 5000; display: flex; align-items: center; justify-content: center; }
     .modal-content { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 600px; box-sizing: border-box; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
@@ -402,9 +401,10 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;"><label>システムID</label><input type="text" name="システムID" placeholder="システムID"></div>
             <div class="form-group" style="margin:0;"><label>物件ID</label><input type="text" name="物件ID" placeholder="物件ID"></div>
+            <div class="form-group" style="margin:0;"><label>検査日</label><input type="date" name="検査日"></div>
             <div class="form-group" style="margin:0;"><label>着工日</label><input type="date" name="着工日"></div>
             <div class="form-group" style="margin:0;"><label>完成日</label><input type="date" name="完成日"></div>
-            <div class="form-group" style="margin:0; grid-column: span 2;"><label>引渡日</label><input type="date" name="引渡日"></div>
+            <div class="form-group" style="margin:0;"><label>引渡日</label><input type="date" name="引渡日"></div>
           </div>
         </div>
 
