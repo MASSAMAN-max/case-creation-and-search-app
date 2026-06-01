@@ -252,8 +252,10 @@
 </head>
 <body>
 
-  <button type="button" class="mini-logout-btn" onclick="handleLogout()"><span class="material-symbols-outlined">logout</span><span>ログアウト</span></button>
-
+<button type="button" id="logoutBtn" class="mini-logout-btn" onclick="handleLogout()" style="display:none;">
+  <span class="material-symbols-outlined">logout</span><span>ログアウト</span>
+</button>
+  
   <div id="loginScreen" class="login-container" style="display:none;">
     <div class="login-box">
       <h2 style="text-align:center; margin-bottom:32px;">案件管理アプリ ログイン</h2>
@@ -681,29 +683,28 @@
         });
         loader.style.display = "none";
         document.getElementById("mainApp").style.display = "block";
+        // ログインが成功してメイン画面が出たら、ログアウトボタンを表示する
+        const logoutBtn = document.getElementById("logoutBtn");
+        if (logoutBtn) logoutBtn.style.display = "flex";
       } catch (err) {
-        // 1. ローダーを非表示にする（これをしないとアラートの裏でグルグルが残る場合があります）
+        // 1. ローダーを非表示にする
         loader.style.display = "none";
-
         // 2. await を使ってユーザーがOKを押すのを待つ
         await Swal.fire({
           title: 'ログインに失敗しました。',
           text: err.message,
-          icon: 'error', // 'success' から 'error' に修正
+          icon: 'error', 
           confirmButtonColor: '#ef4444', 
           confirmButtonText: 'OK'
         });
-        
-        //showToast("ログインに失敗しました。\n\n理由: " + err.message, true);
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
         localStorage.removeItem('app_login_userName');
-        
         // 3. ユーザーがOKを押した後にリロードが走る
         window.location.reload();
       }
     }
-
+    
     // ✅ 修正後（月検索削除版）
     async function search() {
       const btn = document.getElementById("searchBtn");
@@ -1467,6 +1468,22 @@ function displayResults(records) {
         toast.classList.remove("show");
       }, 3000);
     }
+
+  window.handleLogout = function() {
+    if (confirm("ログアウトしますか？")) {
+      // 1. 安全のため、ログインIDとパスワードの入力欄を空っぽにする
+      const idInput = document.getElementById("loginIdInput");
+      const passInput = document.getElementById("loginPasswordInput");
+      if (idInput) idInput.value = "";
+      if (passInput) passInput.value = "";
+      // 🚪 ログアウト実行時（リロード直前）
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (logoutBtn) logoutBtn.style.display = "none"; // ログアウトボタンを隠す
+      // 2. 画面を完全にリロード（再読み込み）して初期状態に戻す
+      window.location.reload();
+    }
+  };
+    
   </script>
   <!-- ✅ 追加：トップへ戻るボタン -->
   <button id="scrollToTopBtn" 
