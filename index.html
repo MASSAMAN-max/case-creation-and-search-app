@@ -214,9 +214,47 @@
       50% { transform: scaleY(1); opacity: 1; filter: drop-shadow(0 0 4px rgba(74,144,226,0.5)); }
     }
     @keyframes pulseText { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+    /* 右上の小さなログアウトボタン */
+    .mini-logout-btn {
+      position: fixed;      /* 画面の特定の位置に固定 */
+      top: 12px;            /* 上からの隙間 */
+      right: 12px;          /* 右からの隙間 */
+      z-index: 2000;        /* モーダル等よりも手前に表示させる */
+      
+      display: flex;
+      align-items: center;
+      gap: 4px;             /* アイコンと文字の間隔 */
+      
+      padding: 6px 10px;    /* ボタン内の余白（小さめ） */
+      font-size: 12px;      /* 文字サイズを小さく */
+      font-weight: bold;
+      
+      background-color: #f1f5f9; /* 普段は目立たない薄いグレー */
+      color: #64748b;            /* 控えめな文字色 */
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;   /* 緩やかな角丸 */
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    /* ボタン内のアイコンサイズ調整 */
+    .mini-logout-btn .material-symbols-outlined {
+      font-size: 16px;      /* アイコンも小さめに */
+    }
+    
+    /* マウスを乗せたとき（ホバー時）の演出 */
+    .mini-logout-btn:hover {
+      background-color: #fee2e2; /* ログアウトらしく、うっすら赤色に */
+      color: #ef4444;            /* 文字をハッキリした赤に */
+      border-color: #fca5a5;
+    }
+    
   </style>
 </head>
 <body>
+
+  <button type="button" class="mini-logout-btn" onclick="handleLogout()"><span class="material-symbols-outlined">logout</span><span>ログアウト</span></button>
 
   <div id="loginScreen" class="login-container" style="display:none;">
     <div class="login-box">
