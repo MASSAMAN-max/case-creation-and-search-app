@@ -747,7 +747,7 @@
     // =================================================================
     // 📊 検索結果リスト表示
     // =================================================================
-    function displayResults(records) {
+function displayResults(records) {
       const container = document.getElementById("results");
       const countDiv = document.getElementById("searchCount");
       container.innerHTML = "";
@@ -781,7 +781,7 @@
         
         if (folderUrl) {
           driveLinkHtml = `
-          <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link">
+          <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" onclick="event.stopPropagation();">
             <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">cloud_done</span>
             <span style="font-weight:bold;">資料フォルダ参照</span>
             <span class="material-symbols-outlined drive-open-icon">open_in_new</span>
@@ -815,20 +815,8 @@
         if(!hasAnyWork) workScheduleHtml += `<div style="font-size:14px; color:#94a3b8;">📅 工事予定なし</div>`;
         workScheduleHtml += '</div>';
 
-        // 🔄 担当者セレクトボックスの生成（ヘルパー適用版）
+        // 🔄 担当者セレクトボックスの生成（※初期化処理で上書きするためベースのみ生成）
         let staffOptionsHtml = '<option value="">選択してください</option>';
-        let staffExist = false;
-        
-        (appConfig.managerList || []).forEach(s => {
-          const sName = (s && typeof s === 'object') ? s.name : s;
-          const isSel = (sName === record.担当者);
-          if (isSel) staffExist = true;
-          staffOptionsHtml += `<option value="${sName}" ${isSel ? 'selected' : ''}>${sName}</option>`;
-        });
-        
-        const currentStaff = (record.担当者 && record.担当者 !== "undefined" && record.担当者 !== "null") ? record.担当者 : "";
-        if(currentStaff && !staffExist) staffOptionsHtml += `<option value="${currentStaff}" selected>${currentStaff}</option>`;
-        staffOptionsHtml += `<option value="(新規担当者)" style="color:var(--primary); font-weight:bold;">(新規担当者)</option>`;
 
         item.innerHTML = `
           <div class="result-summary" onclick="this.parentElement.classList.toggle('is-open')">
@@ -865,7 +853,7 @@
               </div>
               <div class="data-row-input" style="grid-column: span 2;">
                 <label>担当者</label>
-                <select id="editStaffSelect_${record.No}" onchange="handleEditStaffChange(this, '${record.No}')">
+                <select id="editStaffSelect_${record.No}" data-client="${record.発注元}" onchange="handleEditStaffChange(this, '${record.No}')">
                   ${staffOptionsHtml}
                 </select>
                 <div id="newEditStaffGroup_${record.No}" style="display:none; margin-top:6px;">
@@ -964,30 +952,51 @@
           </div>
         `;
         container.appendChild(item);
-          if (record.検査日 && typeof record.検査日 === "string" && record.検査日.includes('T')) {
-            const timeParts = record.検査日.split('T')[1];
-            if (timeParts) {
-              const [hour, minute] = timeParts.split(':');
-              const hourSel = document.getElementById(`検査日時_${record.No}`);
-              const minuteSel = document.getElementById(`検査日分_${record.No}`);
-              
-              // セレクトボックスがDOMに追加されるまで少し待つ
-              setTimeout(() => {
-                if (hourSel && hour) hourSel.value = String(hour).padStart(2, '0');
-                if (minuteSel && minute) {
-                  const minuteVal = minute.substring(0, 2);
-                  // 15分単位に丸める（00→00, 01-07→00, 08-22→15, 23-37→30, 38-52→45, 53-59→00）
-                  const roundedMinute = Math.round(parseInt(minuteVal) / 15) * 15;
-                  const normalizedMinute = roundedMinute === 60 ? '00' : String(roundedMinute).padStart(2, '0');
-                  minuteSel.value = normalizedMinute;
-                }
-              }, 50);
+
+        // 🛠️ 【追加】新規登録と同じ条件で担当者ドロップダウンを生成・初期化する処理
+        const staffSelId = `editStaffSelect_${record.No}`;
+        updateManagersByClient(record.発注元, staffSelId); // 新規共通の関数を呼び出し、発注元に紐づくメンバーに絞り込み
+        
+        const staffSelEl = document.getElementById(staffSelId);
+        if (staffSelEl) {
+          const currentStaff = (record.担当者 && record.担当者 !== "undefined" && record.担当者 !== "null") ? record.担当者 : "";
+          if (currentStaff) {
+            // 安全対策：もし保存されている担当者がマスタ(絞り込みリスト)にないイレギュラーな名前だった場合の救済措置
+            let hasOption = Array.from(staffSelEl.options).some(opt => opt.value === currentStaff);
+            if (!hasOption) {
+              const newOpt = document.createElement("option");
+              newOpt.value = currentStaff;
+              newOpt.textContent = currentStaff;
+              staffSelEl.insertBefore(newOpt, staffSelEl.lastElementChild);
             }
+            staffSelEl.value = currentStaff; // データを反映
           }
+          // 新規登録と同じ条件で、連絡先（ReadOnly制御など）の初期連動を実行
+          handleEditStaffChange(staffSelEl, record.No);
+        }
+        
+        if (record.検査日 && typeof record.検査日 === "string" && record.検査日.includes('T')) {
+          const timeParts = record.検査日.split('T')[1];
+          if (timeParts) {
+            const [hour, minute] = timeParts.split(':');
+            const hourSel = document.getElementById(`検査日時_${record.No}`);
+            const minuteSel = document.getElementById(`検査日分_${record.No}`);
+            
+            setTimeout(() => {
+              if (hourSel && hour) hourSel.value = String(hour).padStart(2, '0');
+              if (minuteSel && minute) {
+                const minuteVal = minute.substring(0, 2);
+                const roundedMinute = Math.round(parseInt(minuteVal) / 15) * 15;
+                const normalizedMinute = roundedMinute === 60 ? '00' : String(roundedMinute).padStart(2, '0');
+                minuteSel.value = normalizedMinute;
+              }
+            }, 50);
+          }
+        }
         initializeInspectionTimeSelectsForRecord(record.No);
       });
     }
-
+    
     // ✅ 新規関数：検索条件をリセット
     window.clearSearchFilters = function() {
       document.getElementById("filterClient").value = "";
@@ -1090,13 +1099,41 @@
     };
 
     window.handleEditStaffChange = function(selectEl, rNum) {
+      // 1. 既存の新規入力欄の出し入れ処理
       toggleEditNewInput(selectEl, `newEditStaffGroup_${rNum}`);
+      
       const phoneInput = document.getElementById(`editPhoneInput_${rNum}`);
+      if (!phoneInput) return; // 安全対策：要素が見つからない場合はスキップ
+
       if (selectEl.value === "(新規担当者)") {
         phoneInput.value = "";
+        phoneInput.readOnly = false; // 新規入力時は手入力を許可
       } else {
-        const matched = (appConfig.managerList || []).find(s => getStaffName(s) === selectEl.value);
-        phoneInput.value = (matched && typeof matched === 'object') ? (matched.phone || matched.連絡先 || "") : "";
+        // 2. HTMLの属性(data-client)から発注元名を取得
+        const selectedClient = selectEl.dataset.client || null;
+        
+        let matched = null;
+        // 優先順位1：発注元ごとのマッピングから探す（新規登録と完全に同じ条件）
+        if (selectedClient && appConfig.managerByClient && appConfig.managerByClient[selectedClient]) {
+          matched = appConfig.managerByClient[selectedClient].find(m => {
+            const mName = (m && typeof m === 'object') ? m.name : m;
+            return mName === selectEl.value;
+          });
+        }
+        
+        // 優先順位2：全マネージャーリストから探す
+        if (!matched) {
+          matched = (appConfig.managerList || []).find(s => getStaffName(s) === selectEl.value);
+        }
+        
+        // 3. 連絡先の反映と読み取り専用(ReadOnly)制御
+        if (matched && typeof matched === 'object') {
+          phoneInput.value = matched.phone || matched.連絡先 || "";
+          phoneInput.readOnly = true; // マスタにあるスタッフは書き換え不可
+        } else {
+          // マスタにない名前、または空文字の場合は手入力を許可
+          phoneInput.readOnly = false;
+        }
       }
     };
 
