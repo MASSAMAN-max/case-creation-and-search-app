@@ -365,7 +365,7 @@
 
         <div class="form-group">
           <label>案件名 <span class="badge-required">必須</span></label>
-          <input type="text" id=project_name name="案件名" placeholder="例：〇〇様邸新築工事" required>
+          <input type="text" id="project_name" name="案件名" placeholder="例：〇〇様邸新築工事" required>
         </div>
 
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
@@ -380,7 +380,7 @@
 
         <div class="form-group">
           <label><span class="material-symbols-outlined">home</span> 所在地（住所）</label>
-          <input type="text" id=address name="住所" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
+          <input type="text" id="address" name="住所" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
         </div>
 
         <div class="form-group">
@@ -390,7 +390,7 @@
 
         <div class="form-group">
           <label><span class="material-symbols-outlined">square_foot</span> 延床面積</label>
-          <input type="text"　id= name="延床面積" placeholder="例：85㎡">
+          <input type="text"　id="room_area" name="延床面積" placeholder="例：85㎡">
         </div>
 
         <div class="form-group">
@@ -408,7 +408,7 @@
 
         <div class="form-group">
           <label><span class="material-symbols-outlined">key</span> キーBOX</label>
-          <input type="text" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所">
+          <input type="text" id="key_box" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所">
         </div>
 
         <div class="form-group">
@@ -421,8 +421,8 @@
             <span class="material-symbols-outlined" style="font-size: 24px; color: var(--text-sub);">admin_panel_settings</span> システム管理項目他
           </h3>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="form-group" style="margin:0;"><label>システムID</label><input type="text" name="システムID" placeholder="システムID"></div>
-            <div class="form-group" style="margin:0;"><label>物件ID</label><input type="text" name="物件ID" placeholder="物件ID"></div>
+            <div class="form-group" style="margin:0;"><label>システムID</label><input type="text" id="system_id" name="システムID" placeholder="システムID"></div>
+            <div class="form-group" style="margin:0;"><label>物件ID</label><input type="text" id="property_id" name="物件ID" placeholder="物件ID"></div>
               <!-- ✅ 検査日：時刻選択付き -->
             <div style="grid-column: span 2;">
               <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px;">検査日（時刻指定）</label>
@@ -436,8 +436,8 @@
                 </select>
               </div>
             </div>
-            <div class="form-group" style="margin:0;"><label>着工日</label><input type="date" name="着工日"></div>
-            <div class="form-group" style="margin:0;"><label>完成日</label><input type="date" name="完成日"></div>
+            <div class="form-group" style="margin:0;"><label>着工日</label><input type="date" id="construction_start_date" name="着工日"></div>
+            <div class="form-group" style="margin:0;"><label>完成日</label><input type="date" id="completion_date" name="完成日"></div>
             <div class="form-group" style="margin:0;"><label>引渡日</label><input type="date" name="引渡日"></div>
           </div>
         </div>
