@@ -365,7 +365,7 @@
 
         <div class="form-group">
           <label>案件名 <span class="badge-required">必須</span></label>
-          <input type="text" name="案件名" placeholder="例：〇〇様邸新築工事" required>
+          <input type="text" id=project_name name="案件名" placeholder="例：〇〇様邸新築工事" required>
         </div>
 
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
@@ -380,7 +380,7 @@
 
         <div class="form-group">
           <label><span class="material-symbols-outlined">home</span> 所在地（住所）</label>
-          <input type="text" name="住所" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
+          <input type="text" id=address name="住所" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
         </div>
 
         <div class="form-group">
@@ -390,7 +390,7 @@
 
         <div class="form-group">
           <label><span class="material-symbols-outlined">square_foot</span> 延床面積</label>
-          <input type="text" name="延床面積" placeholder="例：85㎡">
+          <input type="text"　id= name="延床面積" placeholder="例：85㎡">
         </div>
 
         <div class="form-group">
@@ -831,6 +831,17 @@ function displayResults(records) {
             </div>`;
         }
 
+        // 案件共有ボタン
+        const shareUrl = `https://script.google.com/macros/s/AKfycbw7OcZ4JtelDED2XSgBa-FzUjMLxweHITRI1kiCovsGJX96a53mPCXQYwirLLCvDY8Z/exec?id=${record.No}`;
+        const shareButtonHtml = `
+        <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" style="background: linear-gradient(180deg, rgba(34,197,94,0.05) 0%, rgba(22,163,74,0.05) 100%); border-color: rgba(34,197,94,0.3);">
+          <span class="material-symbols-outlined" style="font-size:32px; color:#22c55e">share</span>
+          <span style="font-weight:bold; color:#16a34a;">案件共有</span>
+          <span class="material-symbols-outlined drive-open-icon" style="color:#22c55e;">open_in_new</span>
+        </a>`;
+    
+        let workScheduleHtml = '<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">';
+        
         let workScheduleHtml = '<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">';
         let hasAnyWork = false;
         for (let i = 1; i <= 4; i++) {
@@ -852,7 +863,7 @@ function displayResults(records) {
         if(!hasAnyWork) workScheduleHtml += `<div style="font-size:14px; color:#94a3b8;">📅 工事予定なし</div>`;
         workScheduleHtml += '</div>';
 
-        // 🔄 担当者セレクトボックスの生成（※初期化処理で上書きするためベースのみ生成）
+        // 担当者セレクトボックスの生成（※初期化処理で上書きするためベースのみ生成）
         let staffOptionsHtml = '<option value="">選択してください</option>';
 
         item.innerHTML = `
@@ -867,6 +878,7 @@ function displayResults(records) {
               ${workScheduleHtml}
               ${badgeHtml}
               ${driveLinkHtml}
+              ${shareButtonHtml}
             </div>
             <span class="material-symbols-outlined expand-icon" style="transition: transform 0.2s; color:#94a3b8; font-size:30px;">expand_more</span>
           </div>
