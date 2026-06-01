@@ -1469,19 +1469,31 @@ function displayResults(records) {
       }, 3000);
     }
 
-    window.handleLogout = function() {
-      if (confirm("ログアウトしますか？")) {
+    window.handleLogout = async function() {
+      const result = await Swal.fire({
+        title: 'ログアウトしますか？',
+        text: "ログイン情報をクリアして最初の画面に戻ります。",
+        icon: 'question',                // 質問マークのアイコン
+        showCancelButton: true,          // キャンセルボタンを表示
+        confirmButtonColor: '#ef4444',   // ログアウトボタンの色（赤）
+        cancelButtonColor: '#64748b',    // キャンセルボタンの色（グレー）
+        confirmButtonText: 'ログアウト',
+        cancelButtonText: 'キャンセル'
+      });
+    
+      // 「ログアウト」ボタンを押した場合のみ、以下の処理が走ります
+      if (result.isConfirmed) {
         // 1. フォームの入力欄をクリア
         const idInput = document.getElementById("loginIdInput");
         const passInput = document.getElementById("loginPasswordInput");
         if (idInput) idInput.value = "";
         if (passInput) passInput.value = "";
     
-        // 2. 🚪 ログアウトボタンを隠す
+        // 2. ログアウトボタンを隠す
         const logoutBtn = document.getElementById("logoutBtn");
         if (logoutBtn) logoutBtn.style.display = "none";
     
-        // 3. 🔑 【最重要】ブラウザに記憶されている自動ログイン用の情報を完全に削除する
+        // 3. 🔑 ブラウザに記憶されている自動ログイン用の情報を完全に削除
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
         localStorage.removeItem('app_login_userName');
