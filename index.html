@@ -1469,20 +1469,27 @@ function displayResults(records) {
       }, 3000);
     }
 
-  window.handleLogout = function() {
-    if (confirm("ログアウトしますか？")) {
-      // 1. 安全のため、ログインIDとパスワードの入力欄を空っぽにする
-      const idInput = document.getElementById("loginIdInput");
-      const passInput = document.getElementById("loginPasswordInput");
-      if (idInput) idInput.value = "";
-      if (passInput) passInput.value = "";
-      // 🚪 ログアウト実行時（リロード直前）
-      const logoutBtn = document.getElementById("logoutBtn");
-      if (logoutBtn) logoutBtn.style.display = "none"; // ログアウトボタンを隠す
-      // 2. 画面を完全にリロード（再読み込み）して初期状態に戻す
-      window.location.reload();
-    }
-  };
+    window.handleLogout = function() {
+      if (confirm("ログアウトしますか？")) {
+        // 1. フォームの入力欄をクリア
+        const idInput = document.getElementById("loginIdInput");
+        const passInput = document.getElementById("loginPasswordInput");
+        if (idInput) idInput.value = "";
+        if (passInput) passInput.value = "";
+    
+        // 2. 🚪 ログアウトボタンを隠す
+        const logoutBtn = document.getElementById("logoutBtn");
+        if (logoutBtn) logoutBtn.style.display = "none";
+    
+        // 3. 🔑 【最重要】ブラウザに記憶されている自動ログイン用の情報を完全に削除する
+        localStorage.removeItem('app_login_id');
+        localStorage.removeItem('app_login_password');
+        localStorage.removeItem('app_login_userName');
+    
+        // 4. すべてをクリアした状態で画面をリロード
+        window.location.reload();
+      }
+    };
     
   </script>
   <!-- ✅ 追加：トップへ戻るボタン -->
