@@ -799,8 +799,11 @@
       records.forEach(record => {
         const item = document.createElement("div");
         item.className = "result-item";
-        const parseDate = (d) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d.split("T")[0])) ? d.split("T")[0] : "";
-
+        const parseDate = (d) => {
+          if (!d) return "";
+          const str = String(d).split("T")[0].replace(/\//g, "-");
+          return /^\d{4}-\d{2}-\d{2}$/.test(str) ? str : "";
+        };
         const savedBadges = String(record.保存済みファイル || "").split(",").map(s => s.trim()).filter(Boolean);
         
         let badgeHtml = '<div style="margin-top:6px; margin-bottom:2px; display:flex; flex-wrap:wrap; gap:4px; align-items:center;">';
@@ -974,13 +977,13 @@
               </div>
               <div class="inner-accordion-details" style="display:none; padding:16px; background:#f8fafc; border-top:1px solid #cbd5e1;">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                  <div class="data-row-input"><label>システムID</label><input type="text" id="edit_システムID_${record.No}" value="${record.システムID || ''}"></div>
-                  <div class="data-row-input"><label>物件ID</label><input type="text" id="edit_物件ID_${record.No}" value="${record.物件ID || ''}"></div>
+                  <div class="data-row-input"><label>システムID</label><input type="text" id="システムID_${record.No}" value="${record.システムID || ''}"></div>
+                  <div class="data-row-input"><label>物件ID</label><input type="text" id="物件ID_${record.No}" value="${record.物件ID || ''}"></div>
                 </div>    
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
-                  <div class="data-row-input"><label>着工日</label><input type="date" id="edit_着工日_${record.No}" value="${parseDate(record.着工日)}"></div>
-                  <div class="data-row-input"><label>完成日</label><input type="date" id="edit_完成日_${record.No}" value="${parseDate(record.完成日)}"></div>
-                  <div class="data-row-input"><label>引渡日</label><input type="date" id="edit_引渡日_${record.No}" value="${parseDate(record.引渡日)}"></div>
+                  <div class="data-row-input"><label>着工日</label><input type="date" id="着工日_${record.No}" value="${parseDate(record.着工日)}"></div>
+                  <div class="data-row-input"><label>完成日</label><input type="date" id="完成日_${record.No}" value="${parseDate(record.完成日)}"></div>
+                  <div class="data-row-input"><label>引渡日</label><input type="date" id="引渡日_${record.No}" value="${parseDate(record.引渡日)}"></div>
                 </div>
               </div>
             </div>
@@ -1389,11 +1392,11 @@
         キーBOX: document.getElementById(`キーBOX_${rNum}`).value,
         緯度経度: document.getElementById(`緯度経度_${rNum}`).value.replace(/\s+/g, ""),
         備考: document.getElementById(`備考_${rNum}`).value,
-        システムID: document.getElementById(`edit_システムID_${rNum}`).value,
-        物件ID: document.getElementById(`edit_物件ID_${rNum}`).value,
-        着工日: document.getElementById(`edit_着工日_${rNum}`).value,
-        完成日: document.getElementById(`edit_完成日_${rNum}`).value,
-        引渡日: document.getElementById(`edit_引渡日_${rNum}`).value
+        システムID: document.getElementById(`システムID_${rNum}`).value,
+        物件ID: document.getElementById(`物件ID_${rNum}`).value,
+        着工日: document.getElementById(`着工日_${rNum}`).value,
+        完成日: document.getElementById(`完成日_${rNum}`).value,
+        引渡日: document.getElementById(`引渡日_${rNum}`).value
       };
     
       // 検査日＋時刻を結合（input + selectの値から組立）
