@@ -1373,18 +1373,6 @@
         showToast("登録エラー: " + err.message, true);
       }
     }
-      
-      // 最終行を取得
-      const lastRow = listSheet.getLastRow();
-      const nextRow = lastRow + 1;
-      
-      // 同じ行に3つセットで書き込み
-      if (newClient) listSheet.getRange(nextRow, clientColIdx + 1).setValue(newClient);
-      if (newStaff) listSheet.getRange(nextRow, staffColIdx + 1).setValue(newStaff);
-      if (newPhone) listSheet.getRange(nextRow, phoneColIdx + 1).setValue(newPhone);
-      
-      writeLog(`${APP_NAME}【マスタ更新】発注元/担当者/連絡先グループを追加: 発注元「${newClient}」 担当者「${newStaff}」 連絡先「${newPhone}」`);
-    }
     
     // =================================================================
     // 詳細データ修正保存処理
