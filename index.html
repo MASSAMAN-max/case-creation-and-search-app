@@ -309,13 +309,15 @@
           <select id="filterClient" style="width: 100%; background-color: #fafafa;"><option value="">すべて</option></select>
         </div>
         <!-- 日付範囲選択 -->
-        <div style="flex: 1; min-width: 200px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">施工日（開始）</label>
-          <input type="date" id="filterStartDate" style="width: 100%;" onchange="handleStartDateChange()">
-        </div>
-        <div style="flex: 1; min-width: 200px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">施工日（終了）</label>
-          <input type="date" id="filterEndDate" style="width: 100%;">
+        <div style="display: flex; flex-wrap: nowrap; gap: 10px; width: 100%;">
+          <div style="flex: 1; min-width: 0;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（開始）</label>
+            <input type="date" id="filterStartDate" style="width: 100%;" onchange="handleStartDateChange()">
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（終了）</label>
+            <input type="date" id="filterEndDate" style="width: 100%;">
+          </div>
         </div>
         
         <div style="flex: 2; min-width: 250px;">
@@ -1045,7 +1047,7 @@
       });
     }
     
-    // 新規関数：検索条件をリセット
+    // 検索条件をリセット
     window.clearSearchFilters = function() {
       document.getElementById("filterClient").value = "";
       document.getElementById("filterStartDate").value = "";
@@ -1056,12 +1058,12 @@
       document.getElementById("searchCount").innerHTML = "";
     };
 
-    // 新規関数：トップへスクロール
+    // トップへスクロール
     window.scrollToTop = function() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
     
-    // 新規関数：スクロール位置でボタンを表示/非表示
+    // スクロール位置でボタンを表示/非表示
     window.handleScroll = function() {
       const scrollToTopBtn = document.getElementById("scrollToTopBtn");
       if (window.scrollY > 300) {
@@ -1071,7 +1073,7 @@
       }
     };
     
-    // 新規関数：開始日が変更されたら終了日に自動代入
+    // ：開始日が変更されたら終了日に自動代入
     window.handleStartDateChange = function() {
       const startDate = document.getElementById("filterStartDate").value;
       const endDate = document.getElementById("filterEndDate").value;
@@ -1269,7 +1271,7 @@
         initSelectWithOptions(`newWorker_${i}`, appConfig.userList, "工事担当者");
       }
 
-      // 🔄 新規登録モーダル内の担当者マスタ展開（ヘルパー適用版）
+      //  新規登録モーダル内の担当者マスタ展開（ヘルパー適用版）
       const staffSel = document.getElementById("addStaffSelect");
       staffSel.innerHTML = '<option value="">選択してください</option>';
       (appConfig.managerList || []).forEach(s => { 
@@ -1372,6 +1374,35 @@
       }
     }
 
+    // 「発注元」「担当者」「連絡先」を1グループとして書き込み
+    function addClientStaffGroup(newClient, newStaff, newPhone) {
+      if (!newClient && !newStaff && !newPhone) return; // 全て空の場合はスキップ
+      
+      const listSheet = getWhitelistSheet();
+      const data = listSheet.getDataRange().getValues();
+      const headers = data[0];
+      
+      const clientColIdx = headers.indexOf("発注元");
+      const staffColIdx = headers.indexOf("担当者");
+      const phoneColIdx = headers.indexOf("連絡先");
+      
+      if (clientColIdx === -1 || staffColIdx === -1 || phoneColIdx === -1) {
+        writeLog(`${APP_NAME}【警告】発注元/担当者/連絡先列が見つかりません。`);
+        return;
+      }
+      
+      // 最終行を取得
+      const lastRow = listSheet.getLastRow();
+      const nextRow = lastRow + 1;
+      
+      // 同じ行に3つセットで書き込み
+      if (newClient) listSheet.getRange(nextRow, clientColIdx + 1).setValue(newClient);
+      if (newStaff) listSheet.getRange(nextRow, staffColIdx + 1).setValue(newStaff);
+      if (newPhone) listSheet.getRange(nextRow, phoneColIdx + 1).setValue(newPhone);
+      
+      writeLog(`${APP_NAME}【マスタ更新】発注元/担当者/連絡先グループを追加: 発注元「${newClient}」 担当者「${newStaff}」 連絡先「${newPhone}」`);
+    }
+    
     // =================================================================
     // 詳細データ修正保存処理
     // =================================================================
