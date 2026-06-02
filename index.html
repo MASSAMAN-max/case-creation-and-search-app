@@ -1373,23 +1373,6 @@
         showToast("登録エラー: " + err.message, true);
       }
     }
-
-    // 「発注元」「担当者」「連絡先」を1グループとして書き込み
-    function addClientStaffGroup(newClient, newStaff, newPhone) {
-      if (!newClient && !newStaff && !newPhone) return; // 全て空の場合はスキップ
-      
-      const listSheet = getWhitelistSheet();
-      const data = listSheet.getDataRange().getValues();
-      const headers = data[0];
-      
-      const clientColIdx = headers.indexOf("発注元");
-      const staffColIdx = headers.indexOf("担当者");
-      const phoneColIdx = headers.indexOf("連絡先");
-      
-      if (clientColIdx === -1 || staffColIdx === -1 || phoneColIdx === -1) {
-        writeLog(`${APP_NAME}【警告】発注元/担当者/連絡先列が見つかりません。`);
-        return;
-      }
       
       // 最終行を取得
       const lastRow = listSheet.getLastRow();
