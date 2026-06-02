@@ -69,11 +69,11 @@
     .btn-success:hover { background-color: var(--success-hover); }
     .btn-secondary { background-color: #bdc3c7; color: white; }
     
-    /* 📝 フォーム共通：ラベルのレイアウトを一括設定.form-group label { display: flex; align-items: center; gap: 4px; font-weight: bold; margin-bottom: 8px; } */
+    /* フォーム共通：ラベルのレイアウトを一括設定.form-group label { display: flex; align-items: center; gap: 4px; font-weight: bold; margin-bottom: 8px; } */
     .form-group label { display: flex; align-items: center; font-weight: bold; margin-bottom: 8px; white-space: nowrap; }
-    /* 🎨 フォーム共通：ラベル横のアイコンデザインを一括設定.form-group label .material-symbols-outlined { font-size: 21px; gap: 4px; color: var(--primary); transform: translateY(5px); } */
+    /* フォーム共通：ラベル横のアイコンデザインを一括設定.form-group label .material-symbols-outlined { font-size: 21px; gap: 4px; color: var(--primary); transform: translateY(5px); } */
     .form-group label .material-symbols-outlined { font-size: 21px; color: var(--primary); transform: translateY(5px); }
-    /* ☁️ アップロードボックス内のテキスト微調整（お好みで） */
+    /* アップロードボックス内のテキスト微調整（お好みで） */
     .drag-drop-text { text-align: center; }
 
     .login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: white; }
@@ -112,7 +112,7 @@
     .file-item { display: flex; align-items: center; background: white; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 6px; font-size: 14px; }
     .file-badge { display: inline-block; padding: 4px 12px; margin: 2px; border-radius: 6px; font-size: 14px; font-weight: bold; border: 1px solid #90caf9; background-color: #e3f2fd; color: #0d47a1; box-shadow: 0 2px 4px rgba(13,71,161,0.08); }
     
-    /* ☁️ クラウドアイコンの共通設定（サイズ重複を解消） */
+    /* クラウドアイコンの共通設定（サイズ重複を解消） */
     .cloud-icon {
       font-size: 40px !important;
       color: #60a5fa;
@@ -125,7 +125,7 @@
       margin: 0 auto;
     }
     
-    /* 🔗 フォルダURLがある時のリンクボタン */
+    /* フォルダURLがある時のリンクボタン */
     .drive-folder-link {
       display: inline-flex;
       align-items: center;
@@ -155,7 +155,7 @@
     .drive-open-icon { cursor: pointer; transition: transform 0.2s ease, color 0.2s ease; }
     .drive-open-icon:hover { transform: translateY(-6px); color: var(--primary); }
     
-    /* 🚫 フォルダ未作成時の無効化枠 */
+    /* フォルダ未作成時の無効化枠 */
     .drive-folder-link-disabled {
       display: inline-flex;
       align-items: center;
@@ -346,7 +346,7 @@
       
       <form id="createProjectForm" onsubmit="handleCreateSubmit(event)">
 
-        <!--  受注媒体：プルダウン選択形式 -->
+        <!-- 受注媒体：プルダウン選択形式 -->
         <div class="form-group">
           <label>受注媒体 <span class="badge-required">必須</span></label>
           <select name="受注媒体" id="addMediaSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newMediaInputGroup')"></select>
@@ -423,7 +423,7 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;"><label>システムID</label><input type="text" id="system_id" name="システムID" placeholder="システムID"></div>
             <div class="form-group" style="margin:0;"><label>物件ID</label><input type="text" id="property_id" name="物件ID" placeholder="物件ID"></div>
-              <!-- ✅ 検査日：時刻選択付き -->
+              <!-- 検査日：時刻選択付き -->
             <div style="grid-column: span 2;">
               <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px;">検査日（時刻指定）</label>
               <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
@@ -530,7 +530,7 @@
       "06": "駐車", "07": "写真", "08": "見積", "09": "その他", "10": "地図", "20": "請求"
     };
 
-    // ✅ [変更2] 日時ヘルパー：yyyy-mm-dd HH:MM:SS 形式
+    // yyyy-mm-dd HH:MM:SS 形式
     function getNowDateTimeString() {
       const now = new Date();
       const pad = n => String(n).padStart(2, '0');
@@ -576,7 +576,7 @@
       window.addEventListener("scroll", handleScroll);
     });
 
-    // ✅ 新規関数：時刻セレクトボックスを初期化
+    // 新規関数：時刻セレクトボックスを初期化
     window.initializeInspectionTimeSelects = function() {
       // 時間（0～23）
       const hours = ['<option value="">時</option>'];
@@ -597,7 +597,7 @@
       if (newMinuteSel) newMinuteSel.innerHTML = minutes.join('');
     };
     
-    // ✅ 修正後（時刻値を保持）
+    // 時刻値を保持
     window.initializeInspectionTimeSelectsForRecord = function(recordNo) {
       // 時間（0～23）
       const hours = ['<option value="">時</option>'];
@@ -614,19 +614,19 @@
       const hourSel = document.getElementById(`検査日時_${recordNo}`);
       const minuteSel = document.getElementById(`検査日分_${recordNo}`);
       
-      // ✅ 既存値を保存してからHTMLを更新
+      // 既存値を保存してからHTMLを更新
       const existingHour = hourSel ? hourSel.value : '';
       const existingMinute = minuteSel ? minuteSel.value : '';
       
       if (hourSel) hourSel.innerHTML = hours.join('');
       if (minuteSel) minuteSel.innerHTML = minutes.join('');
       
-      // ✅ 既存値を復元
+      // 既存値を復元
       if (hourSel && existingHour) hourSel.value = existingHour;
       if (minuteSel && existingMinute) minuteSel.value = existingMinute;
     };
 
-    // 🦺 担当者データから安全に名前を取り出すヘルパー
+    // 担当者データから安全に名前を取り出すヘルパー
     function getStaffName(s) {
       if (!s || s === "undefined" || s === "null") return "";
       if (typeof s === 'object') {
@@ -705,7 +705,7 @@
       }
     }
     
-    // ✅ 修正後（月検索削除版）
+    // 日程検索
     async function search() {
       const btn = document.getElementById("searchBtn");
       const resultsDiv = document.getElementById("results");
@@ -748,7 +748,7 @@
       if (span) span.textContent = getWeekday(inputEl.value);
     };
 
-    // 📊 検索結果内のセレクトボックス生成（オブジェクト対応版）
+    // 検索結果内のセレクトボックス生成（オブジェクト対応版）
     function createOptionsHtml(masterList, currentVal, suffix) {
       let html = '<option value="">選択してください</option>';
       let exist = false;
@@ -766,7 +766,7 @@
       return html;
     }
 
-    // ➕ 新規登録モーダル内のセレクトボックス生成（オブジェクト対応版）
+    // 新規登録モーダル内のセレクトボックス生成（オブジェクト対応版）
     function initSelectWithOptions(elementId, dataList, suffix) {
       const el = document.getElementById(elementId);
       if(!el) return;
@@ -782,7 +782,7 @@
       el.innerHTML += `<option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix})</option>`;
     }
     // =================================================================
-    // 📊 検索結果リスト表示
+    // 検索結果リスト表示
     // =================================================================
     function displayResults(records) {
       const container = document.getElementById("results");
@@ -1001,7 +1001,7 @@
         `;
         container.appendChild(item);
 
-        // 🛠️ 【追加】新規登録と同じ条件で担当者ドロップダウンを生成・初期化する処理
+        // 【追加】新規登録と同じ条件で担当者ドロップダウンを生成・初期化する処理
         const staffSelId = `editStaffSelect_${record.No}`;
         updateManagersByClient(record.発注元, staffSelId); // 新規共通の関数を呼び出し、発注元に紐づくメンバーに絞り込み
         
@@ -1045,7 +1045,7 @@
       });
     }
     
-    // ✅ 新規関数：検索条件をリセット
+    // 新規関数：検索条件をリセット
     window.clearSearchFilters = function() {
       document.getElementById("filterClient").value = "";
       document.getElementById("filterStartDate").value = "";
@@ -1056,12 +1056,12 @@
       document.getElementById("searchCount").innerHTML = "";
     };
 
-    // ✅ 新規関数：トップへスクロール
+    // 新規関数：トップへスクロール
     window.scrollToTop = function() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
     
-    // ✅ 新規関数：スクロール位置でボタンを表示/非表示
+    // 新規関数：スクロール位置でボタンを表示/非表示
     window.handleScroll = function() {
       const scrollToTopBtn = document.getElementById("scrollToTopBtn");
       if (window.scrollY > 300) {
@@ -1071,7 +1071,7 @@
       }
     };
     
-    // ✅ 新規関数：開始日が変更されたら終了日に自動代入
+    // 新規関数：開始日が変更されたら終了日に自動代入
     window.handleStartDateChange = function() {
       const startDate = document.getElementById("filterStartDate").value;
       const endDate = document.getElementById("filterEndDate").value;
@@ -1250,7 +1250,7 @@
       staffSel.innerHTML += `<option value="(新規担当者)" style="color:var(--primary); font-weight:bold;">(新規担当者)</option>`;
     };
 
-    // ✅ 新規登録モーダル初期展開
+    // 新規登録モーダル初期展開
     window.openCreateModal = function() {
       document.getElementById("createModal").style.display = "flex";
       document.getElementById("createProjectForm").reset();
@@ -1293,7 +1293,7 @@
     window.closeCreateModal = function() { document.getElementById("createModal").style.display = "none"; };
 
     // =================================================================
-    // 💾 新規登録データ送信処理
+    // 新規登録データ送信処理
     // =================================================================
     async function handleCreateSubmit(event) {
       event.preventDefault();
@@ -1301,7 +1301,8 @@
       const formData = new FormData(form);
       const payload = {};
       formData.forEach((value, key) => { payload[key] = value; });
-      // ✅ [変更1] 受注媒体の新規入力処理
+      
+      //  受注媒体の新規入力処理
       if (payload["受注媒体"] === "(新規受注媒体)") {
         payload["受注媒体"] = document.getElementById("newMediaInput").value.trim();
         payload["isNewMedia"] = true;
@@ -1329,7 +1330,7 @@
       const nowStr = getNowDateTimeString();
       payload["作成日時"] = nowStr;
     
-      // ✅ 検査日＋時刻を結合（formDataの検査日を上書き）
+      // 検査日＋時刻を結合（formDataの検査日を上書き）
       const inspectionDate = document.getElementById("newInspectionDate").value;
       const inspectionHour = document.getElementById("newInspectionHour").value;
       const inspectionMinute = document.getElementById("newInspectionMinute").value;
@@ -1362,6 +1363,9 @@
         loader.style.display = "none";
         showToast("新規案件の登録が完了しました。");
         closeCreateModal();
+        // マスタデータを再取得（ログイン状態は保持）
+        const data = await apiCall("loadAppDataMaster");
+        appConfig = data;
       } catch (err) {
         loader.style.display = "none";
         showToast("登録エラー: " + err.message, true);
@@ -1369,7 +1373,7 @@
     }
 
     // =================================================================
-    // 💾 詳細データ修正保存処理
+    // 詳細データ修正保存処理
     // =================================================================
     window.saveRecord = async function(rNum, rowNumber) {
       const loader = document.getElementById("initLoader");
@@ -1390,7 +1394,7 @@
         引渡日: document.getElementById(`edit_引渡日_${rNum}`).value
       };
     
-      // ✅ 検査日＋時刻を結合（input + selectの値から組立）
+      // 検査日＋時刻を結合（input + selectの値から組立）
       const inspectionDate = document.getElementById(`検査日_${rNum}`).value;
       const inspectionHour = document.getElementById(`検査日時_${rNum}`).value;
       const inspectionMinute = document.getElementById(`検査日分_${rNum}`).value;
@@ -1504,7 +1508,7 @@
         const logoutBtn = document.getElementById("logoutBtn");
         if (logoutBtn) logoutBtn.style.display = "none";
     
-        // 3. 🔑 ブラウザに記憶されている自動ログイン用の情報を完全に削除
+        // 3.  ブラウザに記憶されている自動ログイン用の情報を完全に削除
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
         localStorage.removeItem('app_login_userName');
@@ -1554,7 +1558,7 @@
     });
     
   </script>
-  <!-- ✅ 追加：トップへ戻るボタン -->
+  <!-- 追加：トップへ戻るボタン -->
   <button id="scrollToTopBtn" 
           onclick="scrollToTop()" 
           style="position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; border-radius: 50%; background-color: var(--primary); color: white; border: none; cursor: pointer; display: none; z-index: 999; box-shadow: 0 4px 12px rgba(74,144,226,0.3); transition: all 0.3s ease; align-items: center; justify-content: center;">
