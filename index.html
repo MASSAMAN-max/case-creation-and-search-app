@@ -819,7 +819,7 @@
         if (folderUrl) {
           driveLinkHtml = `
           <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" onclick="event.stopPropagation();">
-            <span class="material-symbols-outlined" style="font-size:32px; color:var(--primary)">cloud_done</span>
+            <span class="material-symbols-outlined" style="font-size:24px; color:var(--primary)">cloud_done</span>
             <span style="font-weight:bold;">資料フォルダ参照</span>
             <span class="material-symbols-outlined drive-open-icon">open_in_new</span>
           </a>`;
@@ -834,8 +834,8 @@
         // 案件共有ボタン
         const shareUrl = `https://script.google.com/macros/s/AKfycbw7OcZ4JtelDED2XSgBa-FzUjMLxweHITRI1kiCovsGJX96a53mPCXQYwirLLCvDY8Z/exec?id=${record.No}`;
         const shareButtonHtml = `
-        <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" style="background: linear-gradient(180deg, rgba(34,197,94,0.05) 0%, rgba(22,163,74,0.05) 100%); border-color: rgba(34,197,94,0.3);">
-          <span class="material-symbols-outlined" style="font-size:32px; color:#22c55e">share</span>
+        <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" onclick="event.stopPropagation(); style="background: linear-gradient(180deg, rgba(34,197,94,0.05) 0%, rgba(22,163,74,0.05) 100%); border-color: rgba(34,197,94,0.3);">
+          <span class="material-symbols-outlined" style="font-size:24px; color:#22c55e">share</span>
           <span style="font-weight:bold; color:#16a34a;">案件共有</span>
           <span class="material-symbols-outlined drive-open-icon" style="color:#22c55e;">open_in_new</span>
         </a>`;
