@@ -1462,6 +1462,45 @@
       }
     };
 
+    // 画面全体でのペーストイベントを監視
+    window.addEventListener('paste', async (e) => {
+        // クリップボードからテキストを取得
+        const text = (e.clipboardData || window.clipboardData).getData('text');   
+        try {
+            // JSONとしてパースを試みる（通常のテキストのペーストならここでエラーになってスルーされる）
+            const data = JSON.parse(text);
+            // 【設定】取得元のヘッダー名 と 自作アプリのinput要素のid のマッピング定義
+            const fieldMapping = {
+                'システムID': 'system_id',
+                '物件ID': 'property_id',
+                '案件名': 'project_name',
+                '住所': 'address'
+                '専有面積・延床面積': 'room_area'
+                'キーBOX': 'key_box'
+                '着工日': 'construction_start_date'
+                '完成日': 'completion_date'
+                // 必要な項目をここに並べる
+            };
+            // マッピングを元に、データを各入力欄にループで流し込む
+            Object.entries(data).forEach(([key, value]) => {
+                const targetId = fieldMapping[key];
+                if (targetId) {
+                    const inputElement = document.getElementById(targetId);
+                    if (inputElement) {
+                        inputElement.value = value;
+                        // Webアプリのフレームワーク（Vue, React等）によっては、
+                        // 単にvalueを変えるだけだと画面が認識しない場合があるため、変更イベントを明示的に発火させる
+                        inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+                        inputElement.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+            });
+            alert('データを各入力欄に展開しました！');      
+        } catch (err) {
+            // JSONではない通常の文字列がペーストされた場合は、何もせず通常のブラウザ挙動に任せる
+        }
+    });
+
     function showToast(message, isError = false) {
       const toast = document.getElementById("toastNotification");
       toast.innerText = message;
