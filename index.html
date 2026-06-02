@@ -811,9 +811,8 @@
         }
         badgeHtml += '</div>';
         
-        // ✅ ドライブフォルダリンク
+        // ドライブフォルダリンクの組み立て
         let driveLinkHtml = '';
-        
         const folderUrl = String(record.添付資料 || "").trim();
         
         if (folderUrl) {
@@ -821,23 +820,27 @@
           <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" onclick="event.stopPropagation();">
             <span class="material-symbols-outlined" style="font-size:20px; color:var(--primary)">cloud_done</span>
             <span style="font-weight:bold;">資料参照</span>
-            <span class="material-symbols-outlined drive-open-icon">open_in_new</span>
           </a>`;
         } else {
           driveLinkHtml = `
-            <div class="drive-folder-link-disabled">
-              <span class="material-symbols-outlined cloud-icon">folder_off</span>
-              <span>資料無し</span>
-            </div>`;
+          <div class="drive-folder-link-disabled" style="display: inline-flex; align-items: center;">
+            <span class="material-symbols-outlined cloud-icon">folder_off</span>
+            <span>資料無し</span>
+          </div>`;
         }
-        // 案件共有ボタン
+        //  案件共有ボタン
         const shareUrl = `https://script.google.com/macros/s/AKfycbw7OcZ4JtelDED2XSgBa-FzUjMLxweHITRI1kiCovsGJX96a53mPCXQYwirLLCvDY8Z/exec?id=${record.No}`;
         const shareButtonHtml = `
-        <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" onclick="event.stopPropagation(); style="background: linear-gradient(180deg, rgba(34,197,94,0.05) 0%, rgba(22,163,74,0.05) 100%); border-color: rgba(34,197,94,0.3);">
+        <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" onclick="event.stopPropagation();" style="background: linear-gradient(180deg, rgba(34,197,94,0.05) 0%, rgba(22,163,74,0.05) 100%); border-color: rgba(34,197,94,0.3); display: inline-flex; align-items: center;">
           <span class="material-symbols-outlined" style="font-size:20px; color:#22c55e">share</span>
           <span style="font-weight:bold; color:#16a34a;">案件共有</span>
-          <span class="material-symbols-outlined drive-open-icon" style="color:#22c55e;">open_in_new</span>
         </a>`;
+        
+        workScheduleHtml = `
+        <div style="display: flex; gap: 10px; align-items: center;">
+          ${driveLinkHtml}
+          ${shareButtonHtml}
+        </div>`;
         
         let workScheduleHtml = '<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">';
         let hasAnyWork = false;
