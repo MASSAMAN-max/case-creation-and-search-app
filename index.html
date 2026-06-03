@@ -424,7 +424,7 @@
 
         <div class="form-group">
           <label><span class="material-symbols-outlined">notes</span> 備 考</label>
-          <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px; font-size:16px; font-family:inherit; box-sizing:border-box;"></textarea>
+          <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください"></textarea> <!--style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px; font-size:16px; font-family:inherit; box-sizing:border-box;"-->
         </div>
         <!-- 検査日：時刻選択付き -->
         <div style="grid-column: span 2;">
@@ -441,7 +441,7 @@
         </div>
         
         <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-          <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #334155; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+          <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #334155; font-weight: bold; display: flex; align-items: center; gap: 6px; margin-top: 20px;">
             <span class="material-symbols-outlined" style="font-size: 24px; color: var(--text-sub);">admin_panel_settings</span> システム管理項目他
           </h3>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -494,7 +494,7 @@
         htmlContent += `
           <div ${idAttribute} style="${displayStyle} grid-template-columns: 1fr; gap: 4px;">
             <div class="form-group">
-              <label style="margin-bottom: 0px; display: flex; align-items: center; gap: 4px;">
+              <label style="margin-bottom: 0px; align-items: center; gap: 4px;">
                 <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span><span>施工予定日 ${i}</span>
                 <span id="newDaySpan_${i}" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span>
               </label>
@@ -502,7 +502,7 @@
             </div>
             
             <div class="form-group">
-              <label style="margin-bottom: 0px; display: flex; align-items: center; gap: 4px;">
+              <label style="margin-bottom: 0px; align-items: center; gap: 4px;">
                 <span class="material-symbols-outlined" style="font-size: 18px;">Vacuum</span><span>工事内容 ${i}</span>
               </label>
               <select name="工事内容${i}" id="newWorkContent_${i}" style="width:100%; margin-top: 2px;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_${i}')"></select>
@@ -512,7 +512,7 @@
             </div>
             
             <div class="form-group">
-              <label style="margin-bottom: 0px; display: flex; align-items: center; gap: 4px;">
+              <label style="margin-bottom: 0px; align-items: center; gap: 4px;">
                 <span class="material-symbols-outlined" style="font-size: 18px;">Supervisor_Account</span><span>工事担当者 ${i}</span>
               </label>
               <select name="工事担当者${i}" id="newWorker_${i}" style="width:100%; margin-top: 2px;" onchange="toggleNewInput(this, 'newWorkerInputGroup_${i}')"></select>
