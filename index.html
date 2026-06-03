@@ -348,16 +348,23 @@
       
       <form id="createProjectForm" onsubmit="handleCreateSubmit(event)">
 
-        <!-- 受注媒体：プルダウン選択形式 -->
         <div class="form-group">
           <label>受注媒体 <span class="badge-required">必須</span></label>
-          <select name="受注媒体" id="addMediaSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newMediaInputGroup')"></select>
+          <select name="受注媒体" id="addMediaSelect" required style="grid-column: span 2;" onchange="toggleNewInput(this, 'newMediaInputGroup')"></select>
           <div id="newMediaInputGroup" style="display: none; margin-top: 8px;">
             <input type="text" id="newMediaInput" placeholder="新規受注媒体名を入力してください">
           </div>
         </div>
 
         <div class="form-group">
+          <label>案件種別 <span class="badge-required">必須</span></label>
+          <select name="案件種別" id="addProjectTypeSelect" required  style="grid-column: span 2;" onchange="toggleNewInput(this, 'newProjectTypeInputGroup')"></select>
+          <div id="newProjectTypeInputGroup" style="display: none; margin-top: 8px;">
+            <input type="text" id="newProjectTypeInput" placeholder="新規案件種別名を入力してください">
+          </div>
+          <!-- 新規登録モーダル --></div>
+
+          <!-- 新規登録モーダル --><div class="form-group">
           <label>発注元 <span class="badge-required">必須</span></label>
           <select name="発注元" id="addClientSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newClientInputGroup')"></select>
           <div id="newClientInputGroup" style="display: none; margin-top: 8px;">
@@ -889,6 +896,10 @@
           <div class="result-details">
             <div class="detail-card">
               <div class="data-row-input" style="grid-column: span 2;">
+                <label>案件種別</label>
+                <input type="text" id="案件種別_${record.No}" value="${record.案件種別 || ''}">
+              </div>
+              <div class="data-row-input" style="grid-column: span 2;">
                 <label>所在地（住所）</label>
                 <input type="text" id="住所_${record.No}" value="${record.住所 || ''}">
               </div>
@@ -1261,8 +1272,9 @@
       document.getElementById("createProjectForm").reset();
       selectedFilesMap["NEW_PROJECT"] = [];
       document.getElementById("createFileList").innerHTML = "";
-
+    
       initSelectWithOptions("addMediaSelect", appConfig.mediaList || [], "受注媒体");
+      initSelectWithOptions("addProjectTypeSelect", appConfig.projectTypeList || [], "案件種別");
       initSelectWithOptions("addClientSelect", appConfig.clientList, "発注元");
       // 発注元変更時に担当者リストを更新
       document.getElementById("addClientSelect").addEventListener("change", function() {
@@ -1307,10 +1319,14 @@
       const payload = {};
       formData.forEach((value, key) => { payload[key] = value; });
       
-      //  受注媒体の新規入力処理
+      // 新規入力処理
       if (payload["受注媒体"] === "(新規受注媒体)") {
         payload["受注媒体"] = document.getElementById("newMediaInput").value.trim();
         payload["isNewMedia"] = true;
+      }
+      if (payload["案件種別"] === "(新規案件種別)") {
+        payload["案件種別"] = document.getElementById("newProjectTypeInput").value.trim();
+        payload["isNewProjectType"] = true;
       }
       if (payload["発注元"] === "(新規発注元)") {
         payload["発注元"] = document.getElementById("newClientInput").value.trim();
@@ -1387,6 +1403,7 @@
     
       const fData = {
         No: rNum,
+        案件種別: document.getElementById(`案件種別_${rNum}`).value,
         住所: document.getElementById(`住所_${rNum}`).value,
         延床面積: document.getElementById(`延床面積_${rNum}`).value,
         キーBOX: document.getElementById(`キーBOX_${rNum}`).value,
