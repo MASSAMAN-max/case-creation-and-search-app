@@ -354,17 +354,17 @@
           <div id="newMediaInputGroup" style="display: none; margin-top: 8px;">
             <input type="text" id="newMediaInput" placeholder="新規受注媒体名を入力してください">
           </div>
-        </div>
+        <!--</div>
 
-        <div class="form-group">
+        <<div class="form-group">-->
           <label>案件種別 <span class="badge-required">必須</span></label>
           <select name="案件種別" id="addProjectTypeSelect" required  style="grid-column: span 2;" onchange="toggleNewInput(this, 'newProjectTypeInputGroup')"></select>
           <div id="newProjectTypeInputGroup" style="display: none; margin-top: 8px;">
             <input type="text" id="newProjectTypeInput" placeholder="新規案件種別名を入力してください">
           </div>
-          <!-- 新規登録モーダル --></div>
+        </div>
 
-          <!-- 新規登録モーダル --><div class="form-group">
+        <div class="form-group">
           <label>発注元 <span class="badge-required">必須</span></label>
           <select name="発注元" id="addClientSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newClientInputGroup')"></select>
           <div id="newClientInputGroup" style="display: none; margin-top: 8px;">
@@ -486,11 +486,9 @@
     
       for (let i = 1; i <= 4; i++) {
         // グループ1は最初から表示、2〜4は非表示（display: none）で作成
-        const displayStyle = (i === 1) ? "display: grid;" : "display: none; margin-top:16px; border-top:1px dashed #cbd5e1; padding-top:16px;";
+        const displayStyle = (i === 1) ? "display: grid;" : "display: none; margin-top:8px; border-top:1px dashed #cbd5e1; padding-top:16px;";
         const idAttribute = (i === 1) ? 'class="work-input-group"' : `id="addWorkGroup_${i}"`;
-        const requiredAttr = (i === 1) ? "required" : "";
-        const badgeHtml = (i === 1) ? '<span class="badge-required">必須</span>' : "";
-    
+
         htmlContent += `
           <div ${idAttribute} style="${displayStyle} grid-template-columns: 1fr; gap: 12px;">
             <div class="form-group" style="grid-column: span 2;">
@@ -498,12 +496,12 @@
                 <span class="material-symbols-outlined">calendar_month</span><span> 施工予定日 ${i}</span>
                 <span id="newDaySpan_${i}" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span>
               </label>
-              <input type="date" name="施工日${i}" onchange="updateInputWeekday(this, 'newDaySpan_${i}')" ${requiredAttr}>
+              <input type="date" name="施工日${i}" onchange="updateInputWeekday(this, 'newDaySpan_${i}')">
             </div>
             
             <div class="form-group" style="grid-column: span 2;">
-              <label><span class="material-symbols-outlined">Vacuum</span><span> 工事内容 ${i}</span>${badgeHtml}</label>
-              <select name="工事内容${i}" id="newWorkContent_${i}" ${requiredAttr} style="width:100%;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_${i}')"></select>
+              <label><span class="material-symbols-outlined">Vacuum</span><span> 工事内容 ${i}</span></label>
+              <select name="工事内容${i}" id="newWorkContent_${i}" style="width:100%;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_${i}')"></select>
               <div id="newWorkContentInputGroup_${i}" style="display: none; margin-top: 6px;">
                 <input type="text" id="newWorkContentInput_${i}" placeholder="新規工事内容を入力">
               </div>
