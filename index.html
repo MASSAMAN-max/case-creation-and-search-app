@@ -1541,46 +1541,97 @@
     };
 
         // 画面全体でのペーストイベントを監視
-    window.addEventListener('paste', async (e) => {
-        // クリップボードからテキストを取得
-        const text = (e.clipboardData || window.clipboardData).getData('text');   
-        try {
-            // JSONとしてパースを試みる（通常のテキストのペーストならここでエラーになってスルーされる）
+        window.addEventListener('paste', async (e) => {
+          const text = (e.clipboardData || window.clipboardData).getData('text');   
+          try {
             const data = JSON.parse(text);
-            // 【設定】取得元のヘッダー名 と 自作アプリのinput要素のid のマッピング定義
+            // フィールドマッピング定義
             const fieldMapping = {
-                'システムID': 'system_id',
-                '物件ID': 'property_id',
-                '案件名': 'project_name',
-                '住所': 'address',
-                '専有面積・延床面積': 'room_area',
-                'キーBOX': 'key_box',
-                '着工日': 'construction_start_date',
-                '完成日': 'completion_date'
-                // 必要な項目をここに並べる
+              'システムID': 'system_id',
+              '物件ID': 'property_id',
+              '案件名': 'project_name',
+              '住所': 'address',
+              '専有面積・延床面積': 'room_area',
+              'キーBOX': 'key_box',
+              '着工日': 'construction_start_date',
+              '完成日': 'completion_date',
+              '案件種別': 'addProjectTypeSelect',
+              '発注元': 'addClientSelect'
             };
-            // マッピングを元に、データを各入力欄にループで流し込む
+            // 日付フィールドのリスト
+            const dateFields = ['着工日', '完成日'];
+            // マッピングを元にデータを流し込み
             Object.entries(data).forEach(([key, value]) => {
-                const targetId = fieldMapping[key];
-                if (targetId) {
-                    const inputElement = document.getElementById(targetId);
-                    if (inputElement) {
-                        inputElement.value = value;
-                        // Webアプリのフレームワーク（Vue, React等）によっては、
-                        // 単にvalueを変えるだけだと画面が認識しない場合があるため、変更イベントを明示的に発火させる
-                        inputElement.dispatchEvent(new Event('input', { bubbles: true }));
-                        inputElement.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                }
+              const targetId = fieldMapping[key];
+              if (!targetId) return;
+              
+              const inputElement = document.getElementById(targetId);
+              if (!inputElement) return;
+              
+              let processedValue = value;
+              
+              // 日付処理
+              if (dateFields.includes(key) && value) {
+                processedValue = formatDateToYYYYMMDD(value);
+              }
+              
+              // 発注元の括弧内抽出
+              if (key === '発注元' && value) {
+                processedValue = extractTextInParentheses(value);
+              }
+              
+              inputElement.value = processedValue;
+              inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+              inputElement.dispatchEvent(new Event('change', { bubbles: true }));
             });
+            
             alert('データを各入力欄に展開しました！');      
-        } catch (err) {
-            // JSONではない通常の文字列がペーストされた場合は、何もせず通常のブラウザ挙動に任せる
+          } catch (err) {
+            // JSONではない場合は通常のブラウザ挙動に任せる
+          }
+        });
+        /** 日付をyyyy-mm-dd形式に変換 */
+        function formatDateToYYYYMMDD(dateValue) {
+          if (!dateValue) return '';
+          const dateStr = String(dateValue).trim();
+          // すでにyyyy-mm-dd形式の場合
+          if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            return dateStr;
+          }
+          // 日本語の日付フォーマット（例：2024年1月15日）
+          const japaneseMatch = dateStr.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+          if (japaneseMatch) {
+            const year = japaneseMatch[1];
+            const month = String(japaneseMatch[2]).padStart(2, '0');
+            const day = String(japaneseMatch[3]).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          }
+          // スラッシュ形式（例：2024/1/15）
+          const slashMatch = dateStr.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+          if (slashMatch) {
+            const year = slashMatch[1];
+            const month = String(slashMatch[2]).padStart(2, '0');
+            const day = String(slashMatch[3]).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          }
+          // その他の形式はそのまま返す
+          return dateValue;
         }
-    });
+        /** 新規関数：括弧内のテキストを抽出 */
+        function extractTextInParentheses(text) {
+          if (!text) return '';
+          const textStr = String(text).trim();
+          // 「（）」または「()」の両方に対応
+          const match = textStr.match(/[（(]([^）)]+)[）)]/);
+          if (match && match[1]) {
+            return match[1].trim();
+          }
+          // 括弧がない場合はそのまま返す
+          return textStr;
+        }
     
   </script>
-  <!-- 追加：トップへ戻るボタン -->
+  <!-- トップへ戻るボタン -->
   <button id="scrollToTopBtn" 
           onclick="scrollToTop()" 
           style="position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; border-radius: 50%; background-color: var(--primary); color: white; border: none; cursor: pointer; display: none; z-index: 999; box-shadow: 0 4px 12px rgba(74,144,226,0.3); transition: all 0.3s ease; align-items: center; justify-content: center;">
