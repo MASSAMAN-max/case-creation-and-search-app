@@ -796,30 +796,37 @@
           </div>
           <div class="result-details">
             <div class="detail-card">
+            
               <div style="display: flex; gap: 8px; width: 100%;">
+              
                 <div class="data-row-input" style="flex: 1; min-width: 0;">
                   <label>案件種別 <span class="badge-required">必須</span></label>
                   <select id="addProjectTypeSelect_${record.No}" required style="width: 100%;" onchange="toggleEditNewInput(this, 'newProjectTypeInputGroup_${record.No}')">
-                    ${createOptionsHtml(appConfig.projectTypeList || [], record['案件種別'] || '', '案件種別')}
+                    ${createOptionsHtml(appConfig.projectTypeList, record['案件種別'] || '', '案件種別')}
                   </select>
                   <div id="newProjectTypeInputGroup_${record.No}" style="display: none; margin-top: 3px;">
-                    <input type="text" id="newProjectTypeInput_${record.No}" placeholder="新規案件種別" style="width: 100%;">
+                    <input type="text" id="newProjectTypeInput_${record.No}" placeholder="新規案件種別">
                   </div>
                 </div>
+                
                 <div class="data-row-input" style="flex: 1; min-width: 0;">
                   <label>緯度経度</label>
                   <input type="text" id="緯度経度_${record.No}" value="${record.緯度経度 || ''}" style="width: 100%;">
                 </div>
               </div>
+              
               <div class="data-row-input" style="grid-column: span 2;"><label>所在地（住所）</label>
                 <input type="text" id="住所_${record.No}" value="${record.住所 || ''}">
               </div>
+              
               <div class="data-row-input" style="grid-column: span 2;"><label>延床面積</label>
                 <input type="text" id="延床面積_${record.No}" value="${record.延床面積 || ''}">
               </div>
+              
               <div class="data-row-input" style="grid-column: span 2;"><label>キーBOX</label>
                 <input type="text" id="キーBOX_${record.No}" value="${record.キーBOX || ''}">
               </div>
+              
               <div class="data-row-input" style="grid-column: span 2;"><label>担当者</label>
                 <select id="editStaffSelect_${record.No}" data-client="${record.発注元}" onchange="handleEditStaffChange(this, '${record.No}')">
                   ${staffOptionsHtml}
@@ -828,6 +835,7 @@
                   <input type="text" id="newEditStaffInput_${record.No}" placeholder="新規担当者名">
                 </div>
               </div>
+              
               <div class="data-row-input" style="grid-column: span 2;"><label>連絡先</label>
                 <input type="text" id="editPhoneInput_${record.No}" value="${record.連絡先 || ''}">
               </div>
