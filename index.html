@@ -53,7 +53,8 @@
     .result-summary:hover { background: #f8fafc; }
     .result-details { display: none; padding: 24px; border-top: 2px solid #e2e8f0; background: #fcfdfe; }  
     /* 追加：開いているとき（is-open）の見た目を変化させる */
-    .result-item.is-open { display: block; border-left-color: var(--primary); /*左端をメインカラーに*/ background: #f8fafc; /*全体の背景をほんのり薄グレーに*/}
+    .result-item.is-open { display: block; border-left-color: var(--primary); /*左端をメインカラーに*/ background: #f8fafc; /*全体の背景をほんのり薄グレーに*/
+                           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
     .result-item.is-open .result-summary { background: #f8fafc; /* 見出し部分の背景も合わせて変化させる */ }
     .result-item.is-open .result-details { display: block; }
     .result-item.is-open .expand-icon { transform: rotate(180deg); }
@@ -83,7 +84,7 @@
     
     /* クラウドアイコンの共通設定（サイズ重複を解消） */
     .cloud-icon { font-size: 40px !important; color: #60a5fa; flex-shrink: 0; display: inline-block;
-                 line-height: 1; letter-spacing: normal; width: 40px; height: 40px; margin: 0 auto; }
+                  line-height: 1; letter-spacing: normal; width: 40px; height: 40px; margin: 0 auto; }
     /* フォルダURLがある時のリンクボタン */
     .drive-folder-link { display: inline-flex; align-items: center; gap: 12px; margin-top: 10px; padding: 12px 20px;
       background: linear-gradient( 180deg, rgba(255,255,255,0.95) 0%, rgba(240,247,255,0.92) 100% ); border: 1px solid rgba(147,197,253,0.55);
@@ -130,36 +131,14 @@
     @keyframes pulseText { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 
     /* 右上の小さなログアウトボタン */
-    .mini-logout-btn {
-      position: fixed;      /* 画面の特定の位置に固定 */
-      top: 12px;            /* 上からの隙間 */
-      left: 12px;          /* 左からの隙間 */
-      z-index: 2000;        /* モーダル等よりも手前に表示させる */
-      display: flex;
-      align-items: center;
-      gap: 4px;             /* アイコンと文字の間隔 */
-      padding: 6px 10px;    /* ボタン内の余白（小さめ） */
-      font-size: 12px;      /* 文字サイズを小さく */
-      font-weight: bold;
-      background-color: #f1f5f9; /* 普段は目立たない薄いグレー */
-      color: #64748b;            /* 控えめな文字色 */
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;   /* 緩やかな角丸 */
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    
+    .mini-logout-btn { position: fixed;/*画面の特定の位置に固定*/ top: 12px;/*上からの隙間*/ left: 12px;/*左からの隙間*/z-index: 2000; /*モーダル等よりも手前に表示*/
+      display: flex; align-items: center; gap: 4px;/*アイコンと文字の間隔*/ padding: 6px 10px;/*ボタン内の余白（小さめ）*/ font-size: 12px; /*文字サイズ*/
+      font-weight: bold; background-color: #f1f5f9; /*普段は薄いグレー*/ color: #64748b;/* 控えめな文字色 */ border: 1px solid #cbd5e1;
+      border-radius: 6px;/* 緩やかな角丸 */ cursor: pointer; transition: all 0.2s ease; }
     /* ボタン内のアイコンサイズ調整 */
-    .mini-logout-btn .material-symbols-outlined {
-      font-size: 16px;      /* アイコンも小さめに */
-    }
-    
+    .mini-logout-btn .material-symbols-outlined { font-size: 16px;/* アイコン小さめ */ }
     /* マウスを乗せたとき（ホバー時）の演出 */
-    .mini-logout-btn:hover {
-      background-color: #fee2e2; /* ログアウトらしく、うっすら赤色に */
-      color: #ef4444;            /* 文字をハッキリした赤に */
-      border-color: #fca5a5;
-    }
+    .mini-logout-btn:hover { background-color: #fee2e2; /* ログアウトらしく、うっすら赤色 */ color: #ef4444; /* 文字をハッキリした赤に */ border-color: #fca5a5; }
     
   </style>
 </head>
@@ -201,7 +180,6 @@
     </div>
   </div>
 
-  <div id="mainApp" style="display:none; padding: 12px;">
   <div id="mainApp" style="display:none; padding: 12px; height: 100vh; overflow-y: auto; box-sizing: border-box; -webkit-overflow-scrolling: touch;">
     <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
       <div id="userDisplayLabel" style="font-size: 13px; color: var(--text-sub); font-weight: bold; background: #e2e8f0; padding: 4px 12px; border-radius: 20px;"></div>
