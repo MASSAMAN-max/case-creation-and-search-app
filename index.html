@@ -1005,15 +1005,17 @@
         details.style.display = 'block';
         if(icon) icon.style.transform = 'rotate(180deg)';
         if(item) item.classList.add('is-open');
-        // アコーディオンが広がるのを（0.2秒）待ってから自動スクロール
+        
+        // クリックされた「el（見出し）」を基準にスクロール
         setTimeout(() => {
-          if (item) {
-            item.scrollIntoView({ 
-              behavior: 'smooth', // するっと動かす
-              block: 'start'      // 開いた項目の「先頭」が画面の上にピッタリ来るように
+          if (el) {
+            // クリックされた要素の頭が、画面の上端（あるいは少し下）にスムーズに移動します
+            el.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start' 
             });
           }
-        }, 200);
+        }, 200); // 展開アニメーションを待つための0.2秒
       } else {
         details.style.display = 'none';
         if(icon) icon.style.transform = 'rotate(0deg)';
