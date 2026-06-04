@@ -932,13 +932,13 @@
 
         // 新規登録と同じ条件で担当者ドロップダウンを生成・初期化する処理
         const staffSelId = `editStaffSelect_${record.No}`;
-        updateManagersByClient(record.発注元, staffSelId); // 新規共通の関数を呼び出し、発注元に紐づくメンバーに絞り込み
+        updateManagersByClient(record.発注元, staffSelId);
         
         const staffSelEl = document.getElementById(staffSelId);
         if (staffSelEl) {
           const currentStaff = (record.担当者 && record.担当者 !== "undefined" && record.担当者 !== "null") ? record.担当者 : "";
+          
           if (currentStaff) {
-            // 安全対策：もし保存されている担当者がマスタ(絞り込みリスト)にないイレギュラーな名前だった場合の救済措置
             let hasOption = Array.from(staffSelEl.options).some(opt => opt.value === currentStaff);
             if (!hasOption) {
               const newOpt = document.createElement("option");
@@ -946,10 +946,11 @@
               newOpt.textContent = currentStaff;
               staffSelEl.insertBefore(newOpt, staffSelEl.lastElementChild);
             }
-            staffSelEl.value = currentStaff; // データを反映
+            const originalOnchange = staffSelEl.onchange;
+            staffSelEl.onchange = null;
+            staffSelEl.value = currentStaff; // ここでは onchange が発火しない
+            staffSelEl.onchange = originalOnchange; // 復元
           }
-          // 新規登録と同じ条件で、連絡先（ReadOnly制御など）の初期連動を実行
-          handleEditStaffChange(staffSelEl, record.No);
         }
         
         if (record.検査日 && typeof record.検査日 === "string" && record.検査日.includes('T')) {
@@ -1180,22 +1181,43 @@
       const staffSel = document.getElementById(staffSelectId);
       if (!staffSel) return;
       
-      staffSel.innerHTML = '<option value="">選択してください</option>';
+      // ✅ innerHTML の複数回更新を避ける（DocumentFragment を使用）
+      const fragment = document.createDocumentFragment();
       
-      // 発注元が選択されている場合、その発注元に紐付いた担当者のみ表示
+      const defaultOption = document.createElement("option");
+      defaultOption.value = "";
+      defaultOption.textContent = "選択してください";
+      fragment.appendChild(defaultOption);
+      
       if (selectedClient && appConfig.managerByClient && appConfig.managerByClient[selectedClient]) {
         appConfig.managerByClient[selectedClient].forEach(m => {
-          staffSel.innerHTML += `<option value="${m.name}">${m.name}</option>`;
+          const opt = document.createElement("option");
+          opt.value = m.name;
+          opt.textContent = m.name;
+          fragment.appendChild(opt);
         });
       } else {
-        // 発注元が選択されていない場合は全担当者を表示
         (appConfig.managerList || []).forEach(s => {
           const sName = (s && typeof s === 'object') ? s.name : s;
-          if (sName) staffSel.innerHTML += `<option value="${sName}">${sName}</option>`;
+          if (sName) {
+            const opt = document.createElement("option");
+            opt.value = sName;
+            opt.textContent = sName;
+            fragment.appendChild(opt);
+          }
         });
       }
       
-      staffSel.innerHTML += `<option value="(新規担当者)" style="color:var(--primary); font-weight:bold;">(新規担当者)</option>`;
+      const newOption = document.createElement("option");
+      newOption.value = "(新規担当者)";
+      newOption.textContent = "(新規担当者)";
+      newOption.style.color = "var(--primary)";
+      newOption.style.fontWeight = "bold";
+      fragment.appendChild(newOption);
+      
+      // ✅ 一度だけ DOM に追加（最後に一回の DOM操作）
+      staffSel.innerHTML = '';
+      staffSel.appendChild(fragment);
     };
 
     // 新規登録モーダル初期展開
