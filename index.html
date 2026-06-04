@@ -15,6 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
   <style>
+    
     :root {--primary: #4a90e2; --primary-hover: #357abd; --success: #2ecc71; --success-hover: #27ae60;
            --text-main: #222222; --text-sub: #555555; --border: #cccccc; --bg-light: #f4f6f9; }
     
@@ -45,7 +46,7 @@
 
     .result-item { 
       background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 18px;  overflow: hidden; border: 1px solid #e2e8f0; 
-      border-left: 4px solid transparent; /* 最初は左端を透明にしておく */ transition: all 0.2s ease;  }
+      border-left: 4px solid transparent; /* 最初は左端を透明にしておく */ transition: all 0.2s ease; }
     .result-summary {
       padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white; transition: background 0.2s; }
     .result-summary:hover { background: #f8fafc; }
@@ -56,7 +57,7 @@
     .result-item.is-open .result-summary { background: #f8fafc; /* 見出し部分の背景も合わせて変化させる */ }
     .result-item.is-open .result-details { display: block; }
     .result-item.is-open .expand-icon { transform: rotate(180deg); }
-    
+
     .row-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; width: 100%; }
     .badge-no { background: #e2e8f0; color: #334155; padding: 3px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; }
     .anken-title { font-size: 20px; font-weight: bold; color: #0f172a; }
@@ -178,7 +179,7 @@
     </div>
   </div>
 
-  <div id="mainApp" style="display:none; padding: 12px;>
+  <div id="mainApp" style="display:none; padding: 12px;">
     <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
       <div id="userDisplayLabel" style="font-size: 13px; color: var(--text-sub); font-weight: bold; background: #e2e8f0; padding: 4px 12px; border-radius: 20px;"></div>
     </div>
@@ -995,23 +996,26 @@
       }
     };
 
-    // ① 外側のアコーディオン：開いて、その場で150pxだけ「するっ」と下げる
+    // 外側のアコーディオン：開いて、そのカードを画面の一番上まで引っ張り上げる
     window.toggleOuterAccordion = function(el) {
       const item = el.parentElement;
       item.classList.toggle('is-open');
       
       if (item.classList.contains('is-open')) {
         setTimeout(() => {
-          // 💡 window全体を今の位置から150pxだけ安全に下にズラす
-          window.scrollBy({
-            top: 150,
-            behavior: "smooth"
+          // タップされたカードの現在の位置を計算
+          const rect = el.getBoundingClientRect();
+          // 画面の最上部（少しだけ余白として20px手前）までグインとスクロールさせる
+          const targetY = window.pageYOffset + rect.top - 20;
+          window.scrollTo({
+            top: targetY,
+            behavior: "smooth" // 滑らかに動かします
           });
         }, 150);
       }
     };
     
-    // ② 内側のアコーディオン：外側や画面スクロールを一切邪魔せず、その場でサクッと開閉するだけ
+    // 内側のアコーディオン
     window.toggleInnerAccordion = function(el) {
       const details = el.nextElementSibling;
       const icon = el.querySelector('.inner-expand-icon');
@@ -1552,7 +1556,7 @@
   </button>
   
   <style>
-    #scrollToTopBtn:hover {
+    #Btn:hover {
       background-color: var(--primary-hover);
       box-shadow: 0 6px 16px rgba(74,144,226,0.4);
       transform: translateY(-3px);
