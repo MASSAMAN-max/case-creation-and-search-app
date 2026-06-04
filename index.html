@@ -973,6 +973,10 @@
         }
         initializeInspectionTimeSelectsForRecord(record.No);
       });
+      // displayResults の最後に追加
+console.log("レコード" + record.No + "のセレクトボックス確認:");
+console.log("案件種別セレクト:", document.getElementById(`addProjectTypeSelect_${record.No}`));
+console.log("担当者セレクト:", document.getElementById(`editStaffSelect_${record.No}`));
     }
     
     // 検索条件をリセット
