@@ -899,16 +899,20 @@
           </div>
           <div class="result-details">
             <div class="detail-card">
-              <div class="data-row-input" style="width: 50%;"><label>案件種別 <span class="badge-required">必須</span></label>
-                <select id="addProjectTypeSelect_${record.No}" required style="width: 100%;">
-                  ${createOptionsHtml(appConfig.projectTypeList || [], record['案件種別'] || '', '案件種別')}
-                </select>
-                <div id="newProjectTypeInputGroup_${record.No}" style="display: none; margin-top: 3px;">
-                  <input type="text" id="newProjectTypeInput_${record.No}" placeholder="新規案件種別">
+              <div style="display: flex; gap: 8px; width: 100%;">
+                <div class="data-row-input" style="flex: 1; min-width: 0;">
+                  <label>案件種別 <span class="badge-required">必須</span></label>
+                  <select id="addProjectTypeSelect_${record.No}" required style="width: 100%;" onchange="toggleEditNewInput(this, 'newProjectTypeInputGroup_${record.No}')">
+                    ${createOptionsHtml(appConfig.projectTypeList || [], record['案件種別'] || '', '案件種別')}
+                  </select>
+                  <div id="newProjectTypeInputGroup_${record.No}" style="display: none; margin-top: 3px;">
+                    <input type="text" id="newProjectTypeInput_${record.No}" placeholder="新規案件種別" style="width: 100%;">
+                  </div>
                 </div>
-              </div>
-              <div class="data-row-input" style="width: 50%;"><label>緯度経度</label>
-                <input type="text" id="緯度経度_${record.No}" value="${record.緯度経度 || ''}">
+                <div class="data-row-input" style="flex: 1; min-width: 0;">
+                  <label>緯度経度</label>
+                  <input type="text" id="緯度経度_${record.No}" value="${record.緯度経度 || ''}" style="width: 100%;">
+                </div>
               </div>
               <div class="data-row-input" style="grid-column: span 2;"><label>所在地（住所）</label>
                 <input type="text" id="住所_${record.No}" value="${record.住所 || ''}">
