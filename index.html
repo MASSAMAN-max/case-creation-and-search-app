@@ -180,7 +180,7 @@
     </div>
   </div>
 
-  <div id="mainApp" style="display:none; padding: 12px; height: 100vh; overflow-y: auto; box-sizing: border-box; -webkit-overflow-scrolling: touch;">
+  <div id="mainApp" style="display:none; padding: 12px;>
     <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
       <div id="userDisplayLabel" style="font-size: 13px; color: var(--text-sub); font-weight: bold; background: #e2e8f0; padding: 4px 12px; border-radius: 20px;"></div>
     </div>
@@ -774,7 +774,7 @@
         let staffOptionsHtml = '<option value="">選択してください</option>';
 
         item.innerHTML = `
-          <div class="result-summary" onclick="this.parentElement.classList.toggle('is-open')">
+          <div class="result-summary" onclick="toggleOuterAccordion(this)">
             <div class="summary-info" style="flex:1; padding-right:12px;">
               <div class="row-meta">
                 <span class="badge-no">No.${record.No}</span>
@@ -1000,26 +1000,34 @@
     window.toggleInnerAccordion = function(el) {
       const details = el.nextElementSibling;
       const icon = el.querySelector('.inner-expand-icon');
-      const item = el.closest('.result-item') || el.parentElement;
+    
+      // 表示・非表示の切り替えと、矢印の回転だけに特化
       if (details.style.display === 'none' || !details.style.display) {
         details.style.display = 'block';
-        if(icon) icon.style.transform = 'rotate(180deg)';
-        if(item) item.classList.add('is-open');
-        
-        // クリックされた「el（見出し）」を基準にスクロール
-        setTimeout(() => {
-          if (el) {
-            // クリックされた要素の頭が、画面の上端（あるいは少し下）にスムーズに移動します
-            el.scrollIntoView({ 
-              behavior: 'smooth', 
-              block: 'start' 
-            });
-          }
-        }, 200); // 展開アニメーションを待つための0.2秒
+        if (icon) icon.style.transform = 'rotate(180deg)';
       } else {
         details.style.display = 'none';
-        if(icon) icon.style.transform = 'rotate(0deg)';
-        if(item) item.classList.remove('is-open');
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      }
+    };
+    
+    // 外側のアコーディオンが開いたとき、少し下にスクロールさせる関数
+    window.toggleOuterAccordion = function(el) {
+      // 1. まずアコーディオンを開閉する（今までの処理）
+      const item = el.parentElement;
+      item.classList.toggle('is-open');
+      // 2. 開いた（is-open がついた）ときだけ、少し下にスクロール
+      if (item.classList.contains('is-open')) {
+        setTimeout(() => {
+          // クリックした要素の「画面上の現在位置」を取得
+          const rect = el.getBoundingClientRect();
+          //  クリックした要素の位置 から「30ピクセル」だけ手前で止まるように計算（少し下に下がる）
+          const targetY = window.pageYOffset + rect.top - 30;
+          window.scrollTo({
+            top: targetY,
+            behavior: "smooth" // 綺麗にするっと動かす
+          });
+        }, 150); // 開くアニメーションをほんの少し待つ
       }
     };
 
