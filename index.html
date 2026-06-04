@@ -1005,15 +1005,15 @@
         details.style.display = 'block';
         if(icon) icon.style.transform = 'rotate(180deg)';
         if(item) item.classList.add('is-open');
-        // 開いた「中身（details）」に向かって、ブラウザ標準機能でスクロール
+        // アコーディオンが広がるのを（0.2秒）待ってから自動スクロール
         setTimeout(() => {
-          if (details) {
-            details.scrollIntoView({ 
+          if (item) {
+            item.scrollIntoView({ 
               behavior: 'smooth', // するっと動かす
-              block: 'nearest'    // 画面内に収まる最適な位置へ自動調整
+              block: 'start'      // 開いた項目の「先頭」が画面の上にピッタリ来るように
             });
           }
-        }, 100); // アコーディオンが展開するのを一瞬待つ
+        }, 200);
       } else {
         details.style.display = 'none';
         if(icon) icon.style.transform = 'rotate(0deg)';
