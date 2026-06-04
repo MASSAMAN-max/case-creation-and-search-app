@@ -899,44 +899,22 @@
           </div>
           <div class="result-details">
             <div class="detail-card">
-            
-              <div class="data-row-input" style="grid-column: span 2;">
-                <label>案件種別</label>
-                <input type="text" id="案件種別_${record.No}" value="${record.案件種別 || ''}">
-              </div>
-
-              <div class="data-row-input" style="grid-column: span 2;">
+              <div class="data-row-input" style="grid-column: span 1;">
                 <label>案件種別 <span class="badge-required">必須</span></label>
-                <select name="案件種別" id="addProjectTypeSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newProjectTypeInputGroup')"></select>
+                <select id="editProjectTypeSelect_${record.No}" required style="width: 100%;">
+                  ${createOptionsHtml(appConfig.projectTypeList || [], record['案件種別'] || '', '案件種別')}
+                </select>
                 <div id="newProjectTypeInputGroup" style="display: none; margin-top: 3px;">
                   <input type="text" id="案件種別_${record.No}" value="${record.案件種別 || ''}">
                 </div>
               </div>
-
-
-                <label>案件種別 <span class="badge-required">必須</span></label>
-                <select id="editprojectTypeSelect_${record.No}" required style="width: 100%;">
-                  ${createOptionsHtml(appConfig.projectTypeList || [], record['案件種別'] || '', '案件種別')}
-                </select>
-        
-
-              
-              <div class="data-row-input" style="grid-column: span 2;">
-                <label>案件種別 <span class="badge-required">必須</span></label>
-                <select id="editprojectTypeSelect_${record.No}" required style="width: 100%;">
-                  ${createOptionsHtml(appConfig.projectTypeList || [], record['案件種別'] || '', '案件種別')}
-                </select>
+              <div class="data-row-input" style="grid-column: span 1;">
+                <label>緯度経度</label>
+                <input type="text" id="緯度経度_${record.No}" value="${record.緯度経度 || ''}">
               </div>
-
-                                                                     
-              
               <div class="data-row-input" style="grid-column: span 2;">
                 <label>所在地（住所）</label>
                 <input type="text" id="住所_${record.No}" value="${record.住所 || ''}">
-              </div>
-              <div class="data-row-input" style="grid-column: span 2;">
-                <label>緯度経度</label>
-                <input type="text" id="緯度経度_${record.No}" value="${record.緯度経度 || ''}">
               </div>
               <div class="data-row-input" style="grid-column: span 2;">
                 <label>延床面積</label>
@@ -991,7 +969,7 @@
                       </div>
                     </div> 
                   </div>`;
-              }).join('')}
+              }).join('')} 
             </div>
 
             <div class="form-group" style="margin-top:14px;">
