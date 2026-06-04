@@ -899,15 +899,15 @@
           </div>
           <div class="result-details">
             <div class="detail-card">
-              <div class="data-row-input" style="grid-column: span 1;"><label>案件種別 <span class="badge-required">必須</span></label>
-                <select id="editProjectTypeSelect_${record.No}" required style="width: 100%;">
+              <div class="data-row-input" style="width: 50%;"><label>案件種別 <span class="badge-required">必須</span></label>
+                <select id="addProjectTypeSelect_${record.No}" required style="width: 100%;">
                   ${createOptionsHtml(appConfig.projectTypeList || [], record['案件種別'] || '', '案件種別')}
                 </select>
-                <div id="newProjectTypeGroup_${record.No}" style="display: none; margin-top: 3px;">
+                <div id="newProjectTypeInputGroup_${record.No}" style="display: none; margin-top: 3px;">
                   <input type="text" id="newProjectTypeInput_${record.No}" placeholder="新規案件種別">
                 </div>
               </div>
-              <div class="data-row-input" style="grid-column: span 1;"><label>緯度経度</label>
+              <div class="data-row-input" style="width: 50%;"><label>緯度経度</label>
                 <input type="text" id="緯度経度_${record.No}" value="${record.緯度経度 || ''}">
               </div>
               <div class="data-row-input" style="grid-column: span 2;"><label>所在地（住所）</label>
@@ -923,7 +923,7 @@
                 <select id="editStaffSelect_${record.No}" data-client="${record.発注元}" onchange="handleEditStaffChange(this, '${record.No}')">
                   ${staffOptionsHtml}
                 </select>
-                <div id="newEditStaffGroup_${record.No}" style="display:none; margin-top:6px;">
+                <div id="newEditStaffGroup_${record.No}" style="display:none; margin-top:3px;">
                   <input type="text" id="newEditStaffInput_${record.No}" placeholder="新規担当者名">
                 </div>
               </div>
@@ -950,7 +950,7 @@
                       <select id="editWorkContent_${record.No}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkContentGroup_${record.No}_${i}')">
                         ${createOptionsHtml(appConfig.workContentList || [], cContent, '工事内容')}
                       </select>
-                      <div id="newEditWorkContentGroup_${record.No}_${i}" style="display:none; margin-top:6px;">
+                      <div id="newEditWorkContentGroup_${record.No}_${i}" style="display:none; margin-top:3px;">
                         <input type="text" id="newEditWorkContentInput_${record.No}_${i}" placeholder="新規工事内容">
                       </div>
                     </div>
@@ -959,7 +959,7 @@
                       <select id="editWorker_${record.No}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkerGroup_${record.No}_${i}')">
                         ${createOptionsHtml(appConfig.userList, cWorker, '工事担当者')}
                       </select>
-                      <div id="newEditWorkerGroup_${record.No}_${i}" style="display:none; margin-top:6px;">
+                      <div id="newEditWorkerGroup_${record.No}_${i}" style="display:none; margin-top:3px;">
                         <input type="text" id="newEditWorkerInput_${record.No}_${i}" placeholder="新規工事担当者">
                       </div>
                     </div> 
@@ -1021,7 +1021,7 @@
         `;
         container.appendChild(item);
 
-        // 【追加】新規登録と同じ条件で担当者ドロップダウンを生成・初期化する処理
+        // 新規登録と同じ条件で担当者ドロップダウンを生成・初期化する処理
         const staffSelId = `editStaffSelect_${record.No}`;
         updateManagersByClient(record.発注元, staffSelId); // 新規共通の関数を呼び出し、発注元に紐づくメンバーに絞り込み
         
