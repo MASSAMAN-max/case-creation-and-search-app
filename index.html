@@ -79,10 +79,21 @@
     .login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: white; }
     .login-box { width: 100%; max-width: 400px; padding: 32px; box-sizing: border-box; }
 
-    .result-item { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 18px; overflow: hidden; border: 1px solid #e2e8f0; }
-    .result-summary { padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white; transition: background 0.2s; }
+    .result-item { 
+      background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 18px;  overflow: hidden; border: 1px solid #e2e8f0; 
+      border-left: 4px solid transparent; /* 最初は左端を透明にしておく */
+      transition: all 0.2s ease; 
+    }
+    .result-summary {
+      padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white; transition: background 0.2s;
+    }
     .result-summary:hover { background: #f8fafc; }
-    .result-details { display: none; padding: 24px; border-top: 2px solid #e2e8f0; background: #fcfdfe; }
+    .result-details { display: none; padding: 24px; border-top: 2px solid #e2e8f0; background: #fcfdfe; }  
+    /* 追加：開いているとき（is-open）の見た目を変化させる */
+    .result-item.is-open { display: block; border-left-color: var(--primary); /* 左端をメインカラーに色づける */ background: #f8fafc; /* 全体の背景をほんのり薄グレーに */
+    }
+    .result-item.is-open .result-summary { background: #f8fafc;               /* 見出し部分の背景も合わせて変化させる */
+    }
     .result-item.is-open .result-details { display: block; }
     .result-item.is-open .expand-icon { transform: rotate(180deg); }
     
@@ -1107,13 +1118,28 @@
 
     window.toggleInnerAccordion = function(el) {
       const details = el.nextElementSibling;
-      const icon = el.querySelector('.inner-expand-icon');
+      const icon = el.querySelector('.inner-expand-icon');  
+      // アコーディオン全体の枠（.result-item）を取得します
+      const item = el.closest('.result-item') || el.parentElement;
       if (details.style.display === 'none' || !details.style.display) {
         details.style.display = 'block';
-        if(icon) icon.style.transform = 'rotate(180deg)';
+        if(icon) icon.style.transform = 'rotate(180deg)';  
+        // 開いたときに「is-open」クラスを付与
+        if(item) item.classList.add('is-open');
+        // 開いたエリアの先頭までスルッと自動スクロール
+        setTimeout(() => {
+          if (item) {
+            item.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        }, 100); // 0.1秒だけ待ってから実行（表示のガタつき防止）
       } else {
         details.style.display = 'none';
         if(icon) icon.style.transform = 'rotate(0deg)';
+        // 閉じたら「is-open」クラスを外す
+        if(item) item.classList.remove('is-open');
       }
     };
 
@@ -1582,7 +1608,6 @@
               if (dateFields.includes(key) && value) {
                 processedValue = formatDateToYYYYMMDD(value);
               }
-              
               // 発注元の括弧内抽出
               if (key === '発注元' && value) {
                 processedValue = extractTextInParentheses(value);
