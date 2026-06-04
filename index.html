@@ -899,10 +899,28 @@
           </div>
           <div class="result-details">
             <div class="detail-card">
+            
               <div class="data-row-input" style="grid-column: span 2;">
                 <label>案件種別</label>
                 <input type="text" id="案件種別_${record.No}" value="${record.案件種別 || ''}">
               </div>
+
+              <div class="data-row-input" style="grid-column: span 2;">
+                <label>案件種別 <span class="badge-required">必須</span></label>
+                <select name="案件種別" id="addProjectTypeSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newProjectTypeInputGroup')"></select>
+                <div id="newProjectTypeInputGroup" style="display: none; margin-top: 3px;">
+                  <input type="text" id="案件種別_${record.No}" value="${record.案件種別 || ''}">
+                </div>
+              </div>
+
+                
+              <div class="data-row-input" style="grid-column: span 2;">
+                <label>案件種別 <span class="badge-required">必須</span></label>
+                <select name="案件種別" id="addProjectTypeSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newProjectTypeInputGroup')"></select>
+                  <input type="text" id="案件種別_${record.No}" value="${record.案件種別 || ''}">
+              </div>
+                                                                     
+              
               <div class="data-row-input" style="grid-column: span 2;">
                 <label>所在地（住所）</label>
                 <input type="text" id="住所_${record.No}" value="${record.住所 || ''}">
