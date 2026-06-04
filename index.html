@@ -15,8 +15,6 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
   <style>
-    html {scroll-behavior: smooth;}
-    
     :root {--primary: #4a90e2; --primary-hover: #357abd; --success: #2ecc71; --success-hover: #27ae60;
            --text-main: #222222; --text-sub: #555555; --border: #cccccc; --bg-light: #f4f6f9; }
     
@@ -1022,7 +1020,7 @@
           // クリックした要素の「画面上の現在位置」を取得
           const rect = el.getBoundingClientRect();
           //  クリックした要素の位置 から「30ピクセル」だけ手前で止まるように計算（少し下に下がる）
-          const targetY = window.pageYOffset + rect.top - 30;
+          const targetY = window.pageYOffset + rect.top - 40;
           window.scrollTo({
             top: targetY,
             behavior: "smooth" // 綺麗にするっと動かす
