@@ -4,367 +4,856 @@
 <link rel="manifest" href="/case-creation-and-search.json">
 <link rel="icon" href="/icon-192.png">
   
+<!DOCTYPE html>
+<html>
+<head>
+<!-- PWA・メタデータ設定：プログレッシブウェブアプリ化、アイコン登録 -->
+<link rel="manifest" href="/case-creation-and-search.json">
+<link rel="icon" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-512.png">
 <meta name="theme-color" content="#ffffff">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-  <base target="_top">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- ベースURL設定：リンクを新タブで開かない -->
+<base target="_top">
+
+<!-- レスポンシブ対応とビューポート設定 -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- 外部フォント読み込み：日本語対応フォント（Plus Jakarta Sans, Roboto） -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Googleの Material Design アイコン読み込み -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+<!-- SweetAlert2：モーダルダイアログ・アラート用ライブラリ -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
-  <style>
+<style>
+    <!-- カラースキーム・デザイントークン定義（CSS変数） -->
+    :root {
+      --primary: #4a90e2;           /* 主色：青系 */
+      --primary-hover: #357abd;     /* 主色ホバー状態 */
+      --success: #2ecc71;           /* 成功・確認色：緑 */
+      --success-hover: #27ae60;     /* 成功色ホバー状態 */
+      --text-main: #222222;         /* メインテキスト色 */
+      --text-sub: #555555;          /* サブテキスト色 */
+      --border: #cccccc;            /* ボーダー色 */
+      --bg-light: #f4f6f9;          /* 背景色：薄いグレー */
+    }
     
-    :root {--primary: #4a90e2; --primary-hover: #357abd; --success: #2ecc71; --success-hover: #27ae60;
-           --text-main: #222222; --text-sub: #555555; --border: #cccccc; --bg-light: #f4f6f9; }
+    <!-- ページ全体のベーススタイル：フォント・背景・余白 -->
+    body {
+      font-family: Meiryo, "Meiryo UI", "Hiragino Kaku Gothic ProN", sans-serif;
+      margin: 0;
+      background-color: var(--bg-light);
+      color: var(--text-main);
+      font-size: 16px;
+      line-height: 1.6;
+      font-weight: 500;
+    }
     
-    body { font-family: Meiryo, "Meiryo UI", "Hiragino Kaku Gothic ProN", sans-serif; margin: 0; background-color: var(--bg-light);
-      color: var(--text-main); font-size: 16px; line-height: 1.6; font-weight: 500; }
+    <!-- フォーム要素共通スタイル：input, select, textarea の標準化 -->
+    input, select, textarea {
+      font-family: inherit;
+      font-size: 16px !important;  /* モバイルでのズーム防止 */
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      box-sizing: border-box;
+      background: white;
+    }
     
-    input, select, textarea { font-family: inherit; font-size: 16px !important; padding: 12px; border: 2px solid var(--border);
-      border-radius: 8px; box-sizing: border-box; background: white; }
-    input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; background: #fdfdfd; }
-
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: bold; cursor: pointer;
-      border: none; border-radius: 8px; padding: 12px 24px; font-size: 16px; transition: all 0.2s; }
-    .btn-primary { background-color: var(--primary); color: white; }
-    .btn-primary:hover { background-color: var(--primary-hover); }
-    .btn-success { background-color: var(--success); color: white; }
-    .btn-success:hover { background-color: var(--success-hover); }
-    .btn-secondary { background-color: #bdc3c7; color: white; }
-    
-    /* フォーム共通：ラベルのレイアウトを一括設定.form-group label { display: flex; align-items: center; gap: 4px; font-weight: bold; margin-bottom: 8px; } */
-    .form-group label { display: flex; align-items: center; font-weight: bold; margin-bottom: 8px; white-space: nowrap; }
-    /* フォーム共通：ラベル横のアイコンデザインを一括設定.form-group label .material-symbols-outlined { font-size: 21px; gap: 4px; color: var(--primary); transform: translateY(5px); } */
-    .form-group label .material-symbols-outlined { font-size: 21px; color: var(--primary); transform: translateY(5px); }
-    /* アップロードボックス内のテキスト微調整（お好みで） */
-    .drag-drop-text { text-align: center; }
-
-    .login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: white; }
-    .login-box { width: 100%; max-width: 400px; padding: 32px; box-sizing: border-box; }
-
-    .result-item { 
-      background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 18px;  overflow: hidden; border: 1px solid #e2e8f0; 
-      border-left: 4px solid transparent; /* 最初は左端を透明にしておく */ transition: all 0.2s ease; }
-    .result-summary {
-      padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: white; transition: background 0.2s; }
-    .result-summary:hover { background: #f8fafc; }
-    .result-details { display: none; padding: 24px; border-top: 2px solid #e2e8f0; background: #fcfdfe; }  
-    /* 追加：開いているとき（is-open）の見た目を変化させる */
-    .result-item.is-open { display: block; border-left-color: var(--primary); /*左端をメインカラーに*/ background: #f8fafc; /*全体の背景をほんのり薄グレーに*/
-                           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
-    .result-item.is-open .result-summary { background: #f8fafc; /* 見出し部分の背景も合わせて変化させる */ }
-    .result-item.is-open .result-details { display: block; }
-    .result-item.is-open .expand-icon { transform: rotate(180deg); }
-
-    .row-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; width: 100%; }
-    .badge-no { background: #e2e8f0; color: #334155; padding: 3px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; }
-    .anken-title { font-size: 20px; font-weight: bold; color: #0f172a; }
-    
-    .detail-card { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; background: #edf2f7; padding: 18px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #cbd5e1; }
-    .data-row-input { display: flex; flex-direction: column; }
-    .data-row-input label { font-size: 13px; color: #475569; font-weight: bold; margin-bottom: 4px; }
-    .data-row-input input, .data-row-input select { width: 100%; padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;}
-
-    .work-section { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; background: #fff; border: 2px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-bottom: 10px; }
-    .work-section label { display: block; font-size: 13px; color: var(--text-sub); font-weight: bold; margin-bottom: 4px; }
-    .work-section select, .work-section input { width: 100%; padding: 10px; }
-    
-    .uploadbox { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s; margin-top: 15px;
-                 display: flex; flex-direction: column; align-items: center; justify-content: center;}
-    /* 元々あるエリア全体の変化 */
-    .uploadbox.dragover {  border-color: var(--primary);  background: #e0f2fe;  }
-    .uploadbox.dragover .cloud-icon { transform: translateY(-6px); /* 雲を少し上に浮かせます */ color: var(--primary); /* 雲の色をメインカラー（青系）に変えます */ }
-    .cloud-icon {transition: transform 0.2s ease, color 0.2s ease; }/* マウスを離したときにフワッと滑らかに戻るための設定 */
-    
-    .file-item { display: flex; align-items: center; background: white; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 6px; font-size: 14px; }
-    .file-badge { display: inline-block; padding: 4px 12px; margin: 2px; border-radius: 6px; font-size: 14px; font-weight: bold; border: 1px solid #90caf9; background-color: #e3f2fd; color: #0d47a1; box-shadow: 0 2px 4px rgba(13,71,161,0.08); }
-    
-    /* クラウドアイコンの共通設定（サイズ重複を解消） */
-    .cloud-icon { font-size: 40px !important; color: #60a5fa; flex-shrink: 0; display: inline-block;
-                  line-height: 1; letter-spacing: normal; width: 40px; height: 40px; margin: 0 auto; }
-    /* フォルダURLがある時のリンクボタン */
-    .drive-folder-link { display: inline-flex; align-items: center; gap: 12px; margin-top: 10px; padding: 12px 20px;
-      background: linear-gradient( 180deg, rgba(255,255,255,0.95) 0%, rgba(240,247,255,0.92) 100% ); border: 1px solid rgba(147,197,253,0.55);
-      border-radius: 18px; text-decoration: none; color: #2563eb; font-weight: 700; font-size: 15px;
-      box-shadow: 0 4px 12px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
-      backdrop-filter: blur(8px); transition: all 0.2s ease; overflow: hidden; }
-
-    .drive-folder-link:hover { transform: translateY(-1px); background: linear-gradient( 180deg, rgba(255,255,255,1) 0%, rgba(232,242,255,0.98) 100% );
-      box-shadow: 0 8px 20px rgba(37,99,235,0.12); border-color: rgba(59,130,246,0.7); }
-
-    .drive-open-icon { cursor: pointer; transition: transform 0.2s ease, color 0.2s ease; }
-    .drive-open-icon:hover { transform: translateY(-6px); color: var(--primary); }
-    /* フォルダ未作成時の無効化枠 */
-    .drive-folder-link-disabled { display: inline-flex; align-items: center; gap: 10px; margin-top: 10px; padding: 12px 18px;
-      background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 18px; color: #94a3b8; font-size: 10px; font-weight: 600; }
-    /* 無効化枠の中にあるアイコンは、小さく・薄く上書き */
-    .drive-folder-link-disabled .cloud-icon {font-size: 20px !important;  width: 20px; height: 20px; color: #cbd5e1 !important;}
-    /* トースト通知のベース */
-    .toast-box { position: fixed; top: 20px; right: -300px; /* 最初は画面の外に隠しておく */  background: #10b981; /* 成功時の緑色 */ color: white;
-      padding: 16px 24px; border-radius: 8px; font-weight: bold; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 9999; max-width: 350px; /* 横幅が広がりすぎないように制限 */ white-space: pre-wrap; /* 改行文字や長文を自動で折り返す */ }
-    /* 画面内にスッと現れる */
-    .toast-box.show { right: 20px; }
-    
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 5000; display: flex; align-items: center; justify-content: center; }
-    .modal-content { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 600px; box-sizing: border-box; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-    .form-group { margin-bottom: 18px; }
-    .form-group label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 15px; color: #334155; }
-    .form-group input, .form-group select, .form-group textarea { width: 100%; }
-    .badge-required { background-color: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-left: 8px; vertical-align: middle; }
-
-    @media (max-width: 780px) {
-      .drag-drop-text { display: none; }
-      .detail-card, .work-section { grid-template-columns: 1fr; }
-      .work-section div[style*="grid-column: span 2"] { grid-column: span 1 !important; }
+    <!-- フォーム要素フォーカス時のスタイル：ボーダー色・背景色変更 -->
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      outline: none;
+      background: #fdfdfd;
     }
 
-    .spinning { animation: spin 1s linear infinite; display: inline-block; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    <!-- ボタン共通スタイル：Flexレイアウト・ホバーアニメーション -->
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    
+    <!-- ボタン：プライマリ（主要な操作） -->
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+    
+    <!-- ボタン：サクセス（確定・作成操作） -->
+    .btn-success {
+      background-color: var(--success);
+      color: white;
+    }
+    .btn-success:hover {
+      background-color: var(--success-hover);
+    }
+    
+    <!-- ボタン：セカンダリ（キャンセル・補助操作） -->
+    .btn-secondary {
+      background-color: #bdc3c7;
+      color: white;
+    }
+    
+    <!-- フォームグループ内のラベル：アイコン・テキストの整列 -->
+    .form-group label {
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+      margin-bottom: 8px;
+      white-space: nowrap;
+    }
+    
+    <!-- ラベル内のアイコンスタイル：Material Symbols の色・サイズ調整 -->
+    .form-group label .material-symbols-outlined {
+      font-size: 21px;
+      color: var(--primary);
+      transform: translateY(5px);  /* 縦方向の微調整 */
+    }
+    
+    <!-- ドラッグ&ドロップのテキスト配置 -->
+    .drag-drop-text {
+      text-align: center;
+    }
+
+    <!-- ログイン画面全体：画面中央配置 -->
+    .login-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: white;
+    }
+    
+    <!-- ログインボックス：幅制限・内部余白 -->
+    .login-box {
+      width: 100%;
+      max-width: 400px;
+      padding: 32px;
+      box-sizing: border-box;
+    }
+
+    <!-- 検索結果1件のカード：白背景・シャドウ・展開機能 -->
+    .result-item {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      margin-bottom: 18px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid transparent;  /* 初期状態：左枠線は透明 */
+      transition: all 0.2s ease;
+    }
+    
+    <!-- 検索結果見出し部分：クリック時の背景変更 -->
+    .result-summary {
+      padding: 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: white;
+      transition: background 0.2s;
+    }
+    .result-summary:hover {
+      background: #f8fafc;
+    }
+    
+    <!-- 検索結果詳細部分：初期表示は非表示、展開時にブロック表示 -->
+    .result-details {
+      display: none;
+      padding: 24px;
+      border-top: 2px solid #e2e8f0;
+      background: #fcfdfe;
+    }
+    
+    <!-- 検索結果が開いている状態：左枠線を主色に、シャドウ強調 -->
+    .result-item.is-open {
+      display: block;
+      border-left-color: var(--primary);  /* 左枠線をメインカラーに */
+      background: #f8fafc;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+    .result-item.is-open .result-summary {
+      background: #f8fafc;
+    }
+    .result-item.is-open .result-details {
+      display: block;
+    }
+    .result-item.is-open .expand-icon {
+      transform: rotate(180deg);  /* 展開時にアイコン回転 */
+    }
+
+    <!-- 検索結果メタ情報：Noバッジ・案件タイトル等の配置 -->
+    .row-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      width: 100%;
+    }
+    
+    <!-- No バッジ：背景色付きラベル -->
+    .badge-no {
+      background: #e2e8f0;
+      color: #334155;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    
+    <!-- 案件タイトル：大きめのフォント -->
+    .anken-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #0f172a;
+    }
+    
+    <!-- 詳細情報カード：グリッドで2列配置 -->
+    .detail-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      background: #edf2f7;
+      padding: 18px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #cbd5e1;
+    }
+    
+    <!-- データ行：ラベルと入力欄の縦積み -->
+    .data-row-input {
+      display: flex;
+      flex-direction: column;
+    }
+    .data-row-input label {
+      font-size: 13px;
+      color: #475569;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .data-row-input input, .data-row-input select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #adb5bd;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    <!-- 施工予定セクション：3列グリッド（日付・内容・担当） -->
+    .work-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      background: #fff;
+      border: 2px solid #e2e8f0;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .work-section label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-sub);
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .work-section select, .work-section input {
+      width: 100%;
+      padding: 10px;
+    }
+    
+    <!-- アップロードボックス：ドラッグ&ドロップ対応エリア -->
+    .uploadbox {
+      border: 2px dashed #cbd5e1;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      background: #f8fafc;
+      transition: all 0.2s;
+      margin-top: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    <!-- ドラッグオーバー時の見た目変更：ボーダー・背景色が変わる -->
+    .uploadbox.dragover {
+      border-color: var(--primary);
+      background: #e0f2fe;
+    }
+    .uploadbox.dragover .cloud-icon {
+      transform: translateY(-6px);  /* クラウドアイコンが浮き上がる */
+      color: var(--primary);        /* クラウドアイコンの色が主色に */
+    }
+    
+    <!-- クラウドアイコン：トランジション設定で滑らかな動作 -->
+    .cloud-icon {
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+    
+    <!-- ファイル項目：表示済みファイル一覧のスタイル -->
+    .file-item {
+      display: flex;
+      align-items: center;
+      background: white;
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      margin-top: 6px;
+      font-size: 14px;
+    }
+    
+    <!-- ファイルバッジ：ファイル名タグのスタイル -->
+    .file-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      margin: 2px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      border: 1px solid #90caf9;
+      background-color: #e3f2fd;
+      color: #0d47a1;
+      box-shadow: 0 2px 4px rgba(13,71,161,0.08);
+    }
+    
+    <!-- クラウドアイコン共通設定：サイズ統一 -->
+    .cloud-icon {
+      font-size: 40px !important;
+      color: #60a5fa;
+      flex-shrink: 0;
+      display: inline-block;
+      line-height: 1;
+      letter-spacing: normal;
+      width: 40px;
+      height: 40px;
+      margin: 0 auto;
+    }
+    
+    <!-- フォルダリンク：Google Drive等への外部リンクボタン -->
+    .drive-folder-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+      padding: 12px 20px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(240,247,255,0.92) 100%);
+      border: 1px solid rgba(147,197,253,0.55);
+      border-radius: 18px;
+      text-decoration: none;
+      color: #2563eb;
+      font-weight: 700;
+      font-size: 15px;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+      backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
+      overflow: hidden;
+    }
+
+    <!-- フォルダリンクホバー状態：アップアニメーション・シャドウ強調 -->
+    .drive-folder-link:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(232,242,255,0.98) 100%);
+      box-shadow: 0 8px 20px rgba(37,99,235,0.12);
+      border-color: rgba(59,130,246,0.7);
+    }
+
+    <!-- フォルダ開くアイコン：ホバーでアップアニメーション -->
+    .drive-open-icon {
+      cursor: pointer;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+    .drive-open-icon:hover {
+      transform: translateY(-6px);
+      color: var(--primary);
+    }
+    
+    <!-- フォルダ未作成状態：無効化表示（グレーアウト） -->
+    .drive-folder-link-disabled {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 12px 18px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 18px;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    
+    <!-- 無効化状態のアイコン：薄いグレー -->
+    .drive-folder-link-disabled .cloud-icon {
+      font-size: 20px !important;
+      width: 20px;
+      height: 20px;
+      color: #cbd5e1 !important;
+    }
+    
+    <!-- トースト通知：右下から出現するメッセージ -->
+    .toast-box {
+      position: fixed;
+      top: 20px;
+      right: -300px;  /* 初期状態：画面外に隠す */
+      background: #10b981;  /* 成功時の緑色 */
+      color: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 9999;
+      max-width: 350px;
+      white-space: pre-wrap;  /* 改行・長文に対応 */
+    }
+    
+    <!-- トースト表示時：スライドイン */
+    .toast-box.show {
+      right: 20px;
+    }
+    
+    <!-- モーダルオーバーレイ：半透明の背景 -->
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15,23,42,0.6);
+      z-index: 5000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    <!-- モーダルコンテンツ：白いボックス中央配置 -->
+    .modal-content {
+      background: white;
+      padding: 32px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 600px;
+      box-sizing: border-box;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    }
+    
+    <!-- フォームグループ：マージン・ラベル・入力欄の間隔 -->
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+      font-size: 15px;
+      color: #334155;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+    }
+    
+    <!-- 必須バッジ：赤い小さなラベル -->
+    .badge-required {
+      background-color: #ef4444;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    <!-- レスポンシブデザイン：タブレット・モバイル対応 -->
+    @media (max-width: 780px) {
+      .drag-drop-text {
+        display: none;
+      }
+      .detail-card, .work-section {
+        grid-template-columns: 1fr;  /* 1列に統合 */
+      }
+      .work-section div[style*="grid-column: span 2"] {
+        grid-column: span 1 !important;
+      }
+    }
+
+    <!-- ローディング：回転アニメーション -->
+    .spinning {
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    <!-- ローディング：波状のバーアニメーション -->
     @keyframes geminiWave {
       0%, 100% { transform: scaleY(0.3); opacity: 0.6; }
       50% { transform: scaleY(1); opacity: 1; filter: drop-shadow(0 0 4px rgba(74,144,226,0.5)); }
     }
-    @keyframes pulseText { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-
-    /* 右上の小さなログアウトボタン */
-    .mini-logout-btn { position: fixed;/*画面の特定の位置に固定*/ top: 12px;/*上からの隙間*/ left: 12px;/*左からの隙間*/z-index: 2000; /*モーダル等よりも手前に表示*/
-      display: flex; align-items: center; gap: 4px;/*アイコンと文字の間隔*/ padding: 6px 10px;/*ボタン内の余白（小さめ）*/ font-size: 12px; /*文字サイズ*/
-      font-weight: bold; background-color: #f1f5f9; /*普段は薄いグレー*/ color: #64748b;/* 控えめな文字色 */ border: 1px solid #cbd5e1;
-      border-radius: 6px;/* 緩やかな角丸 */ cursor: pointer; transition: all 0.2s ease; }
-    /* ボタン内のアイコンサイズ調整 */
-    .mini-logout-btn .material-symbols-outlined { font-size: 16px;/* アイコン小さめ */ }
-    /* マウスを乗せたとき（ホバー時）の演出 */
-    .mini-logout-btn:hover { background-color: #fee2e2; /* ログアウトらしく、うっすら赤色 */ color: #ef4444; /* 文字をハッキリした赤に */ border-color: #fca5a5; }
     
-  </style>
+    <!-- ローディング：テキストのパルスアニメーション -->
+    @keyframes pulseText {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    <!-- ログアウトボタン：左上に固定表示 -->
+    .mini-logout-btn {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: bold;
+      background-color: #f1f5f9;
+      color: #64748b;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    <!-- ログアウトボタン内のアイコン調整 -->
+    .mini-logout-btn .material-symbols-outlined {
+      font-size: 16px;
+    }
+    
+    <!-- ログアウトボタンホバー状態：赤系のハイライト -->
+    .mini-logout-btn:hover {
+      background-color: #fee2e2;
+      color: #ef4444;
+      border-color: #fca5a5;
+    }
+    
+</style>
 </head>
 <body>
 
+<!-- ログアウトボタン：認証済みユーザーのみ表示 -->
 <button type="button" id="logoutBtn" class="mini-logout-btn" onclick="handleLogout()" style="display:none;">
   <span class="material-symbols-outlined">logout</span><span>ログアウト</span>
 </button>
   
-  <div id="loginScreen" class="login-container" style="display:none;">
-    <div class="login-box">
-      <h2 style="text-align:center; margin-bottom:32px;">案件管理アプリ ログイン</h2>
-      <div style="margin-bottom:20px;">
-        <label style="display:block; margin-bottom:8px; font-weight:bold;">ログインID</label>
-        <input type="text" id="loginIdInput" style="width:100%;" placeholder="IDを入力してください">
-      </div>
-      <div style="margin-bottom:32px; position:relative;">
-        <label style="display:block; margin-bottom:8px; font-weight:bold;">パスワード</label>
-        <input type="password" id="loginPasswordInput" style="width:100%; padding-right:50px; box-sizing: border-box;" placeholder="パスワードを入力してください">
-        <span onclick="togglePasswordVisibility()" style="position:absolute; right:12px; top:45px; cursor:pointer; color:var(--text-sub); user-select:none;">
-          <span id="eyeIcon" class="material-symbols-outlined" style="font-size: 22px; vertical-align: middle;">visibility_off</span>
-        </span>
-      </div>
-      <button id="loginBtn" class="btn btn-primary" onclick="handleLoginSubmit()" style="width:100%; padding:14px; font-size:18px;">ログイン</button>
-    </div>
-  </div>
-
-  <div id="initLoader" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #ffffff; z-index: 9999; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 120px;">
-    <div style="width: 100%; max-width: 350px; text-align: center;">
-      <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 24px; height: 50px;">
-        <div style="width: 6px; height: 16px; background: linear-gradient(to bottom, #4a90e2, #9b59b6); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite;"></div>
-        <div style="width: 6px; height: 32px; background: linear-gradient(to bottom, #7bb0f9, #bdc3c7); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.15s;"></div>
-        <div style="width: 6px; height: 48px; background: linear-gradient(to bottom, #4a90e2, #4facfe); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.3s;"></div>
-        <div style="width: 6px; height: 24px; background: linear-gradient(to bottom, #9b59b6, #ff0844); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.45s;"></div>
-      </div>
-      <p id="loaderText" style="margin: 0; color: #475569; font-size: 16px; font-weight: bold; letter-spacing: 0.5px; animation: pulseText 2s ease-in-out infinite;">
-        読み込み中...
-      </p>
-    </div>
-  </div>
-
-  <div id="mainApp" style="display:none; padding: 12px;">
-    <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
-      <div id="userDisplayLabel" style="font-size: 13px; color: var(--text-sub); font-weight: bold; background: #e2e8f0; padding: 4px 12px; border-radius: 20px;"></div>
+<!-- ログイン画面：初期表示（認証前） -->
+<div id="loginScreen" class="login-container" style="display:none;">
+  <div class="login-box">
+    <h2 style="text-align:center; margin-bottom:32px;">案件管理アプリ ログイン</h2>
+    
+    <!-- ログインID入力欄 -->
+    <div style="margin-bottom:20px;">
+      <label style="display:block; margin-bottom:8px; font-weight:bold;">ログインID</label>
+      <input type="text" id="loginIdInput" style="width:100%;" placeholder="IDを入力してください">
     </div>
     
-    <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 24px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f0f2f5; padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
-        <div style="font-size: 22px; font-weight: bold; color: #1e293b; display:flex; align-items:center; gap:8px;">
-          <span class="material-symbols-outlined" style="color:var(--primary); font-size:34px;">Assignment_Globe</span> 案件管理アプリ
+    <!-- パスワード入力欄：表示/非表示切り替え機能付き -->
+    <div style="margin-bottom:32px; position:relative;">
+      <label style="display:block; margin-bottom:8px; font-weight:bold;">パスワード</label>
+      <input type="password" id="loginPasswordInput" style="width:100%; padding-right:50px; box-sizing: border-box;" placeholder="パスワードを入力してください">
+      <!-- パスワード表示・非表示切り替えアイコン -->
+      <span onclick="togglePasswordVisibility()" style="position:absolute; right:12px; top:45px; cursor:pointer; color:var(--text-sub); user-select:none;">
+        <span id="eyeIcon" class="material-symbols-outlined" style="font-size: 22px; vertical-align: middle;">visibility_off</span>
+      </span>
+    </div>
+    
+    <!-- ログインボタン -->
+    <button id="loginBtn" class="btn btn-primary" onclick="handleLoginSubmit()" style="width:100%; padding:14px; font-size:18px;">ログイン</button>
+  </div>
+</div>
+
+<!-- 初期ローディング画面：ページ読み込み時の表示 -->
+<div id="initLoader" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #ffffff; z-index: 9999; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 120px;">
+  <div style="width: 100%; max-width: 350px; text-align: center;">
+    <!-- 波状のローディングアニメーション -->
+    <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 24px; height: 50px;">
+      <div style="width: 6px; height: 16px; background: linear-gradient(to bottom, #4a90e2, #9b59b6); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite;"></div>
+      <div style="width: 6px; height: 32px; background: linear-gradient(to bottom, #7bb0f9, #bdc3c7); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.15s;"></div>
+      <div style="width: 6px; height: 48px; background: linear-gradient(to bottom, #4a90e2, #4facfe); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.3s;"></div>
+      <div style="width: 6px; height: 24px; background: linear-gradient(to bottom, #9b59b6, #ff0844); border-radius: 4px; animation: geminiWave 1.2s ease-in-out infinite; animation-delay: 0.45s;"></div>
+    </div>
+    <!-- ローディングテキスト -->
+    <p id="loaderText" style="margin: 0; color: #475569; font-size: 16px; font-weight: bold; letter-spacing: 0.5px; animation: pulseText 2s ease-in-out infinite;">
+      読み込み中...
+    </p>
+  </div>
+</div>
+
+<!-- メインアプリ画面：認証後の表示 -->
+<div id="mainApp" style="display:none; padding: 12px;">
+  <!-- ユーザー表示ラベル（右上） -->
+  <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+    <div id="userDisplayLabel" style="font-size: 13px; color: var(--text-sub); font-weight: bold; background: #e2e8f0; padding: 4px 12px; border-radius: 20px;"></div>
+  </div>
+    
+  <!-- 検索・フィルターセクション -->
+  <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 24px;">
+    
+    <!-- ヘッダー：タイトル・新規登録ボタン -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f0f2f5; padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
+      <div style="font-size: 22px; font-weight: bold; color: #1e293b; display:flex; align-items:center; gap:8px;">
+        <span class="material-symbols-outlined" style="color:var(--primary); font-size:34px;">Assignment_Globe</span> 案件管理アプリ
+      </div>
+      <!-- 新規案件登録ボタン -->
+      <button class="btn btn-success" onclick="openCreateModal()" style="font-size: 18px; padding: 14px 28px;">
+        <span class="material-symbols-outlined">add_circle</span> 新規案件を登録
+      </button>
+    </div>
+
+    <!-- フィルター・検索エリア -->
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+      
+      <!-- フィルター1：発注元選択ドロップダウン -->
+      <div style="flex: 1; min-width: 200px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">発注元で絞り込み</label>
+        <select id="filterClient" style="width: 100%; background-color: #fafafa;"><option value="">すべて</option></select>
+      </div>
+      
+      <!-- フィルター2：施工日の日付範囲選択 -->
+      <div style="display: flex; flex-wrap: nowrap; gap: 10px; width: 100%;">
+        <div style="flex: 1; min-width: 0;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（開始）</label>
+          <input type="date" id="filterStartDate" style="width: 100%;" onchange="handleStartDateChange()">
         </div>
-        <button class="btn btn-success" onclick="openCreateModal()" style="font-size: 18px; padding: 14px 28px;">
-          <span class="material-symbols-outlined">add_circle</span> 新規案件を登録
+        <div style="flex: 1; min-width: 0;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（終了）</label>
+          <input type="date" id="filterEndDate" style="width: 100%;">
+        </div>
+      </div>
+      
+      <!-- フィルター3：キーワード検索入力欄 -->
+      <div style="flex: 2; min-width: 250px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">キーワード検索（No、案件名など）</label>
+        <input type="text" id="searchValue" placeholder="文字を入力（Enterキーでも検索できます）" style="width: 100%;">
+      </div>
+      
+      <!-- 検索・クリアボタン -->
+      <div style="display: flex; gap: 8px; min-width: 280px;">
+        <button id="searchBtn" class="btn btn-primary" onclick="search()" style="flex: 1; padding: 13px; font-size:18px;">
+          <span class="material-symbols-outlined">search</span> 検索する
+        </button>
+        <button id="clearBtn" class="btn btn-secondary" onclick="clearSearchFilters()" style="flex: 1; padding: 13px; font-size:18px;">
+          <span class="material-symbols-outlined">clear</span> クリア
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 検索結果件数表示 -->
+  <div id="searchCount" style="margin-bottom: 12px; font-weight: bold; font-size: 16px; padding-left: 4px;"></div>
+  
+  <!-- 検索結果表示エリア：JavaScriptで動的生成 -->
+  <div id="results"></div>
+</div>
+
+<!-- 新規案件登録モーダル -->
+<div id="createModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <!-- モーダルヘッダー -->
+    <h2 style="margin-top: 0; margin-bottom: 24px; color: #1e293b; border-bottom: 3px solid var(--success); padding-bottom: 10px; display:flex; align-items:center; gap:8px;">
+      <span class="material-symbols-outlined" style="color:var(--success); font-size:32px;">assignment_add</span> 新規案件の登録
+    </h2>
+      
+    <!-- 新規案件登録フォーム -->
+    <form id="createProjectForm" onsubmit="handleCreateSubmit(event)">
+
+      <!-- セクション1：基本情報（受注媒体・案件種別） -->
+      <div style="display: flex; gap: 12px; width: 100%;">
+        <!-- 受注媒体選択：ドロップダウンまたは新規入力 -->
+        <div class="form-group" style="flex: 1; min-width: 0;">
+          <label>受注媒体 <span class="badge-required">必須</span></label>
+          <select name="受注媒体" id="addMediaSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newMediaInputGroup')"></select>
+          <div id="newMediaInputGroup" style="display: none; margin-top: 3px;">
+            <input type="text" id="newMediaInput" placeholder="新規受注媒体名を入力してください" style="width: 100%;">
+          </div>
+        </div>
+    
+        <!-- 案件種別選択：ドロップダウンまたは新規入力 -->
+        <div class="form-group" style="flex: 1; min-width: 0;">
+          <label>案件種別 <span class="badge-required">必須</span></label>
+          <select name="案件種別" id="addProjectTypeSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newProjectTypeInputGroup')"></select>
+          <div id="newProjectTypeInputGroup" style="display: none; margin-top: 3px;">
+            <input type="text" id="newProjectTypeInput" placeholder="新規案件種別名を入力してください" style="width: 100%;">
+          </div>
+        </div>
+      </div>
+
+      <!-- 発注元選択：ドロップダウンまたは新規入力 -->
+      <div class="form-group">
+        <label>発注元 <span class="badge-required">必須</span></label>
+        <select name="発注元" id="addClientSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newClientInputGroup')"></select>
+        <div id="newClientInputGroup" style="display: none; margin-top: 8px;">
+          <input type="text" id="newClientInput" placeholder="新規発注元名を入力してください">
+        </div>
+      </div>
+
+      <!-- 案件名入力欄 -->
+      <div class="form-group">
+        <label>案件名 <span class="badge-required">必須</span></label>
+        <input type="text" id="project_name" name="案件名" placeholder="例：〇〇様邸新築工事" required>
+      </div>
+
+      <!-- セクション2：工事予定・担当割当（動的追加可能） -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+        <h3 style="margin: 0 0 12px 0; font-size: 18px; color: #475569; display: flex; align-items: center; gap: 6px;">
+          工事予定・担当割当
+        </h3>
+        
+        <!-- 工事予定フィールド動的生成エリア -->
+        <div id="dynamicWorkFieldsContainer"></div>
+      
+        <!-- 工事日程追加ボタン -->
+        <button type="button" id="addWorkBtn" class="btn" style="margin-top:16px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="showNextWorkField()">
+          <span class="material-symbols-outlined" style="font-size:18px; translateY(5px); ">add_circle</span> 施工日・工事内容・担当を追加
         </button>
       </div>
 
-      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
-        <div style="flex: 1; min-width: 200px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">発注元で絞り込み</label>
-          <select id="filterClient" style="width: 100%; background-color: #fafafa;"><option value="">すべて</option></select>
-        </div>
-        <!-- 日付範囲選択 -->
-        <div style="display: flex; flex-wrap: nowrap; gap: 10px; width: 100%;">
-          <div style="flex: 1; min-width: 0;">
-            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（開始）</label>
-            <input type="date" id="filterStartDate" style="width: 100%;" onchange="handleStartDateChange()">
-          </div>
-          <div style="flex: 1; min-width: 0;">
-            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（終了）</label>
-            <input type="date" id="filterEndDate" style="width: 100%;">
-          </div>
-        </div>
-        
-        <div style="flex: 2; min-width: 250px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">キーワード検索（No、案件名など）</label>
-          <input type="text" id="searchValue" placeholder="文字を入力（Enterキーでも検索できます）" style="width: 100%;">
-        </div>
-        <div style="display: flex; gap: 8px; min-width: 280px;">
-          <button id="searchBtn" class="btn btn-primary" onclick="search()" style="flex: 1; padding: 13px; font-size:18px;">
-            <span class="material-symbols-outlined">search</span> 検索する
-          </button>
-          <button id="clearBtn" class="btn btn-secondary" onclick="clearSearchFilters()" style="flex: 1; padding: 13px; font-size:18px;">
-            <span class="material-symbols-outlined">clear</span> クリア
-          </button>
+      <!-- セクション3：物件情報 -->
+      <!-- 所在地（住所） -->
+      <div class="form-group">
+        <label><span class="material-symbols-outlined">home</span> 所在地（住所）</label>
+        <input type="text" id="address" name="住所" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
+      </div>
+
+      <!-- 緯度経度（地図連携用） -->
+      <div class="form-group">
+        <label><span class="material-symbols-outlined">pin_drop</span> 緯度経度</label>
+        <input type="text" name="緯度経度" placeholder="例：36.8420,137.4060" style="width: 100%;">
+      </div>
+
+      <!-- 延床面積 -->
+      <div class="form-group">
+        <label><span class="material-symbols-outlined">square_foot</span> 延床面積</label>
+        <input type="text" id="room_area" name="延床面積" placeholder="例：85㎡">
+      </div>
+
+      <!-- セクション4：担当者情報 -->
+      <!-- 担当者選択：ドロップダウンまたは新規入力 -->
+      <div class="form-group">
+        <label><span class="material-symbols-outlined">person</span> 担当者</label>
+        <select name="担当者" id="addStaffSelect" style="width:100%;" onchange="handleStaffChange(this, 'addPhoneInput', 'newStaffInputGroup')"></select>
+        <div id="newStaffInputGroup" style="display: none; margin-top: 8px;">
+          <input type="text" id="newStaffInput" placeholder="新規担当者名を入力してください">
         </div>
       </div>
-    </div>
 
-    <div id="searchCount" style="margin-bottom: 12px; font-weight: bold; font-size: 16px; padding-left: 4px;"></div>
-    <div id="results"></div>
-  </div>
+      <!-- 連絡先（担当者選択時に自動入力） -->
+      <div class="form-group">
+        <label><span class="material-symbols-outlined">phone</span> 連絡先</label>
+        <input type="text" name="連絡先" id="addPhoneInput" placeholder="担当者を選択すると自動反映されます">
+      </div>
 
-  <!-- 新規登録モーダル -->
-  <div id="createModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-      <h2 style="margin-top: 0; margin-bottom: 24px; color: #1e293b; border-bottom: 3px solid var(--success); padding-bottom: 10px; display:flex; align-items:center; gap:8px;">
-        <span class="material-symbols-outlined" style="color:var(--success); font-size:32px;">assignment_add</span> 新規案件の登録
-      </h2>
+      <!-- キーBOX（暗証番号・保管場所） -->
+      <div class="form-group">
+        <label><span class="material-symbols-outlined">key</span> キーBOX</label>
+        <input type="text" id="key_box" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所">
+      </div>
+
+      <!-- 備考欄 -->
+      <div class="form-group">
+        <label><span class="material-symbols-outlined">notes</span> 備 考</label>
+        <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください"></textarea>
+      </div>
       
-      <form id="createProjectForm" onsubmit="handleCreateSubmit(event)">
-
-        <div style="display: flex; gap: 12px; width: 100%;">
-          <div class="form-group" style="flex: 1; min-width: 0;">
-            <label>受注媒体 <span class="badge-required">必須</span></label>
-            <select name="受注媒体" id="addMediaSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newMediaInputGroup')"></select>
-            <div id="newMediaInputGroup" style="display: none; margin-top: 3px;">
-              <input type="text" id="newMediaInput" placeholder="新規受注媒体名を入力してください" style="width: 100%;">
-            </div>
-          </div>
+      <!-- セクション5：検査日時指定（日付＋時刻） -->
+      <div style="grid-column: span 2;">
+        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px;">検査日（時刻指定）</label>
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
+          <input type="date" id="newInspectionDate" name="検査日" placeholder="日付を選択">
+          <select id="newInspectionHour" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
+            <option value="">時</option>
+          </select>
+          <select id="newInspectionMinute" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
+            <option value="">分</option>
+          </select>
+        </div>
+      </div>
       
-          <div class="form-group" style="flex: 1; min-width: 0;">
-            <label>案件種別 <span class="badge-required">必須</span></label>
-            <select name="案件種別" id="addProjectTypeSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newProjectTypeInputGroup')"></select>
-            <div id="newProjectTypeInputGroup" style="display: none; margin-top: 3px;">
-              <input type="text" id="newProjectTypeInput" placeholder="新規案件種別名を入力してください" style="width: 100%;">
-            </div>
+      <!-- セクション6：システム管理項目（ID・日付等） -->
+      <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px; margin-top: 20px;">
+        <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #334155; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+          <span class="material-symbols-outlined" style="font-size: 24px; color: var(--text-sub);">admin_panel_settings</span> システム管理項目他
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group" style="margin:0;">
+            <label>システムID</label>
+            <input type="text" id="system_id" name="システムID" placeholder="システムID">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>物件ID</label>
+            <input type="text" id="property_id" name="物件ID" placeholder="物件ID">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>着工日</label>
+            <input type="date" id="construction_start_date" name="着工日">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>完成日</label>
+            <input type="date" id="completion_date" name="完成日">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>引渡日</label>
+            <input type="date" name="引渡日">
           </div>
         </div>
+      </div>
 
-        <div class="form-group">
-          <label>発注元 <span class="badge-required">必須</span></label>
-          <select name="発注元" id="addClientSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newClientInputGroup')"></select>
-          <div id="newClientInputGroup" style="display: none; margin-top: 8px;">
-            <input type="text" id="newClientInput" placeholder="新規発注元名を入力してください">
-          </div>
+      <!-- セクション7：ファイル添付 -->
+      <div class="form-group">
+        <label><span class="material-symbols-outlined">attach_file</span> 添付ファイル</label>
+        <!-- ドラッグ&ドロップエリア -->
+        <div class="uploadbox" id="createUploadBox" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, 'NEW_PROJECT')">
+          <div class="material-symbols-outlined cloud-icon" style="font-size:40px; color:var(--primary)">cloud_upload</div>
+          <div class="drag-drop-text" style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
+          <div class="drag-drop-text" style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
+          <!-- ファイル選択ボタン -->
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('createFileInput').click()">ファイルを選択</button>
+          <!-- 隠しファイル入力 -->
+          <input type="file" id="createFileInput" multiple style="display:none;" onchange="handleFileSelect(event, 'NEW_PROJECT')">
+          <!-- 選択済みファイル一覧表示エリア -->
+          <div id="createFileList" style="margin-top: 10px;"></div>
         </div>
-
-        <div class="form-group">
-          <label>案件名 <span class="badge-required">必須</span></label>
-          <input type="text" id="project_name" name="案件名" placeholder="例：〇〇様邸新築工事" required>
-        </div>
-
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-          <h3 style="margin: 0 0 12px 0; font-size: 18px; color: #475569; display: flex; align-items: center; gap: 6px;"> 工事予定・担当割当</h3>
-          
-          <div id="dynamicWorkFieldsContainer"></div>
+      </div>
         
-          <button type="button" id="addWorkBtn" class="btn" style="margin-top:16px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="showNextWorkField()">
-            <span class="material-symbols-outlined" style="font-size:18px; translateY(5px); ">add_circle</span> 施工日・工事内容・担当を追加
-          </button>
-        </div>
-
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">home</span> 所在地（住所）</label>
-          <input type="text" id="address" name="住所" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
-        </div>
-
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">pin_drop</span> 緯度経度</label>
-          <input type="text" name="緯度経度" placeholder="例：36.8420,137.4060" style="width: 100%;">
-        </div>
-
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">square_foot</span> 延床面積</label>
-          <input type="text" id="room_area" name="延床面積" placeholder="例：85㎡">
-        </div>
-
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">person</span> 担当者</label>
-          <select name="担当者" id="addStaffSelect" style="width:100%;" onchange="handleStaffChange(this, 'addPhoneInput', 'newStaffInputGroup')"></select>
-          <div id="newStaffInputGroup" style="display: none; margin-top: 8px;">
-            <input type="text" id="newStaffInput" placeholder="新規担当者名を入力してください">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">phone</span> 連絡先</label>
-          <input type="text" name="連絡先" id="addPhoneInput" placeholder="担当者を選択すると自動反映されます">
-        </div>
-
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">key</span> キーBOX</label>
-          <input type="text" id="key_box" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所">
-        </div>
-
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">notes</span> 備 考</label>
-          <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください"></textarea> <!--style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px; font-size:16px; font-family:inherit; box-sizing:border-box;"-->
-        </div>
-        <!-- 検査日：時刻選択付き -->
-        <div style="grid-column: span 2;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px;">検査日（時刻指定）</label>
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
-            <input type="date" id="newInspectionDate" name="検査日" placeholder="日付を選択">
-            <select id="newInspectionHour" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
-              <option value="">時</option>
-            </select>
-            <select id="newInspectionMinute" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
-              <option value="">分</option>
-            </select>
-          </div>
-        </div>
-        
-        <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px; margin-top: 20px;">
-          <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #334155; font-weight: bold; display: flex; align-items: center; gap: 6px;">
-            <span class="material-symbols-outlined" style="font-size: 24px; color: var(--text-sub);">admin_panel_settings</span> システム管理項目他
-          </h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="form-group" style="margin:0;"><label>システムID</label><input type="text" id="system_id" name="システムID" placeholder="システムID"></div>
-            <div class="form-group" style="margin:0;"><label>物件ID</label><input type="text" id="property_id" name="物件ID" placeholder="物件ID"></div>
-            <div class="form-group" style="margin:0;"><label>着工日</label><input type="date" id="construction_start_date" name="着工日"></div>
-            <div class="form-group" style="margin:0;"><label>完成日</label><input type="date" id="completion_date" name="完成日"></div>
-            <div class="form-group" style="margin:0;"><label>引渡日</label><input type="date" name="引渡日"></div>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">attach_file</span>添付ファイル</label>
-          <div class="uploadbox" id="createUploadBox" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, 'NEW_PROJECT')">
-            <div class="material-symbols-outlined cloud-icon" style="font-size:40px; color:var(--primary)">cloud_upload</div>
-            <div class="drag-drop-text" style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
-            <div class="drag-drop-text" style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
-            <button type="button" class="btn btn-secondary" onclick="document.getElementById('createFileInput').click()">ファイルを選択</button>
-            <input type="file" id="createFileInput" multiple style="display:none;" onchange="handleFileSelect(event, 'NEW_PROJECT')">
-            <div id="createFileList" style="margin-top: 10px;"></div>
-          </div>
-        </div>
-        
-        <div style="display: flex; justify-content: flex-end; gap: 5px; margin-top: 30px;">
-          <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">閉じる</button>
-          <button type="submit" class="btn btn-success" style="padding: 15px 21px;">
-            <span class="material-symbols-outlined">save</span> この内容で登録する
-          </button>
-        </div>
-      </form>
-    </div>
+      <!-- フォームフッター：キャンセル・登録ボタン -->
+      <div style="display: flex; justify-content: flex-end; gap: 5px; margin-top: 30px;">
+        <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">閉じる</button>
+        <button type="submit" class="btn btn-success" style="padding: 15px 21px;">
+          <span class="material-symbols-outlined">save</span> この内容で登録する
+        </button>
+      </div>
+    </form>
   </div>
+</div>
+
+
+
 
   <script>
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbzDU-eldEfHba9IA1vXFZDogvozxKlUOfp_e3XMjOZFj519yFskQrvykhzgp3G18Uic6w/exec';
