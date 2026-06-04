@@ -800,8 +800,8 @@
               <div style="display: flex; gap: 8px; width: 100%;">
               
                 <div class="data-row-input" style="flex: 1; min-width: 0;">
-                  <label>案件種別 <span class="badge-required">必須</span></label>
-                  <select id="addProjectTypeSelect_${record.No}" required style="width: 100%;" onchange="toggleEditNewInput(this, 'newProjectTypeInputGroup_${record.No}')">
+                  <label>案件種別</label>
+                  <select id="addProjectTypeSelect_${record.No}" onchange="toggleEditNewInput(this, 'newProjectTypeInputGroup_${record.No}')">
                     ${createOptionsHtml(appConfig.projectTypeList, record['案件種別'] || '', '案件種別')}
                   </select>
                   <div id="newProjectTypeInputGroup_${record.No}" style="display: none; margin-top: 3px;">
