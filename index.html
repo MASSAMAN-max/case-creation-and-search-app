@@ -1370,6 +1370,14 @@
         完成日: document.getElementById(`完成日_${rNum}`).value,
         引渡日: document.getElementById(`引渡日_${rNum}`).value
       };
+
+      const projectTypeSel = document.getElementById(`addProjectTypeSelect_${rNum}`);
+      if (projectTypeSel && projectTypeSel.value === "(新規案件種別)") {
+        fData["案件種別"] = document.getElementById(`newProjectTypeInput_${rNum}`).value.trim();
+        fData["isNewProjectType"] = true;
+      } else if (projectTypeSel) {
+        fData["案件種別"] = projectTypeSel.value;
+      }
     
       // 検査日＋時刻を結合（input + selectの値から組立）
       const inspectionDate = document.getElementById(`検査日_${rNum}`).value;
