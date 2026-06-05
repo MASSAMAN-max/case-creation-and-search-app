@@ -60,11 +60,7 @@
     }
     
     /* フォーム要素フォーカス時のスタイル：ボーダー色・背景色変更 */
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--primary);
-      outline: none;
-      background: #fdfdfd;
-    }
+    input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; background: #fdfdfd; }
 
     /* ボタン共通スタイル：Flexレイアウト・ホバーアニメーション */
     .btn {
@@ -82,144 +78,61 @@
     }
     
     /* ボタン：プライマリ（主要な操作） */
-    .btn-primary {
-      background-color: var(--primary);
-      color: white;
-    }
-    .btn-primary:hover {
-      background-color: var(--primary-hover);
-    }
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-primary:hover { background-color: var(--primary-hover); }
     
     /* ボタン：サクセス（確定・作成操作） */
-    .btn-success {
-      background-color: var(--success);
-      color: white;
-    }
-    .btn-success:hover {
-      background-color: var(--success-hover);
-    }
+    .btn-success { background-color: var(--success); color: white; }
+    .btn-success:hover { background-color: var(--success-hover); }
     
     /* ボタン：セカンダリ（キャンセル・補助操作） */
-    .btn-secondary {
-      background-color: #bdc3c7;
-      color: white;
-    }
+    .btn-secondary { background-color: #bdc3c7; color: white; }
     
     /* フォームグループ内のラベル：アイコン・テキストの整列 */
-    .form-group label {
-      display: flex;
-      align-items: center;
-      font-weight: bold;
-      margin-bottom: 8px;
-      white-space: nowrap;
-    }
+    .form-group label { display: flex; align-items: center; font-weight: bold; margin-bottom: 8px; white-space: nowrap; }
     
     /* ラベル内のアイコンスタイル：Material Symbols の色・サイズ調整 */
-    .form-group label .material-symbols-outlined {
-      font-size: 21px;
-      color: var(--primary);
-      transform: translateY(5px);  /* 縦方向の微調整 */
-    }
+    .form-group label .material-symbols-outlined { font-size: 21px; color: var(--primary); transform: translateY(5px);  /* 縦方向の微調整 */ }
     
     /* ドラッグ&ドロップのテキスト配置 */
-    .drag-drop-text {
-      text-align: center;
-    }
+    .drag-drop-text { text-align: center; }
 
     /* ログイン画面全体：画面中央配置 */
-    .login-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      background: white;
-    }
+    .login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: white; }
     
     /* ログインボックス：幅制限・内部余白 */
-    .login-box {
-      width: 100%;
-      max-width: 400px;
-      padding: 32px;
-      box-sizing: border-box;
-    }
+    .login-box { width: 100%; max-width: 400px; padding: 32px; box-sizing: border-box; }
 
     /* 検索結果1件のカード：白背景・シャドウ・展開機能 */
-    .result-item {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-      margin-bottom: 18px;
-      overflow: hidden;
-      border: 1px solid #e2e8f0;
-      border-left: 4px solid transparent;  /* 初期状態：左枠線は透明 */
-      transition: all 0.2s ease;
+    .result-item { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 18px; overflow: hidden;
+      border: 1px solid #e2e8f0; border-left: 4px solid transparent;  /* 初期状態：左枠線は透明 */ transition: all 0.2s ease;
     }
     
     /* 検索結果見出し部分：クリック時の背景変更 */
-    .result-summary {
-      padding: 20px;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: white;
-      transition: background 0.2s;
+    .result-summary { padding: 20px; cursor: pointer; display: flex; justify-content: space-between;
+      align-items: center; background: white; transition: background 0.2s;
     }
-    .result-summary:hover {
-      background: #f8fafc;
-    }
+    .result-summary:hover { background: #f8fafc; }
     
     /* 検索結果詳細部分：初期表示は非表示、展開時にブロック表示 */
-    .result-details {
-      display: none;
-      padding: 24px;
-      border-top: 2px solid #e2e8f0;
-      background: #fcfdfe;
-    }
+    .result-details { display: none; padding: 24px; border-top: 2px solid #e2e8f0; background: #fcfdfe; }
     
     /* 検索結果が開いている状態：左枠線を主色に、シャドウ強調 */
-    .result-item.is-open {
-      display: block;
-      border-left-color: var(--primary);  /* 左枠線をメインカラーに */
-      background: #f8fafc;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    .result-item.is-open { display: block; border-left-color: var(--primary);  /* 左枠線をメインカラーに */
+      background: #f8fafc; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
     }
-    .result-item.is-open .result-summary {
-      background: #f8fafc;
-    }
-    .result-item.is-open .result-details {
-      display: block;
-    }
-    .result-item.is-open .expand-icon {
-      transform: rotate(180deg);  /* 展開時にアイコン回転 */
-    }
+    .result-item.is-open .result-summary { background: #f8fafc; }
+    .result-item.is-open .result-details { display: block; }
+    .result-item.is-open .expand-icon { transform: rotate(180deg);  /* 展開時にアイコン回転 */ }
 
     /* 検索結果メタ情報：Noバッジ・案件タイトル等の配置 */
-    .row-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-      width: 100%;
-    }
+    .row-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; width: 100%; }
     
     /* No バッジ：背景色付きラベル */
-    .badge-no {
-      background: #e2e8f0;
-      color: #334155;
-      padding: 3px 10px;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: bold;
-    }
+    .badge-no { background: #e2e8f0; color: #334155; padding: 3px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; }
     
     /* 案件タイトル：大きめのフォント */
-    .anken-title {
-      font-size: 20px;
-      font-weight: bold;
-      color: #0f172a;
-    }
+    .anken-title { font-size: 20px; font-weight: bold; color: #0f172a; }
     
     /* 詳細情報カード：グリッドで2列配置 */
     .detail-card {
@@ -234,87 +147,32 @@
     }
     
     /* データ行：ラベルと入力欄の縦積み */
-    .data-row-input {
-      display: flex;
-      flex-direction: column;
-    }
-    .data-row-input label {
-      font-size: 13px;
-      color: #475569;
-      font-weight: bold;
-      margin-bottom: 4px;
-    }
-    .data-row-input input, .data-row-input select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #adb5bd;
-      border-radius: 6px;
-      box-sizing: border-box;
-    }
+    .data-row-input { display: flex; flex-direction: column; }
+    .data-row-input label { font-size: 13px; color: #475569; font-weight: bold; margin-bottom: 4px; }
+    .data-row-input input, .data-row-input select { width: 100%; padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box; }
 
     /* 施工予定セクション：3列グリッド（日付・内容・担当） */
-    .work-section {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
-      background: #fff;
-      border: 2px solid #e2e8f0;
-      padding: 14px;
-      border-radius: 8px;
-      margin-bottom: 10px;
+    .work-section { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; background: #fff;
+      border: 2px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-bottom: 10px;
     }
-    .work-section label {
-      display: block;
-      font-size: 13px;
-      color: var(--text-sub);
-      font-weight: bold;
-      margin-bottom: 4px;
-    }
-    .work-section select, .work-section input {
-      width: 100%;
-      padding: 10px;
-    }
+    .work-section label { display: block; font-size: 13px; color: var(--text-sub); font-weight: bold; margin-bottom: 4px; }
+    .work-section select, .work-section input { width: 100%; padding: 10px; }
     
     /* アップロードボックス：ドラッグ&ドロップ対応エリア */
-    .uploadbox {
-      border: 2px dashed #cbd5e1;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-      background: #f8fafc;
-      transition: all 0.2s;
-      margin-top: 15px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+    .uploadbox { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s;
+      margin-top: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
     
     /* ドラッグオーバー時の見た目変更：ボーダー・背景色が変わる */
-    .uploadbox.dragover {
-      border-color: var(--primary);
-      background: #e0f2fe;
-    }
-    .uploadbox.dragover .cloud-icon {
-      transform: translateY(-6px);  /* クラウドアイコンが浮き上がる */
-      color: var(--primary);        /* クラウドアイコンの色が主色に */
-    }
+    .uploadbox.dragover { border-color: var(--primary); background: #e0f2fe; }
+    .uploadbox.dragover .cloud-icon { transform: translateY(-6px); /* クラウドアイコンが浮き上がる */ color: var(--primary); /* クラウドアイコンの色が主色に */ }
     
     /* クラウドアイコン：トランジション設定で滑らかな動作 */
-    .cloud-icon {
-      transition: transform 0.2s ease, color 0.2s ease;
-    }
+    .cloud-icon { transition: transform 0.2s ease, color 0.2s ease; }
     
     /* ファイル項目：表示済みファイル一覧のスタイル */
-    .file-item {
-      display: flex;
-      align-items: center;
-      background: white;
-      padding: 8px 12px;
-      border: 1px solid #e2e8f0;
-      border-radius: 6px;
-      margin-top: 6px;
-      font-size: 14px;
+    .file-item { display: flex; align-items: center; background: white; padding: 8px 12px;
+       border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 6px; font-size: 14px;
     }
     
     /* ファイルバッジ：ファイル名タグのスタイル */
@@ -373,14 +231,8 @@
     }
 
     /* フォルダ開くアイコン：ホバーでアップアニメーション */
-    .drive-open-icon {
-      cursor: pointer;
-      transition: transform 0.2s ease, color 0.2s ease;
-    }
-    .drive-open-icon:hover {
-      transform: translateY(-6px);
-      color: var(--primary);
-    }
+    .drive-open-icon { cursor: pointer; transition: transform 0.2s ease, color 0.2s ease; }
+    .drive-open-icon:hover { transform: translateY(-6px); color: var(--primary); }
     
     /* フォルダ未作成状態：無効化表示（グレーアウト） */
     .drive-folder-link-disabled {
@@ -398,12 +250,7 @@
     }
     
     /* 無効化状態のアイコン：薄いグレー */
-    .drive-folder-link-disabled .cloud-icon {
-      font-size: 20px !important;
-      width: 20px;
-      height: 20px;
-      color: #cbd5e1 !important;
-    }
+    .drive-folder-link-disabled .cloud-icon { font-size: 20px !important; width: 20px; height: 20px; color: #cbd5e1 !important; }
     
     /* トースト通知：右下から出現するメッセージ */
     .toast-box {
@@ -423,9 +270,7 @@
     }
     
     /* トースト表示時：スライドイン */
-    .toast-box.show {
-      right: 20px;
-    }
+    .toast-box.show { right: 20px; }
 
     /* モーダルオーバーレイ：半透明の背景 */
     .modal-overlay {
@@ -455,9 +300,7 @@
     }
     
     /* フォームグループ：マージン・ラベル・入力欄の間隔 */
-    .form-group {
-      margin-bottom: 18px;
-    }
+    .form-group { margin-bottom: 18px; }
     .form-group label {
       display: block;
       margin-bottom: 6px;
@@ -465,9 +308,7 @@
       font-size: 15px;
       color: #334155;
     }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%;
-    }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; }
     
     /* 必須バッジ：赤い小さなラベル */
     .badge-required {
@@ -482,22 +323,13 @@
 
     /* レスポンシブデザイン：タブレット・モバイル対応 */
     @media (max-width: 780px) {
-      .drag-drop-text {
-        display: none;
-      }
-      .detail-card, .work-section {
-        grid-template-columns: 1fr;  /* 1列に統合 */
-      }
-      .work-section div[style*="grid-column: span 2"] {
-        grid-column: span 1 !important;
-      }
+      .drag-drop-text { display: none; }
+      .detail-card, .work-section { grid-template-columns: 1fr;  /* 1列に統合 */ }
+      .work-section div[style*="grid-column: span 2"] { grid-column: span 1 !important; }
     }
 
     /* ローディング：回転アニメーション */
-    .spinning {
-      animation: spin 1s linear infinite;
-      display: inline-block;
-    }
+    .spinning { animation: spin 1s linear infinite; display: inline-block; }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -510,14 +342,10 @@
     }
     
     /* ローディング：テキストのパルスアニメーション */
-    @keyframes pulseText {
-      0%, 100% { opacity: 0.6; }
-      50% { opacity: 1; }
-    }
+    @keyframes pulseText { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 
     /* ログアウトボタン：左上に固定表示 */
     .mini-logout-btn {
-      position: fixed;
       top: 12px;
       left: 12px;
       z-index: 2000;
@@ -536,17 +364,10 @@
     }
     
     /* ログアウトボタン内のアイコン調整 */
-    .mini-logout-btn .material-symbols-outlined {
-      font-size: 16px;
-    }
+    .mini-logout-btn .material-symbols-outlined { font-size: 16px; }
     
     /* ログアウトボタンホバー状態：赤系のハイライト */
-    .mini-logout-btn:hover {
-      background-color: #fee2e2;
-      color: #ef4444;
-      border-color: #fca5a5;
-    }
-
+    .mini-logout-btn:hover { background-color: #fee2e2; color: #ef4444; border-color: #fca5a5; }
 
     /* トップへ戻るボタン追加 */
     .scrollToTopBtn {
@@ -567,15 +388,11 @@
       align-items: center;
       justify-content: center;
     }
-    
     .scrollToTopBtn:hover {
       background-color: var(--primary-hover);
       box-shadow: 0 6px 16px rgba(74,144,226,0.4);
       transform: translateY(-3px);
     }
-    
-    
-    #Btn:hover { background-color: var(--primary-hover); box-shadow: 0 6px 16px rgba(74,144,226,0.4); transform: translateY(-3px); }
       
   </style>
 </head>
@@ -1980,10 +1797,10 @@
       }
       // 表示
       toast.classList.add("show");
-      // 3秒後に自動で隠す
+      // 5秒後に自動で隠す
       setTimeout(() => {
         toast.classList.remove("show");
-      }, 3000);
+      }, 5000);
     }
   
     window.handleLogout = async function() {
