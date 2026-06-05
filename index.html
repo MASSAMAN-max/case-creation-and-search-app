@@ -314,8 +314,6 @@
 
     /* ログアウトボタン：左上に固定表示 */
     .mini-logout-btn {
-      margin-top: 8px;
-      margin-left: 10px;
       width: fit-content;
       z-index: 2000;
       display: flex;
@@ -413,14 +411,13 @@
   <!-- メインアプリ画面：認証後の表示 -->
   <div id="mainApp" style="display:none; padding: 12px;">
 
-    <!-- ログアウトボタン（左上） -->
-    <button type="button" id="logoutBtn" class="mini-logout-btn" onclick="handleLogout()" style="display:none;">
-      <span class="material-symbols-outlined">logout</span><span>ログアウト</span>
-    </button>
-    
-    <!-- ユーザー表示ラベル（右上） -->
-    <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
-      <span id="userDisplayLabel" style="font-size: 13px; color: var(--text-sub); font-weight: bold; background: #e2e8f0; padding: 4px 12px; border-radius: 20px;"></span>
+    <div style="display: flex; align-items: center; margin: 12px 12px 8px 12px;">
+      <!-- ログアウトボタン（左上） -->
+      <button type="button" id="logoutBtn" class="mini-logout-btn" onclick="handleLogout()" style="display:none;">
+        <span class="material-symbols-outlined">logout</span><span>ログアウト</span>
+      </button>
+      <!-- ユーザー表示ラベル（右上） -->
+      <span id="userDisplayLabel" style="margin-left: auto; font-size: 13px; color: var(--text-sub); font-weight: bold; background: #e2e8f0; padding: 4px 12px; border-radius: 20px;"></span>
     </div>
       
     <!-- 検索・フィルターセクション -->
