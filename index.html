@@ -315,7 +315,7 @@
     /* ログアウトボタン：左上に固定表示 */
     .mini-logout-btn {
       margin-top: 8px;
-      margin-left: 8px;
+      margin-left: 12px;
       width: fit-content;
       z-index: 2000;
       display: flex;
@@ -366,11 +366,6 @@
   </style>
 </head>
 <body>
-
-  <!-- ログアウトボタン：認証済みユーザーのみ表示 -->
-  <button type="button" id="logoutBtn" class="mini-logout-btn" onclick="handleLogout()" style="display:none;">
-    <span class="material-symbols-outlined">logout</span><span>ログアウト</span>
-  </button>
     
   <!-- ログイン画面：初期表示（認証前） -->
   <div id="loginScreen" class="login-container" style="display:none;">
@@ -417,6 +412,11 @@
   
   <!-- メインアプリ画面：認証後の表示 -->
   <div id="mainApp" style="display:none; padding: 12px;">
+
+    <!-- ログアウトボタン（左上） -->
+    <button type="button" id="logoutBtn" class="mini-logout-btn" onclick="handleLogout()" style="display:none;">
+      <span class="material-symbols-outlined">logout</span><span>ログアウト</span>
+    </button>
     
     <!-- ユーザー表示ラベル（右上） -->
     <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
