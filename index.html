@@ -1321,8 +1321,8 @@
         setTimeout(() => {
           // タップされたカードの現在の位置を計算
           const rect = el.getBoundingClientRect();
-          // 画面の最上部から100px下までスクロール
-          const targetY = window.pageYOffset + rect.top - 100;
+          // 画面の最上部から200px下までスクロール
+          const targetY = window.pageYOffset + rect.top + 200;
           window.scrollTo({
             top: targetY,
             behavior: "smooth" // 滑らかに動かします
