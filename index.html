@@ -1312,7 +1312,7 @@
       }
     };
   
-    // 外側のアコーディオン：開いて、そのカードを画面の一番上まで引っ張り上げる
+    // 外側のアコーディオン：開いて画面の一番上まで引っ張り上げる
     window.toggleOuterAccordion = function(el) {
       const item = el.parentElement;
       item.classList.toggle('is-open');
@@ -1321,8 +1321,8 @@
         setTimeout(() => {
           // タップされたカードの現在の位置を計算
           const rect = el.getBoundingClientRect();
-          // 画面の最上部（少しだけ余白として20px手前）までグインとスクロールさせる
-          const targetY = window.pageYOffset + rect.top - 20;
+          // 画面の最上部から100px下までスクロール
+          const targetY = window.pageYOffset + rect.top - 100;
           window.scrollTo({
             top: targetY,
             behavior: "smooth" // 滑らかに動かします
