@@ -524,7 +524,12 @@
         <!-- 案件名入力欄 -->
         <div class="form-group">
           <label>案件名 <span class="badge-required">必須</span></label>
-          <input type="text" id="project_name" name="案件名" placeholder="例：〇〇様邸新築工事" required>
+          <div class="voice-input-wrapper">
+            <input type="text" id="project_name" name="案件名" placeholder="例：〇〇様邸新築工事" required>
+            <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+              <span class="material-symbols-outlined">mic</span>
+            </button>
+          </div>
         </div>
   
         <!-- セクション2：工事予定・担当割当（動的追加可能） -->
@@ -544,9 +549,15 @@
   
         <!-- セクション3：物件情報 -->
         <!-- 所在地（住所） -->
+        
         <div class="form-group">
           <label><span class="material-symbols-outlined">home</span> 所在地（住所）</label>
-          <input type="text" id="address" name="住所" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
+          <div class="voice-input-wrapper">
+            <input type="text" id="address" name="住所" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
+            <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+              <span class="material-symbols-outlined">mic</span>
+            </button>
+          </div>
         </div>
   
         <!-- 緯度経度（地図連携用） -->
@@ -586,7 +597,12 @@
         <!-- 備考欄 -->
         <div class="form-group">
           <label><span class="material-symbols-outlined">notes</span> 備 考</label>
+          <div class="voice-input-wrapper">
           <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください"></textarea>
+            <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+              <span class="material-symbols-outlined">mic</span>
+            </button>
+          </div>
         </div>
         
         <!-- セクション5：検査日時指定（日付＋時刻） -->
@@ -1564,6 +1580,71 @@
     };
   
     window.closeCreateModal = function() { document.getElementById("createModal").style.display = "none"; };
+
+    // 音声入力関数
+    function startVoiceInput(button) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        Swal.fire({
+          icon: 'warning',
+          title: '非対応',
+          text: 'お使いのブラウザは音声入力に対応していません。',
+          confirmButtonText: '了解'
+        });
+        return;
+      }
+     
+      const input = button.closest('.voice-input-wrapper').querySelector('input');
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'ja-JP';
+      recognition.continuous = false;
+      recognition.interimResults = true;
+     
+      button.classList.add('recording');
+      button.innerHTML = '<span class="material-symbols-outlined" style="animation: blink 1s infinite;">mic</span> 聴取中...';
+      button.disabled = true;
+      input.style.backgroundColor = '#FFF3E0';
+      input.style.borderColor = '#FF9800';
+     
+      recognition.onstart = () => {
+        // 入力中のビジュアル変更
+      };
+     
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            transcript += event.results[i][0].transcript;
+          }
+        }
+        if (transcript) {
+          input.value = (input.value + transcript).trim();
+          calculateAmount(input);
+        }
+      };
+     
+      recognition.onerror = (event) => {
+        button.classList.remove('recording');
+        input.style.backgroundColor = '';
+        input.style.borderColor = '';
+        Swal.fire({
+          icon: 'error',
+          title: '音声認識失敗',
+          text: 'もう一度お試しください。',
+          confirmButtonText: '了解'
+        });
+      };
+     
+      recognition.onend = () => {
+        button.classList.remove('recording');
+        button.innerHTML = '<span class="material-symbols-outlined">mic</span>';
+        button.disabled = false;
+        input.style.backgroundColor = '';
+        input.style.borderColor = '';
+      };
+     
+      recognition.start();
+    }
   
     // =================================================================
     // 新規登録データ送信処理
