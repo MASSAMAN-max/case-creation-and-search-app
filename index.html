@@ -87,6 +87,52 @@
     
     /* ボタン：セカンダリ（キャンセル・補助操作） */
     .btn-secondary { background-color: #bdc3c7; color: white; }
+
+    .btn-sm {
+      background-color: var(--success);
+      color: white;
+      font-size: 12px;
+      padding: 6px 10px;
+      min-width: fit-content;
+    }
+    .btn-sm:hover {
+      background-color: #45a049;
+    }
+    .btn-sm:disabled {
+      background-color: #a8f7a8;
+      cursor: not-allowed;
+    }
+    .btn-sm.recording {
+      background-color: #F44336;
+      animation: pulse 1.5s infinite;
+    }
+     
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(244, 67, 54, 0);
+      }
+    }
+
+    .voice-input-wrapper {
+      display: flex;
+      gap: 6px;
+    }
+
+    .voice-input-wrapper input {
+      flex: 1;
+    }
+    /* マイク点滅アニメーション */
+    @keyframes blink {
+      0%, 49%, 100% {
+        opacity: 1;
+      }
+      50%, 99% {
+        opacity: 0.3;
+      }
+    }
     
     /* フォームグループ内のラベル：アイコン・テキストの整列 */
     .form-group label { display: flex; align-items: center; font-weight: bold; margin-bottom: 8px; white-space: nowrap; }
@@ -549,7 +595,6 @@
   
         <!-- セクション3：物件情報 -->
         <!-- 所在地（住所） -->
-        
         <div class="form-group">
           <label><span class="material-symbols-outlined">home</span> 所在地（住所）</label>
           <div class="voice-input-wrapper">
