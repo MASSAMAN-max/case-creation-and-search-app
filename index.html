@@ -1315,6 +1315,9 @@
           }
         }
         
+        // 1. 先にドロップダウンの選択肢（00〜23時、00〜45分など）を確実に生成する
+        initializeInspectionTimeSelectsForRecord(record.No);
+        // 2. 選択肢が存在する状態で、安全に既存の時刻をセットする
         if (record.検査日 && typeof record.検査日 === "string" && record.検査日.includes('T')) {
           const timeParts = record.検査日.split('T')[1];
           if (timeParts) {
@@ -1322,18 +1325,20 @@
             const hourSel = document.getElementById(`検査日時_${record.No}`);
             const minuteSel = document.getElementById(`検査日分_${record.No}`);
             
-            setTimeout(() => {
-              if (hourSel && hour) hourSel.value = String(hour).padStart(2, '0');
-              if (minuteSel && minute) {
-                const minuteVal = minute.substring(0, 2);
-                const roundedMinute = Math.round(parseInt(minuteVal) / 15) * 15;
-                const normalizedMinute = roundedMinute === 60 ? '00' : String(roundedMinute).padStart(2, '0');
-                minuteSel.value = normalizedMinute;
-              }
-            }, 50);
+            if (hourSel && hour) {
+              // 選択肢のvalue形式に合わせてセット（数字2桁、または生成関数のvalue仕様に合わせる）
+              const targetHour = String(hour).padStart(2, '0');
+              hourSel.value = hourSel.querySelector(`option[value*="${targetHour}"]`) ? hourSel.querySelector(`option[value*="${targetHour}"]`).value : targetHour;
+            }
+            if (minuteSel && minute) {
+              const minuteVal = minute.substring(0, 2);
+              const roundedMinute = Math.round(parseInt(minuteVal) / 15) * 15;
+              const normalizedMinute = roundedMinute === 60 ? '00' : String(roundedMinute).padStart(2, '0');
+              
+              minuteSel.value = minuteSel.querySelector(`option[value*="${normalizedMinute}"]`) ? minuteSel.querySelector(`option[value*="${normalizedMinute}"]`).value : normalizedMinute;
+            }
           }
         }
-        initializeInspectionTimeSelectsForRecord(record.No);
       });
     }
     
@@ -1740,9 +1745,13 @@
     
       if (inspectionDate) {
         if (inspectionHour !== "" && inspectionMinute !== "") {
-          payload["検査日"] = `${inspectionDate}T${inspectionHour}:${inspectionMinute}`;
+          // 💡 どんな選択肢の形式でも、数字だけを抽出して必ず2桁（05、14など）に整形する
+          const cleanHour = String(inspectionHour).replace(/[^0-9]/g, '').padStart(2, '0');
+          const cleanMinute = String(inspectionMinute).replace(/[^0-9]/g, '').padStart(2, '0');
+          
+          fData["検査日"] = `${inspectionDate}T${cleanHour}:${cleanMinute}`; // ⭕ 綺麗な yyyy-MM-ddTHH:mm になる
         } else {
-          payload["検査日"] = inspectionDate;
+          fData["検査日"] = inspectionDate;
         }
       } else {
         payload["検査日"] = "";
@@ -1809,10 +1818,13 @@
       const inspectionDate = document.getElementById(`検査日_${rNum}`).value;
       const inspectionHour = document.getElementById(`検査日時_${rNum}`).value;
       const inspectionMinute = document.getElementById(`検査日分_${rNum}`).value;
-    
       if (inspectionDate) {
         if (inspectionHour !== "" && inspectionMinute !== "") {
-          fData["検査日"] = `${inspectionDate}T${inspectionHour}:${inspectionMinute}`;
+          // 💡 どんな選択肢の形式でも、数字だけを抽出して必ず2桁（05、14など）に整形する
+          const cleanHour = String(inspectionHour).replace(/[^0-9]/g, '').padStart(2, '0');
+          const cleanMinute = String(inspectionMinute).replace(/[^0-9]/g, '').padStart(2, '0');
+          
+          fData["検査日"] = `${inspectionDate}T${cleanHour}:${cleanMinute}`; // ⭕ 綺麗な yyyy-MM-ddTHH:mm になる
         } else {
           fData["検査日"] = inspectionDate;
         }
