@@ -1756,6 +1756,11 @@
       } else {
         payload["検査日"] = "";
       }
+
+      // 🔍 【ここに追加】GASに送信される直前のデータをブラウザのコンソールに出力する
+      console.log("ーーー 検査日デバッグ ーーー");
+      console.log("画面から取得した 時:", inspectionHour, " 分:", inspectionMinute);
+      console.log("GASに送信する最終データ:", fData["検査日"]);
     
       const files = selectedFilesMap["NEW_PROJECT"] || [];
       if (files.length > 0) {
