@@ -1790,13 +1790,13 @@
     }
     
     // =================================================================
-    // 詳細データ修正保存処理
+    // 詳細データ修正保存処理（修正版）
     // =================================================================
     window.saveRecord = async function(rNum, rowNumber) {
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "修正データを保存中...";
-    
+     
       const fData = {
         No: rNum,
         住所: document.getElementById(`住所_${rNum}`).value,
@@ -1810,7 +1810,7 @@
         完成日: document.getElementById(`完成日_${rNum}`).value,
         引渡日: document.getElementById(`引渡日_${rNum}`).value
       };
-  
+     
       const projectTypeSel = document.getElementById(`addProjectTypeSelect_${rNum}`);
       if (projectTypeSel && projectTypeSel.value === "(新規案件種別)") {
         fData["案件種別"] = document.getElementById(`newProjectTypeInput_${rNum}`).value.trim();
@@ -1818,25 +1818,39 @@
       } else if (projectTypeSel) {
         fData["案件種別"] = projectTypeSel.value;
       }
-    
-      // 検査日＋時刻を結合（input + selectの値から組立）
+     
+      // ✅【修正1】検査日＋時刻を正確に結合
       const inspectionDate = document.getElementById(`検査日_${rNum}`).value;
-      const inspectionHour = document.getElementById(`検査日時_${rNum}`).value;
-      const inspectionMinute = document.getElementById(`検査日分_${rNum}`).value;
+      const inspectionHourSel = document.getElementById(`検査日時_${rNum}`);
+      const inspectionMinuteSel = document.getElementById(`検査日分_${rNum}`);
+      
       if (inspectionDate) {
-        if (inspectionHour !== "" && inspectionMinute !== "") {
-          // 💡 どんな選択肢の形式でも、数字だけを抽出して必ず2桁（05、14など）に整形する
-          const cleanHour = String(inspectionHour).replace(/[^0-9]/g, '').padStart(2, '0');
-          const cleanMinute = String(inspectionMinute).replace(/[^0-9]/g, '').padStart(2, '0');
+        const hourVal = inspectionHourSel ? inspectionHourSel.value : "";
+        const minuteVal = inspectionMinuteSel ? inspectionMinuteSel.value : "";
+        
+        if (hourVal && minuteVal) {
+          // セレクトボックスから数字だけを抽出して統一形式に
+          const cleanHour = String(hourVal).replace(/[^0-9]/g, '').padStart(2, '0');
+          const cleanMinute = String(minuteVal).replace(/[^0-9]/g, '').padStart(2, '0');
           
-          fData["検査日"] = `${inspectionDate}T${cleanHour}:${cleanMinute}`; // ⭕ 綺麗な yyyy-MM-ddTHH:mm になる
+          fData["検査日"] = `${inspectionDate}T${cleanHour}:${cleanMinute}`;
+          
+          // 🔍 コンソール出力（デバッグ用）
+          console.log("【検査日保存】", {
+            inspectionDate,
+            hourVal,
+            minuteVal,
+            cleanHour,
+            cleanMinute,
+            result: fData["検査日"]
+          });
         } else {
           fData["検査日"] = inspectionDate;
         }
       } else {
         fData["検査日"] = "";
       }
-    
+     
       // 工事日程・内容・担当者
       for (let i = 1; i <= 4; i++) {
         fData["施工日" + i] = document.getElementById(`editWorkDate_${rNum}_${i}`).value;
@@ -1857,7 +1871,7 @@
           fData["工事担当者" + i] = wSel.value;
         }
       }
-    
+     
       const staffSel = document.getElementById(`editStaffSelect_${rNum}`);
       if (staffSel && staffSel.value === "(新規担当者)") {
         fData["担当者"] = document.getElementById(`newEditStaffInput_${rNum}`).value.trim();
@@ -1870,10 +1884,10 @@
       if (phoneInput) {
         fData["連絡先"] = phoneInput.value.trim();
       }
-    
+     
       fData["loginUser"] = localStorage.getItem('app_login_userName') || '';
       fData["更新日時"] = getNowDateTimeString();
-    
+     
       const files = selectedFilesMap[rNum] || [];
       if (files.length > 0) {
         document.getElementById("loaderText").textContent = "ファイルを処理中...";
@@ -1881,19 +1895,21 @@
       } else {
         fData.files = [];
       }
-    
+     
       try {
+        // ✅【修正2】GASへ送信前に fData の内容をログ出力
+        console.log("【GASへ送信するfData】", fData);
+        
         await apiCall("updateRecordExtended", { fData: fData, rNum: rowNumber });
+        loader.style.display = "none";
+        
         showToast("データの修正が完了しました。");
         selectedFilesMap[rNum] = [];
         renderFileList(rNum);
         search();
       } catch (err) {
         loader.style.display = "none";
-
-        // 🔍 ココにこの1行を追加してください！
         console.error("【保存エラー詳細】", err);
-        
         showToast("保存エラー: " + err.message, true);
       }
     };
