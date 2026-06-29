@@ -1834,16 +1834,6 @@
           const cleanMinute = String(minuteVal).replace(/[^0-9]/g, '').padStart(2, '0');
           
           fData["検査日"] = `${inspectionDate}T${cleanHour}:${cleanMinute}`;
-          
-          // 🔍 コンソール出力（デバッグ用）
-          console.log("【検査日保存】", {
-            inspectionDate,
-            hourVal,
-            minuteVal,
-            cleanHour,
-            cleanMinute,
-            result: fData["検査日"]
-          });
         } else {
           fData["検査日"] = inspectionDate;
         }
@@ -1897,9 +1887,6 @@
       }
      
       try {
-        // ✅【修正2】GASへ送信前に fData の内容をログ出力
-        console.log("【GASへ送信するfData】", fData);
-        
         await apiCall("updateRecordExtended", { fData: fData, rNum: rowNumber });
         loader.style.display = "none";
         
