@@ -1890,6 +1890,10 @@
         search();
       } catch (err) {
         loader.style.display = "none";
+
+        // 🔍 ココにこの1行を追加してください！
+        console.error("【保存エラー詳細】", err);
+        
         showToast("保存エラー: " + err.message, true);
       }
     };
