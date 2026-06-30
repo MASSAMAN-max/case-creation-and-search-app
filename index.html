@@ -1699,7 +1699,7 @@
     // =================================================================
     // 新規登録データ送信処理
     // =================================================================
-    async function handleCreateSubmit(event) {
+async function handleCreateSubmit(event) {
       event.preventDefault();
       const form = event.target;
       const formData = new FormData(form);
@@ -1748,20 +1748,15 @@
           // 💡 どんな選択肢の形式でも、数字だけを抽出して必ず2桁（05、14など）に整形する
           const cleanHour = String(inspectionHour).replace(/[^0-9]/g, '').padStart(2, '0');
           const cleanMinute = String(inspectionMinute).replace(/[^0-9]/g, '').padStart(2, '0');
-          
-          fData["検査日"] = `${inspectionDate}T${cleanHour}:${cleanMinute}`; // ⭕ 綺麗な yyyy-MM-ddTHH:mm になる
+
+          payload["検査日"] = `${inspectionDate}T${cleanHour}:${cleanMinute}`; 
         } else {
-          fData["検査日"] = inspectionDate;
+          payload["検査日"] = inspectionDate;
         }
       } else {
         payload["検査日"] = "";
       }
-
-      // 🔍 【ここに追加】GASに送信される直前のデータをブラウザのコンソールに出力する
-      console.log("ーーー 検査日デバッグ ーーー");
-      console.log("画面から取得した 時:", inspectionHour, " 分:", inspectionMinute);
-      console.log("GASに送信する最終データ:", fData["検査日"]);
-    
+  
       const files = selectedFilesMap["NEW_PROJECT"] || [];
       if (files.length > 0) {
         document.getElementById("initLoader").style.display = "flex";
