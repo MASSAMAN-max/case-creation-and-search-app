@@ -1643,23 +1643,24 @@
         });
         return;
       }
-     
+      
       const input = button.closest('.voice-input-wrapper').querySelector('input');
       const recognition = new SpeechRecognition();
       recognition.lang = 'ja-JP';
       recognition.continuous = false;
       recognition.interimResults = true;
-     
-      button.classList.add('recording');
-      button.innerHTML = '<span class="material-symbols-outlined" style="animation: blink 1s infinite;">mic</span> 聴取中...';
-      button.disabled = true;
+      
+      // 背景色などの変更はクリック直後でOK
       input.style.backgroundColor = '#FFF3E0';
       input.style.borderColor = '#FF9800';
-     
+      
+      // ★ 変更点1: 音声認識が「実際に始まってから」ボタンを無効化する
       recognition.onstart = () => {
-        // 入力中のビジュアル変更
+        button.classList.add('recording');
+        button.innerHTML = '<span class="material-symbols-outlined" style="animation: blink 1s infinite;">mic</span> 聴取中...';
+        button.disabled = true;
       };
-     
+      
       recognition.onresult = (event) => {
         let transcript = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -1669,11 +1670,16 @@
         }
         if (transcript) {
           input.value = (input.value + transcript).trim();
-          calculateAmount(input);
+          
+          // ★ 変更点2: calculateAmount という関数が存在するときだけ実行する（エラー防止）
+          if (typeof calculateAmount === 'function') {
+            calculateAmount(input);
+          }
         }
       };
-     
+      
       recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error); // 原因調査用にコンソールにログを出す
         button.classList.remove('recording');
         input.style.backgroundColor = '';
         input.style.borderColor = '';
@@ -1684,7 +1690,7 @@
           confirmButtonText: '了解'
         });
       };
-     
+      
       recognition.onend = () => {
         button.classList.remove('recording');
         button.innerHTML = '<span class="material-symbols-outlined">mic</span>';
@@ -1692,14 +1698,14 @@
         input.style.backgroundColor = '';
         input.style.borderColor = '';
       };
-     
+      
       recognition.start();
     }
   
     // =================================================================
     // 新規登録データ送信処理
     // =================================================================
-async function handleCreateSubmit(event) {
+    async function handleCreateSubmit(event) {
       event.preventDefault();
       const form = event.target;
       const formData = new FormData(form);
