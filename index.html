@@ -410,7 +410,7 @@
   </style>
 </head>
 <body>
-    
+  
   <!-- ログイン画面：初期表示（認証前） -->
   <div id="loginScreen" class="login-container" style="display:none;">
     <div class="login-box">
@@ -438,6 +438,7 @@
   </div>
   
   <!-- 初期ローディング画面：ページ読み込み時の表示 -->
+  <!-- ※JavaScriptで表示する際は、displayを 'flex' に切り替えてください -->
   <div id="initLoader" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #ffffff; z-index: 9999; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 120px;">
     <div style="width: 100%; max-width: 350px; text-align: center;">
       <!-- 波状のローディングアニメーション -->
@@ -556,14 +557,14 @@
               <input type="text" id="newProjectTypeInput" placeholder="新規案件種別名を入力してください" style="width: 100%;">
             </div>
           </div>
-        </div>
+        </div> <!-- 【修正：閉じ忘れのdivを追加】 -->
   
         <!-- 発注元選択：ドロップダウンまたは新規入力 -->
-        <div class="form-group">
+        <div class="form-group" style="margin-top: 15px;">
           <label>発注元 <span class="badge-required">必須</span></label>
           <select name="発注元" id="addClientSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newClientInputGroup')"></select>
           <div id="newClientInputGroup" style="display: none; margin-top: 8px;">
-            <input type="text" id="newClientInput" placeholder="新規発注元名を入力してください">
+            <input type="text" id="newClientInput" placeholder="新規発注元名を入力してください" style="width: 100%;">
           </div>
         </div>
   
@@ -587,9 +588,10 @@
           <!-- 工事予定フィールド動的生成エリア -->
           <div id="dynamicWorkFieldsContainer"></div>
         
-          <!-- 工事日程追加ボタン  -->
+          <!-- 工事日程追加ボタン -->
+          <!-- 【修正：translateYを単体ではなく transform の中に修正】 -->
           <button type="button" id="addWorkBtn" class="btn" style="margin-top:16px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="showNextWorkField()">
-            <span class="material-symbols-outlined" style="font-size:18px; translateY(5px); ">add_circle</span> 施工日・工事内容・担当を追加
+            <span class="material-symbols-outlined" style="font-size:18px; transform: translateY(0px);">add_circle</span> 施工日・工事内容・担当を追加
           </button>
         </div>
   
@@ -614,7 +616,7 @@
         <!-- 延床面積 -->
         <div class="form-group">
           <label><span class="material-symbols-outlined">square_foot</span> 延床面積</label>
-          <input type="text" id="room_area" name="延床面積" placeholder="例：85㎡">
+          <input type="text" id="room_area" name="延床面積" placeholder="例：85㎡" style="width: 100%;">
         </div>
   
         <!-- セクション4：担当者情報 -->
@@ -623,27 +625,27 @@
           <label><span class="material-symbols-outlined">person</span> 担当者</label>
           <select name="担当者" id="addStaffSelect" style="width:100%;" onchange="handleStaffChange(this, 'addPhoneInput', 'newStaffInputGroup')"></select>
           <div id="newStaffInputGroup" style="display: none; margin-top: 8px;">
-            <input type="text" id="newStaffInput" placeholder="新規担当者名を入力してください">
+            <input type="text" id="newStaffInput" placeholder="新規担当者名を入力してください" style="width: 100%;">
           </div>
         </div>
   
         <!-- 連絡先（担当者選択時に自動入力） -->
         <div class="form-group">
           <label><span class="material-symbols-outlined">phone</span> 連絡先</label>
-          <input type="text" name="連絡先" id="addPhoneInput" placeholder="担当者を選択すると自動反映されます">
+          <input type="text" name="連絡先" id="addPhoneInput" placeholder="担当者を選択すると自動反映されます" style="width: 100%;">
         </div>
   
         <!-- キーBOX（暗証番号・保管場所） -->
         <div class="form-group">
           <label><span class="material-symbols-outlined">key</span> キーBOX</label>
-          <input type="text" id="key_box" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所">
+          <input type="text" id="key_box" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所" style="width: 100%;">
         </div>
   
         <!-- 備考欄 -->
         <div class="form-group">
           <label><span class="material-symbols-outlined">notes</span> 備 考</label>
           <div class="voice-input-wrapper">
-          <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください"></textarea>
+            <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください" style="width: 100%; box-sizing: border-box;"></textarea>
             <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
               <span class="material-symbols-outlined">mic</span>
             </button>
@@ -651,10 +653,11 @@
         </div>
         
         <!-- セクション5：検査日時指定（日付＋時刻） -->
-        <div style="grid-column: span 2;">
+        <!-- ※親のformにGridレイアウトを適用しない場合、grid-columnは通常のブロックとして処理されます -->
+        <div style="margin-bottom: 20px;">
           <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px;">検査日（時刻指定）</label>
           <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
-            <input type="date" id="newInspectionDate" name="検査日" placeholder="日付を選択">
+            <input type="date" id="newInspectionDate" name="検査日" placeholder="日付を選択" style="width: 100%;">
             <select id="newInspectionHour" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
               <option value="">時</option>
             </select>
@@ -672,23 +675,23 @@
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="form-group" style="margin:0;">
               <label>システムID</label>
-              <input type="text" id="system_id" name="システムID" placeholder="システムID">
+              <input type="text" id="system_id" name="システムID" placeholder="システムID" style="width: 100%;">
             </div>
             <div class="form-group" style="margin:0;">
               <label>物件ID</label>
-              <input type="text" id="property_id" name="物件ID" placeholder="物件ID">
+              <input type="text" id="property_id" name="物件ID" placeholder="物件ID" style="width: 100%;">
             </div>
             <div class="form-group" style="margin:0;">
               <label>着工日</label>
-              <input type="date" id="construction_start_date" name="着工日">
+              <input type="date" id="construction_start_date" name="着工日" style="width: 100%;">
             </div>
             <div class="form-group" style="margin:0;">
               <label>完成日</label>
-              <input type="date" id="completion_date" name="完成日">
+              <input type="date" id="completion_date" name="完成日" style="width: 100%;">
             </div>
-            <div class="form-group" style="margin:0;">
+            <div class="form-group" style="margin:0; grid-column: span 2;">
               <label>引渡日</label>
-              <input type="date" name="引渡日">
+              <input type="date" name="引渡日" style="width: 100%;">
             </div>
           </div>
         </div>
@@ -730,7 +733,7 @@
     transition: all 0.3s ease; align-items: center; justify-content: center;">
     <span class="material-symbols-outlined" style="font-size: 24px;">arrow_upward</span>
   </button>
-
+  
   <script>
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbzDU-eldEfHba9IA1vXFZDogvozxKlUOfp_e3XMjOZFj519yFskQrvykhzgp3G18Uic6w/exec';
     let appConfig = {};
