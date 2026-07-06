@@ -411,31 +411,33 @@
 </head>
 <body>
   
-  <!-- ログイン画面：初期表示（認証前） -->
-  <div id="loginScreen" class="login-container" style="display:none;">
-    <div class="login-box">
-      <h2 style="text-align:center; margin-bottom:32px;">案件管理アプリ ログイン</h2>
-      
+<!-- ログイン画面：初期表示（認証前） -->
+<div id="loginScreen" class="login-container" style="display:none;">
+  <div class="login-box">
+    <h2 style="text-align:center; margin-bottom:32px;">案件管理アプリ ログイン</h2>
+    
+    <form id="loginForm" onsubmit="handleLoginSubmit(event)">
       <!-- ログインID入力欄 -->
       <div style="margin-bottom:20px;">
         <label style="display:block; margin-bottom:8px; font-weight:bold;">ログインID</label>
-        <input type="text" id="loginIdInput" style="width:100%;" placeholder="IDを入力してください">
+        <!-- autocompleteを追加しておくとブラウザに親切です -->
+        <input type="text" id="loginIdInput" style="width:100%;" placeholder="IDを入力してください" autocomplete="username" required>
       </div>
-      
       <!-- パスワード入力欄：表示/非表示切り替え機能付き -->
       <div style="margin-bottom:32px; position:relative;">
         <label style="display:block; margin-bottom:8px; font-weight:bold;">パスワード</label>
-        <input type="password" id="loginPasswordInput" style="width:100%; padding-right:50px; box-sizing: border-box;" placeholder="パスワードを入力してください">
+        <input type="password" id="loginPasswordInput" style="width:100%; padding-right:50px; box-sizing: border-box;" placeholder="パスワードを入力してください" autocomplete="current-password" required>
         <!-- パスワード表示・非表示切り替えアイコン -->
         <span onclick="togglePasswordVisibility()" style="position:absolute; right:12px; top:45px; cursor:pointer; color:var(--text-sub); user-select:none;">
           <span id="eyeIcon" class="material-symbols-outlined" style="font-size: 22px; vertical-align: middle;">visibility_off</span>
         </span>
       </div>
-      
       <!-- ログインボタン -->
-      <button id="loginBtn" class="btn btn-primary" onclick="handleLoginSubmit()" style="width:100%; padding:14px; font-size:18px;">ログイン</button>
-    </div>
+      <button type="submit" id="loginBtn" class="btn btn-primary" style="width:100%; padding:14px; font-size:18px;">ログイン</button>
+      
+    </form>
   </div>
+</div>
   
   <!-- 初期ローディング画面：ページ読み込み時の表示 -->
   <!-- ※JavaScriptで表示する際は、displayを 'flex' に切り替えてください -->
@@ -924,6 +926,9 @@
     }
   
     async function handleLoginSubmit() {
+      if (e && e.preventDefault) {
+          e.preventDefault();
+      }
       const id = document.getElementById("loginIdInput").value.trim();
       const pw = document.getElementById("loginPasswordInput").value.trim();
       if (!id || !pw) return showToast("IDとパスワードを入力してください。", true);
