@@ -1046,16 +1046,32 @@
     // 新規登録モーダル内のセレクトボックス生成（オブジェクト対応版）
     function initSelectWithOptions(elementId, dataList, suffix) {
       const el = document.getElementById(elementId);
-      if(!el) return;
+      if (!el) return;
+
       el.innerHTML = '<option value="">選択してください</option>';
-      
+
       (dataList || []).forEach(v => {
-        // 要素がオブジェクトなら .name や .value を取得、なければそのまま使用
-        const val = (v && typeof v === 'object') ? (v.name || v.value || Object.values(v)[0]) : v;
-        
-        el.innerHTML += `<option value="${val}">${val}</option>`;
+
+        // 実際に保存する値
+        const val = (v && typeof v === "object")
+          ? (v.name || v.value || Object.values(v)[0])
+          : v;
+
+        // 表示する文字
+        let text = val;
+
+        // 発注元だけ会社種別を省略表示
+        if (suffix === "発注元" && typeof val === "string") {
+          text = val
+            .replace(/^株式会社/, "")
+            .replace(/^有限会社/, "")
+            .replace(/株式会社$/, "")
+            .replace(/有限会社$/, "");
+        }
+
+        el.innerHTML += `<option value="${val}">${text}</option>`;
       });
-      
+
       el.innerHTML += `<option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix})</option>`;
     }
     // =================================================================
@@ -1459,13 +1475,13 @@
           matched = appConfig.managerByClient[selectedClient].find(m => m.name === selectEl.value);
         }
         
-        // 優先順位2：全マネージャーリストから探す
+        /*// 優先順位2：全マネージャーリストから探す
         if (!matched) {
           matched = (appConfig.managerList || []).find(s => {
             const sName = (typeof s === 'object') ? s.name : s;
             return sName === selectEl.value;
           });
-        }
+        }*/
         
         phoneInput.value = (matched && typeof matched === 'object') ? (matched.phone || "") : "";
         phoneInput.readOnly = !!matched;
@@ -1495,10 +1511,10 @@
           });
         }
         
-        // 優先順位2：全マネージャーリストから探す
+        /*// 優先順位2：全マネージャーリストから探す
         if (!matched) {
           matched = (appConfig.managerList || []).find(s => getStaffName(s) === selectEl.value);
-        }
+        }*/
         
         // 3. 連絡先の反映と読み取り専用(ReadOnly)制御
         if (matched && typeof matched === 'object') {
