@@ -559,7 +559,7 @@
               <input type="text" id="newProjectTypeInput" placeholder="新規案件種別名を入力してください" style="width: 100%;">
             </div>
           </div>
-        </div> <!-- 【修正：閉じ忘れのdivを追加】 -->
+        </div>
   
         <!-- 発注元選択：ドロップダウンまたは新規入力 -->
         <div class="form-group" style="margin-top: 15px;">
@@ -1048,7 +1048,12 @@
       const el = document.getElementById(elementId);
       if (!el) return;
 
-      el.innerHTML = '<option value="">選択してください</option>';
+      // 最初に「新規」を表示
+      el.innerHTML = `
+        <option value="">選択してください</option>
+        <option value="(新規${suffix})">➕ 新規${suffix}を登録</option>
+        <option disabled>────────────</option>
+      `;
 
       (dataList || []).forEach(v => {
 
@@ -1062,7 +1067,7 @@
 
         // 発注元だけ会社種別を省略表示
         if (suffix === "発注元" && typeof val === "string") {
-          text = val
+          text = text
             .replace(/^株式会社/, "")
             .replace(/^有限会社/, "")
             .replace(/株式会社$/, "")
@@ -1071,8 +1076,6 @@
 
         el.innerHTML += `<option value="${val}">${text}</option>`;
       });
-
-      el.innerHTML += `<option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix})</option>`;
     }
     // =================================================================
     // 検索結果リスト表示
