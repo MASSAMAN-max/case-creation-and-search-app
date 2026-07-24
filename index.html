@@ -496,11 +496,11 @@
         <div style="display: flex; flex-wrap: nowrap; gap: 10px; width: 100%;">
           <div style="flex: 1; min-width: 0;">
             <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（開始）</label>
-            <input type="date" id="filterStartDate" style="width: 100%;" onchange="handleStartDateChange()">
+            <input type="date" id="filterStartDate" style="width: 100%;" onchange="handleStartDateChange()" onclick="this.showPicker?.()" style="cursor:pointer;">
           </div>
           <div style="flex: 1; min-width: 0;">
             <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（終了）</label>
-            <input type="date" id="filterEndDate" style="width: 100%;">
+            <input type="date" id="filterEndDate" style="width: 100%;" onclick="this.showPicker?.()" style="cursor:pointer;">
           </div>
         </div>
         
@@ -659,7 +659,7 @@
         <div style="margin-bottom: 20px;">
           <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px;">検査日（時刻指定）</label>
           <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
-            <input type="date" id="newInspectionDate" name="検査日" placeholder="日付を選択" style="width: 100%;">
+            <input type="date" id="newInspectionDate" name="検査日" placeholder="日付を選択" style="width: 100%;" onclick="this.showPicker?.()" style="cursor:pointer;">
             <select id="newInspectionHour" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
               <option value="">時</option>
             </select>
@@ -685,15 +685,15 @@
             </div>
             <div class="form-group" style="margin:0;">
               <label>着工日</label>
-              <input type="date" id="construction_start_date" name="着工日" style="width: 100%;">
+              <input type="date" id="construction_start_date" name="着工日" style="width: 100%;" onclick="this.showPicker?.()" style="cursor:pointer;">
             </div>
             <div class="form-group" style="margin:0;">
               <label>完成日</label>
-              <input type="date" id="completion_date" name="完成日" style="width: 100%;">
+              <input type="date" id="completion_date" name="完成日" style="width: 100%;" onclick="this.showPicker?.()" style="cursor:pointer;">
             </div>
             <div class="form-group" style="margin:0; grid-column: span 2;">
               <label>引渡日</label>
-              <input type="date" name="引渡日" style="width: 100%;">
+              <input type="date" name="引渡日" style="width: 100%;" onclick="this.showPicker?.()" style="cursor:pointer;">
             </div>
           </div>
         </div>
@@ -759,7 +759,7 @@
                 <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span><span>施工予定日 ${i}</span>
                 <span id="newDaySpan_${i}" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span>
               </label>
-              <input type="date" name="施工日${i}" onchange="updateInputWeekday(this, 'newDaySpan_${i}')" style="margin-top: 2px;">
+              <input type="date" name="施工日${i}" onchange="updateInputWeekday(this, 'newDaySpan_${i}')" onclick="this.showPicker && this.showPicker();" style="margin-top: 2px; cursor:pointer;">
             </div>
             
             <div class="form-group">
@@ -1252,7 +1252,7 @@
                       <label>施工予定日 ${i} 
                         <span id="editDaySpan_${record.No}_${i}" style="font-weight:bold; color:var(--primary);">${getWeekday(cDate)}</span>
                       </label>
-                      <input type="date" id="editWorkDate_${record.No}_${i}" value="${cDate}" onchange="updateInputWeekday(this, 'editDaySpan_${record.No}_${i}')">
+                      <input type="date" id="editWorkDate_${record.No}_${i}" value="${cDate}" onchange="updateInputWeekday(this, 'editDaySpan_${record.No}_${i}')" onclick="this.showPicker?.()" style="cursor:pointer;">
                     </div>    
                     <div>
                       <label>工事内容 ${i}</label>
@@ -1279,7 +1279,7 @@
             <div class="form-group" style="margin-top:14px;">
               <label style="font-weight:bold; font-size:14px; color:var(--text-sub);">検査日（時刻指定）</label>
               <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
-                <input type="date" id="検査日_${record.No}" value="${parseDate(record.検査日)}">
+                <input type="date" id="検査日_${record.No}" value="${parseDate(record.検査日)}" onclick="this.showPicker?.()" style="cursor:pointer;">
                 <select id="検査日時_${record.No}" style="padding: 10px; border: 2px solid var(--border); border-radius: 8px; box-sizing: border-box;">
                   <option value="">時</option>
                 </select>
