@@ -1774,7 +1774,7 @@
       const payload = {};
       formData.forEach((value, key) => { payload[key] = value; });
       
-      // 新規入力処理
+      // 新規入力項目の取得・補正
       if (payload["受注媒体"] === "(新規受注媒体)") {
         payload["受注媒体"] = document.getElementById("newMediaInput").value.trim();
         payload["isNewMedia"] = true;
@@ -1801,22 +1801,19 @@
         payload["担当者"] = document.getElementById("newStaffInput").value.trim();
         payload["isNewStaff"] = true;
       }
-  
-      payload["loginUser"] = localStorage.getItem('app_login_userName') || '';
-      const nowStr = getNowDateTimeString();
-      payload["作成日時"] = nowStr;
     
-      // 検査日＋時刻を結合（formDataの検査日を上書き）
+      payload["loginUser"] = localStorage.getItem('app_login_userName') || '';
+      payload["作成日時"] = getNowDateTimeString();
+    
+      // 検査日＋時刻の結合
       const inspectionDate = document.getElementById("newInspectionDate").value;
       const inspectionHour = document.getElementById("newInspectionHour").value;
       const inspectionMinute = document.getElementById("newInspectionMinute").value;
     
       if (inspectionDate) {
         if (inspectionHour !== "" && inspectionMinute !== "") {
-          // 💡 どんな選択肢の形式でも、数字だけを抽出して必ず2桁（05、14など）に整形する
           const cleanHour = String(inspectionHour).replace(/[^0-9]/g, '').padStart(2, '0');
           const cleanMinute = String(inspectionMinute).replace(/[^0-9]/g, '').padStart(2, '0');
-
           payload["検査日"] = `${inspectionDate}T${cleanHour}:${cleanMinute}`; 
         } else {
           payload["検査日"] = inspectionDate;
@@ -1824,11 +1821,12 @@
       } else {
         payload["検査日"] = "";
       }
-  
+    
+      // 添付ファイルの準備
       const files = selectedFilesMap["NEW_PROJECT"] || [];
       if (files.length > 0) {
         document.getElementById("initLoader").style.display = "flex";
-        document.getElementById("loaderText").textContent = "ファイルを処理中...";
+        document.getElementById("loaderText").textContent = "ファイルを準備中...";
         payload.files = await Promise.all(files.map(fileToBase64));
       } else {
         payload.files = [];
@@ -1838,28 +1836,77 @@
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "新規案件を登録中...";
     
+      // =================================================================
+      // 【1段目】シート追加処理
+      // =================================================================
       try {
-        await apiCall("createRecordExtended", { fData: payload });
+        const response = await apiCall("createRecordSheetOnly", { fData: payload });
+        
+        // 1. ローダー解除＆新規モーダルを閉じる
         loader.style.display = "none";
-        showToast("新規案件の登録が完了しました。");
         closeCreateModal();
-        // マスタデータを再取得（ログイン状態は保持）
-        const data = await apiCall("loadAppDataMaster");
-        appConfig = data;
+    
+        // 2. 状態のクリアと画面（一覧）の再検索
+        selectedFilesMap["NEW_PROJECT"] = [];
+        if (typeof search === 'function') search();
+    
+        // 3. 成功ダイアログを表示
+        Swal.fire({
+          icon: 'success',
+          title: '新規案件の登録完了',
+          text: 'スプレッドシートへの追加が完了しました。裏でカレンダー同期等の処理を実行しています。',
+          confirmButtonText: '了解'
+        });
+    
+        // =================================================================
+        // 【2段目】重い処理を非同期実行（バックグラウンド）
+        // =================================================================
+        const newRowNumber = response.data.rowNumber;
+        const flags = { inspectionDateChanged: !!payload["検査日"] };
+    
+        apiCall("processBackgroundTasks", { fData: payload, rNum: newRowNumber, flags: flags })
+          .then(() => {
+            // ★ 全処理成功時のみトースト表示
+            showToast("すべての処理が完了しました");
+            
+            // バックグラウンドでマスタデータを再取得・更新
+            apiCall("loadAppDataMaster").then(data => {
+              if (data && data.data) appConfig = data.data;
+            }).catch(console.error);
+          })
+          .catch((bgErr) => {
+            console.error("❌ バックグラウンド処理エラー(新規登録):", bgErr);
+            Swal.fire({
+              icon: 'error',
+              title: '背景処理でエラーが発生しました',
+              html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期や添付ファイル保存でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
+              confirmButtonText: '了解'
+            });
+          });
+    
       } catch (err) {
+        // 1段目失敗時も必ずローダーを消す
         loader.style.display = "none";
-        showToast("登録エラー: " + err.message, true);
+        console.error("❌ 新規登録エラー:", err);
+        
+        Swal.fire({
+          icon: 'error',
+          title: '登録エラーが発生しました',
+          html: `<strong>${err.message}</strong><br><br><small>詳細はコンソール（F12）を確認してください</small>`,
+          confirmButtonText: '了解'
+        });
       }
     }
     
     // =================================================================
-    // 詳細データ修正保存処理（修正版）
+    // 詳細データ修正保存処理
     // =================================================================
     window.saveRecord = async function(rNum, rowNumber) {
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
-      document.getElementById("loaderText").textContent = "修正データを保存中...";
-     
+      document.getElementById("loaderText").textContent = "スプレッドシートを更新中...";
+      
+      // 1. フォームデータの収集
       const fData = {
         No: rNum,
         住所: document.getElementById(`住所_${rNum}`).value,
@@ -1873,7 +1920,7 @@
         完成日: document.getElementById(`完成日_${rNum}`).value,
         引渡日: document.getElementById(`引渡日_${rNum}`).value
       };
-     
+      
       const projectTypeSel = document.getElementById(`addProjectTypeSelect_${rNum}`);
       if (projectTypeSel && projectTypeSel.value === "(新規案件種別)") {
         fData["案件種別"] = document.getElementById(`newProjectTypeInput_${rNum}`).value.trim();
@@ -1881,8 +1928,8 @@
       } else if (projectTypeSel) {
         fData["案件種別"] = projectTypeSel.value;
       }
-     
-      // 検査日＋時刻を正確に結合
+      
+      // 検査日＋時刻の結合
       const inspectionDate = document.getElementById(`検査日_${rNum}`).value;
       const inspectionHourSel = document.getElementById(`検査日時_${rNum}`);
       const inspectionMinuteSel = document.getElementById(`検査日分_${rNum}`);
@@ -1892,10 +1939,8 @@
         const minuteVal = inspectionMinuteSel ? inspectionMinuteSel.value : "";
         
         if (hourVal && minuteVal) {
-          // セレクトボックスから数字だけを抽出して統一形式に
           const cleanHour = String(hourVal).replace(/[^0-9]/g, '').padStart(2, '0');
           const cleanMinute = String(minuteVal).replace(/[^0-9]/g, '').padStart(2, '0');
-          
           fData["検査日"] = `${inspectionDate}T${cleanHour}:${cleanMinute}`;
         } else {
           fData["検査日"] = inspectionDate;
@@ -1903,7 +1948,7 @@
       } else {
         fData["検査日"] = "";
       }
-     
+      
       // 工事日程・内容・担当者
       for (let i = 1; i <= 4; i++) {
         fData["施工日" + i] = document.getElementById(`editWorkDate_${rNum}_${i}`).value;
@@ -1924,7 +1969,7 @@
           fData["工事担当者" + i] = wSel.value;
         }
       }
-     
+      
       const staffSel = document.getElementById(`editStaffSelect_${rNum}`);
       if (staffSel && staffSel.value === "(新規担当者)") {
         fData["担当者"] = document.getElementById(`newEditStaffInput_${rNum}`).value.trim();
@@ -1937,30 +1982,74 @@
       if (phoneInput) {
         fData["連絡先"] = phoneInput.value.trim();
       }
-     
+      
       fData["loginUser"] = localStorage.getItem('app_login_userName') || '';
       fData["更新日時"] = getNowDateTimeString();
-     
+      
+      // ファイル変換処理
       const files = selectedFilesMap[rNum] || [];
       if (files.length > 0) {
-        document.getElementById("loaderText").textContent = "ファイルを処理中...";
+        document.getElementById("loaderText").textContent = "ファイルを準備中...";
         fData.files = await Promise.all(files.map(fileToBase64));
       } else {
         fData.files = [];
       }
-     
+      
+      // =================================================================
+      // 【1段目】シート書き込み処理
+      // =================================================================
       try {
-        await apiCall("updateRecordExtended", { fData: fData, rNum: rowNumber });
+        document.getElementById("loaderText").textContent = "シートを更新中...";
+        const response = await apiCall("updateRecordSheetOnly", { fData: fData, rNum: rowNumber });
+        
+        // 1. ローダーを消して画面を解放
         loader.style.display = "none";
         
-        showToast("データの修正が完了しました。");
+        // 2. UIの更新・メイン画面への復帰
         selectedFilesMap[rNum] = [];
-        renderFileList(rNum);
-        search();
+        if (typeof renderFileList === 'function') renderFileList(rNum);
+        if (typeof search === 'function') search(); // 再検索で画面反映
+        
+        // 3. 「スプレッドシート保存完了」ダイアログ（Swal.fire）を表示
+        Swal.fire({
+          icon: 'success',
+          title: 'スプレッドシート保存完了',
+          text: 'シートへの書き込みが完了しました。裏でカレンダー同期等の処理を実行しています。',
+          confirmButtonText: '了解'
+        });
+    
+        // =================================================================
+        // 【2段目】重い処理を非同期実行（バックグラウンド）
+        // =================================================================
+        const flags = (response && response.data && response.data.flags) ? response.data.flags : {};
+        
+        apiCall("processBackgroundTasks", { fData: fData, rNum: rowNumber, flags: flags })
+          .then(() => {
+            // ★ 全処理が成功した場合のみトースト通知を出す
+            showToast("すべての処理が完了しました");
+          })
+          .catch((bgErr) => {
+            console.error("❌ バックグラウンド処理エラー:", bgErr);
+            // ★ 背景処理でエラーが起きた場合はエラーアラートを表示
+            Swal.fire({
+              icon: 'error',
+              title: '背景処理でエラーが発生しました',
+              html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期や添付ファイル保存でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
+              confirmButtonText: '了解'
+            });
+          });
+    
       } catch (err) {
+        // 1段目（シート書き込み失敗）のときも必ずローダーを消す
         loader.style.display = "none";
-        console.error("【保存エラー詳細】", err);
-        showToast("保存エラー: " + err.message, true);
+        
+        console.error("❌ シート書き込みエラー:", err);
+        Swal.fire({
+          icon: 'error',
+          title: '保存エラーが発生しました',
+          html: `<strong>${err.message}</strong><br><br><small>詳細はコンソール（F12）を確認してください</small>`,
+          confirmButtonText: '了解'
+        });
       }
     };
   
