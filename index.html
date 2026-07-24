@@ -1031,26 +1031,50 @@
         <option value="">選択してください</option>
         <option value="(新規${suffix})">＋ 新規${suffix}</option>
       `;
-
+    
       let exist = false;
-
+    
       (masterList || []).forEach(v => {
-        // 要素がオブジェクトなら .name や .value を取得、なければそのまま使用
+        // 実際に保存する値
         const val = (v && typeof v === 'object')
           ? (v.name || v.value || Object.values(v)[0])
           : v;
-
+    
+        // 表示する文字
+        let text = val;
+    
+        // 発注元だけ会社種別を省略表示
+        if (suffix === "発注元" && typeof val === "string") {
+          text = text
+            .replace(/^株式会社/, "")
+            .replace(/^有限会社/, "")
+            .replace(/株式会社$/, "")
+            .replace(/有限会社$/, "");
+        }
+    
         const sel = (val === currentVal) ? 'selected' : '';
         if (sel) exist = true;
-
-        html += `<option value="${val}" ${sel}>${val}</option>`;
+    
+        html += `<option value="${val}" ${sel}>${text}</option>`;
       });
-
+    
       // 現在値がマスタにない場合だけ追加
       if (currentVal && !exist) {
-        html += `<option value="${currentVal}" selected>${currentVal}</option>`;
+    
+        let text = currentVal;
+    
+        // 発注元だけ会社種別を省略表示
+        if (suffix === "発注元" && typeof currentVal === "string") {
+          text = text
+            .replace(/^株式会社/, "")
+            .replace(/^有限会社/, "")
+            .replace(/株式会社$/, "")
+            .replace(/有限会社$/, "");
+        }
+    
+        html += `<option value="${currentVal}" selected>${text}</option>`;
       }
-
+    
       return html;
     }
   
@@ -1062,7 +1086,7 @@
       // 最初に「新規」を表示
       el.innerHTML = `
         <option value="">選択してください</option>
-        <option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(＋ 新規${suffix}を登録) </option>
+        <option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix}を登録) </option>
         <option disabled>────────────</option>
       `;
 
