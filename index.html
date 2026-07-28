@@ -1840,7 +1840,9 @@
       // 【1段目】シート追加処理
       // =================================================================
       try {
-        const response = await apiCall("createRecordSheetOnly", { fData: payload });
+        const fDataForSheetOnly = Object.assign({}, payload);
+        delete fDataForSheetOnly.files; // 高速な1段目にはファイルの重いbase64データを含めない
+        const response = await apiCall("createRecordSheetOnly", { fData: fDataForSheetOnly });
         
         // 1. ローダー解除＆新規モーダルを閉じる
         loader.style.display = "none";
@@ -1861,8 +1863,8 @@
         // =================================================================
         // 【2段目】重い処理を非同期実行（バックグラウンド）
         // =================================================================
-        const newRowNumber = response.data.rowNumber;
-        const flags = { inspectionDateChanged: !!payload["検査日"] };
+        const newRowNumber = response.rowNumber;
+        const flags = { inspectionDateChanged: !!payload["検査日"], isNew: true };
     
         apiCall("processBackgroundTasks", { fData: payload, rNum: newRowNumber, flags: flags })
           .then(() => {
@@ -1871,7 +1873,7 @@
             
             // バックグラウンドでマスタデータを再取得・更新
             apiCall("loadAppDataMaster").then(data => {
-              if (data && data.data) appConfig = data.data;
+              if (data) appConfig = data;
             }).catch(console.error);
           })
           .catch((bgErr) => {
@@ -2000,7 +2002,9 @@
       // =================================================================
       try {
         document.getElementById("loaderText").textContent = "シートを更新中...";
-        const response = await apiCall("updateRecordSheetOnly", { fData: fData, rNum: rowNumber });
+        const fDataForSheetOnly = Object.assign({}, fData);
+        delete fDataForSheetOnly.files; // 高速な1段目にはファイルの重いbase64データを含めない
+        const response = await apiCall("updateRecordSheetOnly", { fData: fDataForSheetOnly, rNum: rowNumber });
         
         // 1. ローダーを消して画面を解放
         loader.style.display = "none";
@@ -2021,7 +2025,7 @@
         // =================================================================
         // 【2段目】重い処理を非同期実行（バックグラウンド）
         // =================================================================
-        const flags = (response && response.data && response.data.flags) ? response.data.flags : {};
+        const flags = (response && response.flags) ? response.flags : {};
         
         apiCall("processBackgroundTasks", { fData: fData, rNum: rowNumber, flags: flags })
           .then(() => {
