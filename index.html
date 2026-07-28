@@ -799,9 +799,24 @@
       }
     };
   
-    const FILE_TYPES_DEF = {
+  /*  const FILE_TYPES_DEF = {
       "01": "Q R", "02": "工程", "03": "平面", "04": "立面", "05": "注文",
       "06": "駐車", "07": "写真", "08": "見積", "09": "その他", "10": "地図", "20": "請求"
+    };　*/
+
+    const FILE_TYPES_DEF = {
+      "01": { name: "QR",       keywords: ["QR"] },
+      "02": { name: "工程表",   keywords: ["工程表", "工程"] },
+      "03": { name: "平面図",   keywords: ["平面図", "平面"] },
+      "04": { name: "立面図",   keywords: ["立面図", "立面"] },
+      "05": { name: "注文書",   keywords: ["注文書", "注文", "発注書", "発注"] },
+      "06": { name: "駐車場",   keywords: ["駐車場", "駐車"] },
+      "07": { name: "現場写真", keywords: ["現場写真", "写真"] },
+      "08": { name: "見積書",   keywords: ["見積書", "見積"] },
+      "09": { name: "その他",   keywords: ["その他"] },
+      "10": { name: "地図",     keywords: ["地図", "案内図"] },
+      "20": { name: "請求書",   keywords: ["請求書", "請求"] },
+      "21": { name: "出来高",   keywords: ["出来高", "出来高報告書"] }
     };
   
     // yyyy-mm-dd HH:MM:SS 形式
@@ -1575,20 +1590,94 @@
   
     function addSelectedFiles(files, key) {
       if (!selectedFilesMap[key]) selectedFilesMap[key] = [];
-      files.forEach(f => selectedFilesMap[key].push(f));
+    
+      files.forEach(file => {
+        selectedFilesMap[key].push({
+          file: file,
+          fileType: null
+        });
+      });
+    
       renderFileList(key);
     }
-  
+
+    function getFileTypeNum(fileName) {
+      for (const [id, def] of Object.entries(FILE_TYPES_DEF)) {
+        if (def.keywords.some(keyword => fileName.includes(keyword))) {
+          return id;
+        }
+      }
+      return "09";
+    }
+    
     function renderFileList(key) {
-      const targetId = (key === 'NEW_PROJECT') ? 'createFileList' : `fileList_${key}`;
+      const targetId = (key === 'NEW_PROJECT')
+        ? 'createFileList'
+        : `fileList_${key}`;
+    
       const div = document.getElementById(targetId);
-      if(!div) return;
+      if (!div) return;
+    
       div.innerHTML = '';
-      (selectedFilesMap[key] || []).forEach((f, idx) => {
-        const item = document.createElement("div");
-        item.className = "file-item";
-        item.innerHTML = `<span style="flex:1; text-align:left; font-weight:bold;">📄 ${f.name}</span><span class="material-symbols-outlined" style="cursor:pointer; color:#ef4444;" onclick="removeSelectedFile('${key}', ${idx})">delete</span>`;
-        div.appendChild(item);
+    
+      (selectedFilesMap[key] || []).forEach((obj, idx) => {
+    
+        // 初回だけ自動判定
+        if (!obj.fileType) {
+          obj.fileType = getFileTypeNum(obj.file.name);
+        }
+    
+        const wrapper = document.createElement("div");
+        wrapper.className = "file-item";
+        wrapper.style.display = "flex";
+        wrapper.style.flexDirection = "column";
+        wrapper.style.alignItems = "stretch";
+        wrapper.style.gap = "6px";
+        wrapper.style.padding = "8px 0";
+    
+        // プルダウン
+        const select = document.createElement("select");
+        select.style.width = "180px";
+    
+        Object.entries(FILE_TYPES_DEF).forEach(([id, def]) => {
+          const option = document.createElement("option");
+          option.value = id;
+          option.textContent = def.name;
+          option.selected = (id === obj.fileType);
+          select.appendChild(option);
+        });
+    
+        select.onchange = () => {
+          obj.fileType = select.value;
+        };
+    
+        // 下段
+        const row = document.createElement("div");
+        row.style.display = "flex";
+        row.style.alignItems = "center";
+        row.style.gap = "10px";
+    
+        const fileName = document.createElement("span");
+        fileName.style.flex = "1";
+        fileName.style.fontWeight = "bold";
+        fileName.style.textAlign = "left";
+        fileName.textContent = `📄 ${obj.file.name}`;
+    
+        const del = document.createElement("span");
+        del.className = "material-symbols-outlined";
+        del.style.cursor = "pointer";
+        del.style.color = "#ef4444";
+        del.textContent = "delete";
+    
+        del.onclick = () => removeSelectedFile(key, idx);
+    
+        row.appendChild(fileName);
+        row.appendChild(del);
+    
+        wrapper.appendChild(select);
+        wrapper.appendChild(row);
+    
+        div.appendChild(wrapper);
       });
     }
   
@@ -1596,11 +1685,12 @@
       if (selectedFilesMap[key]) { selectedFilesMap[key].splice(idx, 1); renderFileList(key); }
     };
   
-    function fileToBase64(file) {
+    function fileToBase64(fileObj) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve({ base64: reader.result.split(',')[1], name: file.name, type: file.type });
+        reader.readAsDataURL(fileObj.file);
+        reader.onload = () => resolve({ base64: reader.result.split(',')[1], name: fileObj.file.name, type: fileObj.file.type, fileType: fileObj.fileType
+        });
         reader.onerror = (err) => reject(err);
       });
     }
