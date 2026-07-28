@@ -482,7 +482,7 @@
           <span class="material-symbols-outlined">add_circle</span> 新規案件を登録
         </button>
       </div>
-  
+    
       <!-- フィルター・検索エリア -->
       <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
         
@@ -492,15 +492,15 @@
           <select id="filterClient" style="width: 100%; background-color: #fafafa;"><option value="">すべて</option></select>
         </div>
         
-        <!-- フィルター2：施工日の日付範囲選択 -->
-        <div style="display: flex; flex-wrap: nowrap; gap: 10px; width: 100%;">
-          <div style="flex: 1; min-width: 0;">
+        <!-- フィルター2：施工日の日付範囲選択（★styleの重複を解消＆スマホ対応） -->
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; flex: 2; min-width: 280px;">
+          <div style="flex: 1; min-width: 130px;">
             <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（開始）</label>
-            <input type="date" id="filterStartDate" style="width: 100%;" onchange="handleStartDateChange()" onclick="this.showPicker?.()" style="cursor:pointer;">
+            <input type="date" id="filterStartDate" style="width: 100%; cursor: pointer;" onchange="handleStartDateChange()" onclick="this.showPicker?.()">
           </div>
-          <div style="flex: 1; min-width: 0;">
+          <div style="flex: 1; min-width: 130px;">
             <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（終了）</label>
-            <input type="date" id="filterEndDate" style="width: 100%;" onclick="this.showPicker?.()" style="cursor:pointer;">
+            <input type="date" id="filterEndDate" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
           </div>
         </div>
         
@@ -511,7 +511,7 @@
         </div>
         
         <!-- 検索・クリアボタン -->
-        <div style="display: flex; gap: 8px; min-width: 280px;">
+        <div style="display: flex; gap: 8px; min-width: 280px; flex: 1;">
           <button id="searchBtn" class="btn btn-primary" onclick="search()" style="flex: 1; padding: 13px; font-size:18px;">
             <span class="material-symbols-outlined">search</span> 検索する
           </button>
@@ -521,65 +521,65 @@
         </div>
       </div>
     </div>
-  
+    
     <!-- 検索結果件数表示 -->
     <div id="searchCount" style="margin-bottom: 12px; font-weight: bold; font-size: 16px; padding-left: 4px;"></div>
     
     <!-- 検索結果表示エリア：JavaScriptで動的生成 -->
     <div id="results"></div>
-  </div>
-  
-  <!-- 新規案件登録モーダル -->
-  <div id="createModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-      <!-- モーダルヘッダー -->
-      <h2 style="margin-top: 0; margin-bottom: 24px; color: #1e293b; border-bottom: 3px solid var(--success); padding-bottom: 10px; display:flex; align-items:center; gap:8px;">
-        <span class="material-symbols-outlined" style="color:var(--success); font-size:32px;">assignment_add</span> 新規案件の登録
-      </h2>
+    
+    <!-- 新規案件登録モーダル -->
+    <div id="createModal" class="modal-overlay" style="display: none;">
+      <div class="modal-content">
+        <!-- モーダルヘッダー -->
+        <h2 style="margin-top: 0; margin-bottom: 24px; color: #1e293b; border-bottom: 3px solid var(--success); padding-bottom: 10px; display:flex; align-items:center; gap:8px;">
+          <span class="material-symbols-outlined" style="color:var(--success); font-size:32px;">assignment_add</span> 新規案件の登録
+        </h2>
+          
+        <!-- 新規案件登録フォーム -->
+        <form id="createProjectForm" onsubmit="handleCreateSubmit(event)">
+    
+          <!-- セクション1：基本情報（受注媒体・案件種別） -->
+          <div style="display: flex; gap: 12px; width: 100%; flex-wrap: wrap;">
+            <!-- 受注媒体選択：ドロップダウンまたは新規入力 -->
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+              <label>受注媒体 <span class="badge-required">必須</span></label>
+              <select name="受注媒体" id="addMediaSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newMediaInputGroup')"></select>
+              <div id="newMediaInputGroup" style="display: none; margin-top: 3px;">
+                <input type="text" id="newMediaInput" placeholder="新規受注媒体名を入力してください" style="width: 100%;">
+              </div>
+            </div>
         
-      <!-- 新規案件登録フォーム -->
-      <form id="createProjectForm" onsubmit="handleCreateSubmit(event)">
-  
-        <!-- セクション1：基本情報（受注媒体・案件種別） -->
-        <div style="display: flex; gap: 12px; width: 100%;">
-          <!-- 受注媒体選択：ドロップダウンまたは新規入力 -->
-          <div class="form-group" style="flex: 1; min-width: 0;">
-            <label>受注媒体 <span class="badge-required">必須</span></label>
-            <select name="受注媒体" id="addMediaSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newMediaInputGroup')"></select>
-            <div id="newMediaInputGroup" style="display: none; margin-top: 3px;">
-              <input type="text" id="newMediaInput" placeholder="新規受注媒体名を入力してください" style="width: 100%;">
+            <!-- 案件種別選択：ドロップダウンまたは新規入力 -->
+            <div class="form-group" style="flex: 1; min-width: 200px;">
+              <label>案件種別 <span class="badge-required">必須</span></label>
+              <select name="案件種別" id="addProjectTypeSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newProjectTypeInputGroup')"></select>
+              <div id="newProjectTypeInputGroup" style="display: none; margin-top: 3px;">
+                <input type="text" id="newProjectTypeInput" placeholder="新規案件種別名を入力してください" style="width: 100%;">
+              </div>
             </div>
           </div>
-      
-          <!-- 案件種別選択：ドロップダウンまたは新規入力 -->
-          <div class="form-group" style="flex: 1; min-width: 0;">
-            <label>案件種別 <span class="badge-required">必須</span></label>
-            <select name="案件種別" id="addProjectTypeSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newProjectTypeInputGroup')"></select>
-            <div id="newProjectTypeInputGroup" style="display: none; margin-top: 3px;">
-              <input type="text" id="newProjectTypeInput" placeholder="新規案件種別名を入力してください" style="width: 100%;">
+    
+          <!-- 発注元選択：ドロップダウンまたは新規入力 -->
+          <div class="form-group" style="margin-top: 15px;">
+            <label>発注元 <span class="badge-required">必須</span></label>
+            <select name="発注元" id="addClientSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newClientInputGroup')"></select>
+            <div id="newClientInputGroup" style="display: none; margin-top: 8px;">
+              <input type="text" id="newClientInput" placeholder="新規発注元名を入力してください" style="width: 100%;">
             </div>
           </div>
-        </div>
-  
-        <!-- 発注元選択：ドロップダウンまたは新規入力 -->
-        <div class="form-group" style="margin-top: 15px;">
-          <label>発注元 <span class="badge-required">必須</span></label>
-          <select name="発注元" id="addClientSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newClientInputGroup')"></select>
-          <div id="newClientInputGroup" style="display: none; margin-top: 8px;">
-            <input type="text" id="newClientInput" placeholder="新規発注元名を入力してください" style="width: 100%;">
+    
+          <!-- 案件名入力欄 -->
+          <div class="form-group">
+            <label>案件名 <span class="badge-required">必須</span></label>
+            <div class="voice-input-wrapper">
+              <input type="text" id="project_name" name="案件名" placeholder="例：〇〇様邸新築工事" required>
+              <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+                <span class="material-symbols-outlined">mic</span>
+              </button>
+            </div>
           </div>
-        </div>
-  
-        <!-- 案件名入力欄 -->
-        <div class="form-group">
-          <label>案件名 <span class="badge-required">必須</span></label>
-          <div class="voice-input-wrapper">
-            <input type="text" id="project_name" name="案件名" placeholder="例：〇〇様邸新築工事" required>
-            <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
-              <span class="material-symbols-outlined">mic</span>
-            </button>
-          </div>
-        </div>
+
   
         <!-- セクション2：工事予定・担当割当（動的追加可能） -->
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
