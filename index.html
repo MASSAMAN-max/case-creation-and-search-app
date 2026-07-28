@@ -1042,22 +1042,32 @@
   
     // 共通関数1: オブジェクト対応の値抽出
     function extractValue(v) {
-      return (v && typeof v === 'object') 
-        ? (v.name || v.value || Object.values(v)[0]) 
-        : v;
+      if (!v) return "";
+      if (typeof v === 'object') {
+        return String(v.name || v.value || Object.values(v)[0] || "");
+      }
+      return String(v);
     }
     
-    // 共通関数2: 発注元のときだけ会社種別（株式会社・有限会社・(株)など）を削る処理
+    // 共通関数2: 会社種別を徹底的に取り除く（完全版）
     function formatDisplayText(val, suffix) {
-      if (suffix !== "発注元" || typeof val !== "string") return val;
-      
-      return val
-        .replace(/^[（(]?(株式会社|株|有限会社|有)[）)]?/, "") // 前方の会社種別を除去
-        .replace(/[（(]?(株式会社|株|有限会社|有)[）)]?$/, ""); // 後方の会社種別を除去
+      // 文字列化 ＆ 前後の空白除去
+      let text = String(val || "").trim();
+    
+      if (suffix && suffix.includes("発注元")) {
+        text = text
+          // 「(株)」「（株）」「(有)」「（有）」などを消す
+          .replace(/^[（(]?(株|有|株式会社|有限会社)[）)]?/, "")
+          .replace(/[（(]?(株|有|株式会社|有限会社)[）)]?$/, "")
+          // 前後に残った括弧や空白を綺麗にする
+          .trim();
+      }
+    
+      return text;
     }
     
     // ----------------------------------------------------
-    // 1. 検索結果用セレクトボックス生成（株式会社などを省略）
+    // 1. 検索結果用セレクトボックス生成
     // ----------------------------------------------------
     function createOptionsHtml(masterList, currentVal, suffix) {
       let html = `
@@ -1069,7 +1079,7 @@
     
       (masterList || []).forEach(v => {
         const val = extractValue(v);
-        const text = formatDisplayText(val, suffix); // ★省略処理を通す
+        const text = formatDisplayText(val, suffix); // ★強力な削除処理を通す
     
         const sel = (val === currentVal) ? 'selected' : '';
         if (sel) exist = true;
@@ -1079,7 +1089,7 @@
     
       // 現在値がマスタにない場合
       if (currentVal && !exist) {
-        const text = formatDisplayText(currentVal, suffix); // ★省略処理を通す
+        const text = formatDisplayText(currentVal, suffix);
         html += `<option value="${currentVal}" selected>${text}</option>`;
       }
     
@@ -1087,7 +1097,7 @@
     }
     
     // ----------------------------------------------------
-    // 2. 新規登録モーダル用セレクトボックス生成（株式会社などを省略）
+    // 2. 新規登録モーダル用セレクトボックス生成
     // ----------------------------------------------------
     function initSelectWithOptions(elementId, dataList, suffix) {
       const el = document.getElementById(elementId);
@@ -1101,7 +1111,7 @@
     
       (dataList || []).forEach(v => {
         const val = extractValue(v);
-        const text = formatDisplayText(val, suffix); // ★省略処理を通す
+        const text = formatDisplayText(val, suffix);
     
         el.innerHTML += `<option value="${val}">${text}</option>`;
       });
