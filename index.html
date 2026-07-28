@@ -1042,7 +1042,7 @@
       if (span) span.textContent = getWeekday(inputEl.value);
     };
   
-    // 共通関数1: オブジェクト対応の値抽出
+    // オブジェクト対応の値抽出
     function extractValue(v) {
       if (!v) return "";
       if (typeof v === 'object') {
@@ -1050,46 +1050,42 @@
       }
       return String(v);
     }
-    
-    // 共通関数2: 会社種別（株式会社・有限会社・(株)など）を強烈に消去する処理
-    function formatDisplayText(val, suffix) {
+
+    // ★【修正版】「株式会社」「(株)」等を消去する関数（引数の条件を解除し、常に整形）
+    function formatDisplayText(val) {
       let text = String(val || "").trim();
-    
-      if (suffix && suffix.includes("発注元")) {
-        text = text
-          .replace(/[（\(\[\【]?(株式会社|有限会社|株|有)[）\)\]\】]?/g, "")
-          .trim();
-      }
-    
-      return text;
+
+      // (株)、（株）、株式会社、有限会社 などを強力に消去
+      return text
+        .replace(/[（\(\[\【]?(株式会社|有限会社|合同会社|株|有)[）\)\]\】]?/g, "")
+        .trim();
     }
-    
-    // ----------------------------------------------------
-    // セレクトボックスの選択肢を生成して要素にセットする関数
-    // ----------------------------------------------------
+
+    // ★【修正版】セレクトボックス初期化関数
     function initSelectWithOptions(elementId, dataList, suffix, defaultLabel = "選択してください") {
       const el = document.getElementById(elementId);
       if (!el) return;
-    
-      // 初期選択肢（検索時は「すべて」、新規登録時は「選択してください」など）
+
       let html = `<option value="">${defaultLabel}</option>`;
-    
-      // 新規登録用モーダルの場合だけ「＋新規登録」の選択肢を入れる
-      if (elementId !== "filterClient") {
+
+      // 検索フィルタ（filterClientなど）以外の場合は「＋新規登録」を追加
+      if (elementId !== "filterClient" && suffix) {
         html += `
           <option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix}を登録)</option>
           <option disabled>────────────</option>
         `;
       }
-    
-      // リストの生成
+
       (dataList || []).forEach(v => {
         const val = extractValue(v);
-        const text = formatDisplayText(val, suffix); // ★必ず「株式会社」消去を通す
-    
+        
+        // ★ 発注元リスト（clientList）や特定のドロップダウンの場合に表示名を綺麗にする
+        const isClientSelect = (elementId === "filterClient" || elementId === "addClientSelect" || (suffix && suffix.includes("発注元")));
+        const text = isClientSelect ? formatDisplayText(val) : val;
+
         html += `<option value="${val}">${text}</option>`;
       });
-    
+
       el.innerHTML = html;
     }
     
