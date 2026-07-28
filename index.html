@@ -492,7 +492,7 @@
           <select id="filterClient" style="width: 100%; background-color: #fafafa;"><option value="">すべて</option></select>
         </div>
         
-        <!-- フィルター2：施工日の日付範囲選択（★styleの重複を解消＆スマホ対応） -->
+        <!-- フィルター2：施工日の日付範囲選択 -->
         <div style="display: flex; flex-wrap: wrap; gap: 10px; flex: 2; min-width: 280px;">
           <div style="flex: 1; min-width: 130px;">
             <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（開始）</label>
@@ -580,149 +580,151 @@
             </div>
           </div>
 
-  
-        <!-- セクション2：工事予定・担当割当（動的追加可能） -->
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-          <h3 style="margin: 0 0 12px 0; font-size: 18px; color: #475569; display: flex; align-items: center; gap: 6px;">
-            工事予定・担当割当
-          </h3>
+          <!-- セクション2：工事予定・担当割当（動的追加可能） -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 18px; color: #475569; display: flex; align-items: center; gap: 6px;">
+              工事予定・担当割当
+            </h3>
+            
+            <!-- 工事予定フィールド動的生成エリア -->
+            <div id="dynamicWorkFieldsContainer"></div>
           
-          <!-- 工事予定フィールド動的生成エリア -->
-          <div id="dynamicWorkFieldsContainer"></div>
-        
-          <!-- 工事日程追加ボタン -->
-          <!-- 【修正：translateYを単体ではなく transform の中に修正】 -->
-          <button type="button" id="addWorkBtn" class="btn" style="margin-top:16px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="showNextWorkField()">
-            <span class="material-symbols-outlined" style="font-size:18px; transform: translateY(0px);">add_circle</span> 施工日・工事内容・担当を追加
-          </button>
-        </div>
-  
-        <!-- セクション3：物件情報 -->
-        <!-- 所在地（住所） -->
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">home</span> 所在地（住所）</label>
-          <div class="voice-input-wrapper">
-            <input type="text" id="address" name="住所" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
-            <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
-              <span class="material-symbols-outlined">mic</span>
+            <!-- 工事日程追加ボタン -->
+            <button type="button" id="addWorkBtn" class="btn" style="margin-top:16px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="showNextWorkField()">
+              <span class="material-symbols-outlined" style="font-size:18px; transform: translateY(0px);">add_circle</span> 施工日・工事内容・担当を追加
             </button>
           </div>
-        </div>
-  
-        <!-- 緯度経度（地図連携用） -->
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">pin_drop</span> 緯度経度</label>
-          <input type="text" name="緯度経度" placeholder="例：36.8420,137.4060" style="width: 100%;">
-        </div>
-  
-        <!-- 延床面積 -->
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">square_foot</span> 延床面積</label>
-          <input type="text" id="room_area" name="延床面積" placeholder="例：85㎡" style="width: 100%;">
-        </div>
-  
-        <!-- セクション4：担当者情報 -->
-        <!-- 担当者選択：ドロップダウンまたは新規入力 -->
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">person</span> 担当者</label>
-          <select name="担当者" id="addStaffSelect" style="width:100%;" onchange="handleStaffChange(this, 'addPhoneInput', 'newStaffInputGroup')"></select>
-          <div id="newStaffInputGroup" style="display: none; margin-top: 8px;">
-            <input type="text" id="newStaffInput" placeholder="新規担当者名を入力してください" style="width: 100%;">
+    
+          <!-- セクション3：物件情報 -->
+          <!-- 所在地（住所） -->
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">home</span> 所在地（住所）</label>
+            <div class="voice-input-wrapper">
+              <input type="text" id="address" name="住所" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
+              <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+                <span class="material-symbols-outlined">mic</span>
+              </button>
+            </div>
           </div>
-        </div>
-  
-        <!-- 連絡先（担当者選択時に自動入力） -->
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">phone</span> 連絡先</label>
-          <input type="text" name="連絡先" id="addPhoneInput" placeholder="担当者を選択すると自動反映されます" style="width: 100%;">
-        </div>
-  
-        <!-- キーBOX（暗証番号・保管場所） -->
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">key</span> キーBOX</label>
-          <input type="text" id="key_box" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所" style="width: 100%;">
-        </div>
-  
-        <!-- 備考欄 -->
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">notes</span> 備 考</label>
-          <div class="voice-input-wrapper">
-            <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください" style="width: 100%; box-sizing: border-box;"></textarea>
-            <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
-              <span class="material-symbols-outlined">mic</span>
+    
+          <!-- 緯度経度（地図連携用） -->
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">pin_drop</span> 緯度経度</label>
+            <input type="text" name="緯度経度" placeholder="例：36.8420,137.4060" style="width: 100%;">
+          </div>
+    
+          <!-- 延床面積 -->
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">square_foot</span> 延床面積</label>
+            <input type="text" id="room_area" name="延床面積" placeholder="例：85㎡" style="width: 100%;">
+          </div>
+    
+          <!-- セクション4：担当者情報 -->
+          <!-- 担当者選択：ドロップダウンまたは新規入力 -->
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">person</span> 担当者</label>
+            <select name="担当者" id="addStaffSelect" style="width:100%;" onchange="handleStaffChange(this, 'addPhoneInput', 'newStaffInputGroup')"></select>
+            <div id="newStaffInputGroup" style="display: none; margin-top: 8px;">
+              <input type="text" id="newStaffInput" placeholder="新規担当者名を入力してください" style="width: 100%;">
+            </div>
+          </div>
+    
+          <!-- 連絡先（担当者選択時に自動入力） -->
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">phone</span> 連絡先</label>
+            <input type="text" name="連絡先" id="addPhoneInput" placeholder="担当者を選択すると自動反映されます" style="width: 100%;">
+          </div>
+    
+          <!-- キーBOX（暗証番号・保管場所） -->
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">key</span> キーBOX</label>
+            <input type="text" id="key_box" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所" style="width: 100%;">
+          </div>
+    
+          <!-- 備考欄 -->
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">notes</span> 備 考</label>
+            <div class="voice-input-wrapper">
+              <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください" style="width: 100%; box-sizing: border-box;"></textarea>
+              <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+                <span class="material-symbols-outlined">mic</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- セクション5：検査日時指定（日付＋時刻） -->
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px;">検査日（時刻指定）</label>
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
+              <!-- ★style属性の重複を1つに統合 -->
+              <input type="date" id="newInspectionDate" name="検査日" placeholder="日付を選択" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+              <select id="newInspectionHour" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
+                <option value="">時</option>
+              </select>
+              <select id="newInspectionMinute" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
+                <option value="">分</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- セクション6：システム管理項目（ID・日付等） -->
+          <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px; margin-top: 20px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #334155; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+              <span class="material-symbols-outlined" style="font-size: 24px; color: var(--text-sub);">admin_panel_settings</span> システム管理項目他
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group" style="margin:0;">
+                <label>システムID</label>
+                <input type="text" id="system_id" name="システムID" placeholder="システムID" style="width: 100%;">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>物件ID</label>
+                <input type="text" id="property_id" name="物件ID" placeholder="物件ID" style="width: 100%;">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>着工日</label>
+                <!-- ★style属性の重複を1つに統合 -->
+                <input type="date" id="construction_start_date" name="着工日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>完成日</label>
+                <!-- ★style属性の重複を1つに統合 -->
+                <input type="date" id="completion_date" name="完成日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+              </div>
+              <div class="form-group" style="margin:0; grid-column: span 2;">
+                <label>引渡日</label>
+                <!-- ★style属性の重複を1つに統合 -->
+                <input type="date" name="引渡日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+              </div>
+            </div>
+          </div>
+    
+          <!-- セクション7：ファイル添付 -->
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">attach_file</span> 添付ファイル</label>
+            <!-- ドラッグ&ドロップエリア -->
+            <div class="uploadbox" id="createUploadBox" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, 'NEW_PROJECT')">
+              <div class="material-symbols-outlined cloud-icon" style="font-size:40px; color:var(--primary)">cloud_upload</div>
+              <div class="drag-drop-text" style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
+              <div class="drag-drop-text" style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
+              <!-- ファイル選択ボタン -->
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('createFileInput').click()">ファイルを選択</button>
+              <!-- 隠しファイル入力 -->
+              <input type="file" id="createFileInput" multiple style="display:none;" onchange="handleFileSelect(event, 'NEW_PROJECT')">
+              <!-- 選択済みファイル一覧表示エリア -->
+              <div id="createFileList" style="margin-top: 10px;"></div>
+            </div>
+          </div>
+            
+          <!-- フォームフッター：キャンセル・登録ボタン -->
+          <div style="display: flex; justify-content: flex-end; gap: 5px; margin-top: 30px;">
+            <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">閉じる</button>
+            <button type="submit" class="btn btn-success" style="padding: 15px 21px;">
+              <span class="material-symbols-outlined">save</span> この内容で登録する
             </button>
           </div>
-        </div>
-        
-        <!-- セクション5：検査日時指定（日付＋時刻） -->
-        <!-- ※親のformにGridレイアウトを適用しない場合、grid-columnは通常のブロックとして処理されます -->
-        <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px;">検査日（時刻指定）</label>
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
-            <input type="date" id="newInspectionDate" name="検査日" placeholder="日付を選択" style="width: 100%;" onclick="this.showPicker?.()" style="cursor:pointer;">
-            <select id="newInspectionHour" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
-              <option value="">時</option>
-            </select>
-            <select id="newInspectionMinute" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
-              <option value="">分</option>
-            </select>
-          </div>
-        </div>
-        
-        <!-- セクション6：システム管理項目（ID・日付等） -->
-        <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px; margin-top: 20px;">
-          <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #334155; font-weight: bold; display: flex; align-items: center; gap: 6px;">
-            <span class="material-symbols-outlined" style="font-size: 24px; color: var(--text-sub);">admin_panel_settings</span> システム管理項目他
-          </h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="form-group" style="margin:0;">
-              <label>システムID</label>
-              <input type="text" id="system_id" name="システムID" placeholder="システムID" style="width: 100%;">
-            </div>
-            <div class="form-group" style="margin:0;">
-              <label>物件ID</label>
-              <input type="text" id="property_id" name="物件ID" placeholder="物件ID" style="width: 100%;">
-            </div>
-            <div class="form-group" style="margin:0;">
-              <label>着工日</label>
-              <input type="date" id="construction_start_date" name="着工日" style="width: 100%;" onclick="this.showPicker?.()" style="cursor:pointer;">
-            </div>
-            <div class="form-group" style="margin:0;">
-              <label>完成日</label>
-              <input type="date" id="completion_date" name="完成日" style="width: 100%;" onclick="this.showPicker?.()" style="cursor:pointer;">
-            </div>
-            <div class="form-group" style="margin:0; grid-column: span 2;">
-              <label>引渡日</label>
-              <input type="date" name="引渡日" style="width: 100%;" onclick="this.showPicker?.()" style="cursor:pointer;">
-            </div>
-          </div>
-        </div>
-  
-        <!-- セクション7：ファイル添付 -->
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">attach_file</span> 添付ファイル</label>
-          <!-- ドラッグ&ドロップエリア -->
-          <div class="uploadbox" id="createUploadBox" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event, 'NEW_PROJECT')">
-            <div class="material-symbols-outlined cloud-icon" style="font-size:40px; color:var(--primary)">cloud_upload</div>
-            <div class="drag-drop-text" style="font-weight:bold; margin-top:6px;">ファイルをここにドラッグ＆ドロップ</div>
-            <div class="drag-drop-text" style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">または</div>
-            <!-- ファイル選択ボタン -->
-            <button type="button" class="btn btn-secondary" onclick="document.getElementById('createFileInput').click()">ファイルを選択</button>
-            <!-- 隠しファイル入力 -->
-            <input type="file" id="createFileInput" multiple style="display:none;" onchange="handleFileSelect(event, 'NEW_PROJECT')">
-            <!-- 選択済みファイル一覧表示エリア -->
-            <div id="createFileList" style="margin-top: 10px;"></div>
-          </div>
-        </div>
-          
-        <!-- フォームフッター：キャンセル・登録ボタン -->
-        <div style="display: flex; justify-content: flex-end; gap: 5px; margin-top: 30px;">
-          <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">閉じる</button>
-          <button type="submit" class="btn btn-success" style="padding: 15px 21px;">
-            <span class="material-symbols-outlined">save</span> この内容で登録する
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -1049,17 +1051,13 @@
       return String(v);
     }
     
-    // 共通関数2: 会社種別を徹底的に取り除く（完全版）
+    // 共通関数2: 会社種別（株式会社・有限会社・(株)など）を強烈に消去する処理
     function formatDisplayText(val, suffix) {
-      // 文字列化 ＆ 前後の空白除去
       let text = String(val || "").trim();
     
       if (suffix && suffix.includes("発注元")) {
         text = text
-          // 「(株)」「（株）」「(有)」「（有）」などを消す
-          .replace(/^[（(]?(株|有|株式会社|有限会社)[）)]?/, "")
-          .replace(/[（(]?(株|有|株式会社|有限会社)[）)]?$/, "")
-          // 前後に残った括弧や空白を綺麗にする
+          .replace(/[（\(\[\【]?(株式会社|有限会社|株|有)[）\)\]\】]?/g, "")
           .trim();
       }
     
@@ -1067,54 +1065,32 @@
     }
     
     // ----------------------------------------------------
-    // 1. 検索結果用セレクトボックス生成
+    // セレクトボックスの選択肢を生成して要素にセットする関数
     // ----------------------------------------------------
-    function createOptionsHtml(masterList, currentVal, suffix) {
-      let html = `
-        <option value="">選択してください</option>
-        <option value="(新規${suffix})">＋ 新規${suffix}</option>
-      `;
-    
-      let exist = false;
-    
-      (masterList || []).forEach(v => {
-        const val = extractValue(v);
-        const text = formatDisplayText(val, suffix); // ★強力な削除処理を通す
-    
-        const sel = (val === currentVal) ? 'selected' : '';
-        if (sel) exist = true;
-    
-        html += `<option value="${val}" ${sel}>${text}</option>`;
-      });
-    
-      // 現在値がマスタにない場合
-      if (currentVal && !exist) {
-        const text = formatDisplayText(currentVal, suffix);
-        html += `<option value="${currentVal}" selected>${text}</option>`;
-      }
-    
-      return html;
-    }
-    
-    // ----------------------------------------------------
-    // 2. 新規登録モーダル用セレクトボックス生成
-    // ----------------------------------------------------
-    function initSelectWithOptions(elementId, dataList, suffix) {
+    function initSelectWithOptions(elementId, dataList, suffix, defaultLabel = "選択してください") {
       const el = document.getElementById(elementId);
       if (!el) return;
     
-      el.innerHTML = `
-        <option value="">選択してください</option>
-        <option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix}を登録) </option>
-        <option disabled>────────────</option>
-      `;
+      // 初期選択肢（検索時は「すべて」、新規登録時は「選択してください」など）
+      let html = `<option value="">${defaultLabel}</option>`;
     
+      // 新規登録用モーダルの場合だけ「＋新規登録」の選択肢を入れる
+      if (elementId !== "filterClient") {
+        html += `
+          <option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix}を登録)</option>
+          <option disabled>────────────</option>
+        `;
+      }
+    
+      // リストの生成
       (dataList || []).forEach(v => {
         const val = extractValue(v);
-        const text = formatDisplayText(val, suffix);
+        const text = formatDisplayText(val, suffix); // ★必ず「株式会社」消去を通す
     
-        el.innerHTML += `<option value="${val}">${text}</option>`;
+        html += `<option value="${val}">${text}</option>`;
       });
+    
+      el.innerHTML = html;
     }
     
     // =================================================================
@@ -1739,6 +1715,7 @@
       initSelectWithOptions("addMediaSelect", appConfig.mediaList || [], "受注媒体");
       initSelectWithOptions("addProjectTypeSelect", appConfig.projectTypeList || [], "案件種別");
       initSelectWithOptions("addClientSelect", appConfig.clientList, "発注元");
+      initSelectWithOptions("filterClient", appConfig.clientList, "発注元", "すべて");
       // 発注元変更時に担当者リストを更新
       document.getElementById("addClientSelect").addEventListener("change", function() {
         updateManagersByClient(this.value, "addStaffSelect");
