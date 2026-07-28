@@ -1154,7 +1154,7 @@
         let hasBadge = false;
         for (let code in FILE_TYPES_DEF) {
           if (savedBadges.includes(code)) {
-            badgeHtml += `<span class="file-badge">${FILE_TYPES_DEF[code]}</span>`;
+            badgeHtml += `<span class="file-badge">${FILE_TYPES_DEF[code].name}</span>`;
             hasBadge = true;
           }
         }
