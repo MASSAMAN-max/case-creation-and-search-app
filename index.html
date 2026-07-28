@@ -502,10 +502,6 @@
             <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（終了）</label>
             <input type="date" id="filterEndDate" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
           </div>
-          <div style="flex-basis: 100%; display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-            <input type="checkbox" id="filterUnscheduledOnly" onchange="handleUnscheduledOnlyChange()" style="width:16px; height:16px; cursor:pointer;">
-            <label for="filterUnscheduledOnly" style="font-size: 0.85rem; color: var(--text-sub); cursor:pointer;">施工日未設定の案件のみ表示</label>
-          </div>
         </div>
         
         <!-- フィルター3：キーワード検索入力欄 -->
@@ -523,6 +519,12 @@
             <span class="material-symbols-outlined">clear</span> クリア
           </button>
         </div>
+      </div>
+
+      <!-- 施工日未設定の案件のみ表示するチェックボックス（フィルター行の下に独立配置） -->
+      <div style="display: flex; align-items: center; gap: 6px; margin-top: 12px;">
+        <input type="checkbox" id="filterUnscheduledOnly" onchange="handleUnscheduledOnlyChange()" style="width:16px; height:16px; cursor:pointer;">
+        <label for="filterUnscheduledOnly" style="font-size: 0.85rem; color: var(--text-sub); cursor:pointer;">施工日未設定の案件のみ表示</label>
       </div>
     </div>
     
@@ -978,6 +980,8 @@
         // ログインが成功してメイン画面が出たら、ログアウトボタンを表示する
         const logoutBtn = document.getElementById("logoutBtn");
         if (logoutBtn) logoutBtn.style.display = "flex";
+        // 保存処理後のリロードであれば、直前の検索条件を復元して再検索する
+        restorePendingSearchStateIfAny();
       } catch (err) {
         // 1. ローダーを非表示にする
         loader.style.display = "none";
@@ -1024,6 +1028,13 @@
         loader.style.display = "none";
         btn.disabled = false;
         resultsDiv.innerHTML = '<p style="color:red; text-align:center;">エラー: ' + err.message + '</p>';
+        console.error("❌ 検索エラー:", err);
+        Swal.fire({
+          icon: 'error',
+          title: '検索中にエラーが発生しました',
+          html: `<strong>${err.message}</strong><br><br><small>詳細はコンソール（F12）を確認してください</small>`,
+          confirmButtonText: '了解'
+        });
       }
     }
   
@@ -1947,39 +1958,34 @@
         selectedFilesMap["NEW_PROJECT"] = [];
         if (typeof search === 'function') search();
     
-        // 3. 成功ダイアログを表示
-        Swal.fire({
-          icon: 'success',
-          title: '新規案件の登録完了',
-          text: 'スプレッドシートへの追加が完了しました。裏でカレンダー同期等の処理を実行しています。',
-          confirmButtonText: '了解'
-        });
+        // 3. 軽量なトースト通知（1段目完了）
+        showToast("スプレッドシートへの登録が完了しました。バックグラウンド処理中...");
     
         // =================================================================
-        // 【2段目】重い処理を非同期実行（バックグラウンド）
+        // 【2段目】重い処理を実行し、完了を待ってから最新化を確認する
         // =================================================================
         const newRowNumber = response.rowNumber;
         const flags = { inspectionDateChanged: !!payload["検査日"], isNew: true };
     
-        apiCall("processBackgroundTasks", { fData: payload, rNum: newRowNumber, flags: flags })
-          .then(() => {
-            // ★ 全処理成功時のみトースト表示
-            showToast("すべての処理が完了しました");
-            
-            // バックグラウンドでマスタデータを再取得・更新
-            apiCall("loadAppDataMaster").then(data => {
-              if (data) appConfig = data;
-            }).catch(console.error);
-          })
-          .catch((bgErr) => {
-            console.error("❌ バックグラウンド処理エラー(新規登録):", bgErr);
-            Swal.fire({
-              icon: 'error',
-              title: '背景処理でエラーが発生しました',
-              html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期や添付ファイル保存でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
-              confirmButtonText: '了解'
-            });
+        try {
+          await apiCall("processBackgroundTasks", { fData: payload, rNum: newRowNumber, flags: flags });
+    
+          // バックグラウンドでマスタデータを再取得・更新
+          apiCall("loadAppDataMaster").then(data => {
+            if (data) appConfig = data;
+          }).catch(console.error);
+    
+          // すべての処理完了 → 最新化するか選択
+          await promptReloadAfterAllProcessing();
+        } catch (bgErr) {
+          console.error("❌ バックグラウンド処理エラー(新規登録):", bgErr);
+          Swal.fire({
+            icon: 'error',
+            title: '背景処理でエラーが発生しました',
+            html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期や添付ファイル保存でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
+            confirmButtonText: '了解'
           });
+        }
     
       } catch (err) {
         // 1段目失敗時も必ずローダーを消す
@@ -2109,34 +2115,27 @@
         if (typeof renderFileList === 'function') renderFileList(rNum);
         if (typeof search === 'function') search(); // 再検索で画面反映
         
-        // 3. 「スプレッドシート保存完了」ダイアログ（Swal.fire）を表示
-        Swal.fire({
-          icon: 'success',
-          title: 'スプレッドシート保存完了',
-          text: 'シートへの書き込みが完了しました。裏でカレンダー同期等の処理を実行しています。',
-          confirmButtonText: '了解'
-        });
+        // 3. 軽量なトースト通知（1段目完了）
+        showToast("スプレッドシートへの保存が完了しました。バックグラウンド処理中...");
     
         // =================================================================
-        // 【2段目】重い処理を非同期実行（バックグラウンド）
+        // 【2段目】重い処理を実行し、完了を待ってから最新化を確認する
         // =================================================================
         const flags = (response && response.flags) ? response.flags : {};
         
-        apiCall("processBackgroundTasks", { fData: fData, rNum: rowNumber, flags: flags })
-          .then(() => {
-            // ★ 全処理が成功した場合のみトースト通知を出す
-            showToast("すべての処理が完了しました");
-          })
-          .catch((bgErr) => {
-            console.error("❌ バックグラウンド処理エラー:", bgErr);
-            // ★ 背景処理でエラーが起きた場合はエラーアラートを表示
-            Swal.fire({
-              icon: 'error',
-              title: '背景処理でエラーが発生しました',
-              html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期や添付ファイル保存でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
-              confirmButtonText: '了解'
-            });
+        try {
+          await apiCall("processBackgroundTasks", { fData: fData, rNum: rowNumber, flags: flags });
+          // すべての処理完了 → 最新化するか選択
+          await promptReloadAfterAllProcessing();
+        } catch (bgErr) {
+          console.error("❌ バックグラウンド処理エラー:", bgErr);
+          Swal.fire({
+            icon: 'error',
+            title: '背景処理でエラーが発生しました',
+            html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期や添付ファイル保存でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
+            confirmButtonText: '了解'
           });
+        }
     
       } catch (err) {
         // 1段目（シート書き込み失敗）のときも必ずローダーを消す
@@ -2168,6 +2167,56 @@
       setTimeout(() => {
         toast.classList.remove("show");
       }, 5000);
+    }
+
+    // =================================================================
+    // 現在の検索条件をsessionStorageへ保存/復元
+    // （バックグラウンド処理完了後にリロード→同条件で再検索するために使用）
+    // =================================================================
+    function saveSearchStateForReload() {
+      const state = {
+        client: document.getElementById("filterClient").value,
+        startDate: document.getElementById("filterStartDate").value,
+        endDate: document.getElementById("filterEndDate").value,
+        unscheduledOnly: document.getElementById("filterUnscheduledOnly").checked,
+        keyword: document.getElementById("searchValue").value
+      };
+      sessionStorage.setItem("pending_search_state", JSON.stringify(state));
+    }
+
+    function restorePendingSearchStateIfAny() {
+      const raw = sessionStorage.getItem("pending_search_state");
+      if (!raw) return;
+      sessionStorage.removeItem("pending_search_state");
+      try {
+        const state = JSON.parse(raw);
+        document.getElementById("filterClient").value = state.client || "";
+        document.getElementById("filterStartDate").value = state.startDate || "";
+        document.getElementById("filterEndDate").value = state.endDate || "";
+        document.getElementById("filterUnscheduledOnly").checked = !!state.unscheduledOnly;
+        handleUnscheduledOnlyChange();
+        document.getElementById("searchValue").value = state.keyword || "";
+        search();
+      } catch (e) {
+        console.error("検索条件の復元に失敗しました:", e);
+      }
+    }
+
+    // すべての処理（1段目＋2段目）完了後、一覧を最新化するかどうかをユーザーに確認する
+    async function promptReloadAfterAllProcessing() {
+      const result = await Swal.fire({
+        icon: 'success',
+        title: 'すべての処理が完了しました',
+        text: '最新のデータで一覧を更新しますか？',
+        showCancelButton: true,
+        confirmButtonText: '更新する',
+        cancelButtonText: 'このまま入力を続ける',
+        confirmButtonColor: 'var(--primary)'
+      });
+      if (result.isConfirmed) {
+        saveSearchStateForReload();
+        window.location.reload();
+      }
     }
   
     window.handleLogout = async function() {
