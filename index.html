@@ -502,6 +502,10 @@
             <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（終了）</label>
             <input type="date" id="filterEndDate" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
           </div>
+          <div style="flex-basis: 100%; display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+            <input type="checkbox" id="filterUnscheduledOnly" onchange="handleUnscheduledOnlyChange()" style="width:16px; height:16px; cursor:pointer;">
+            <label for="filterUnscheduledOnly" style="font-size: 0.85rem; color: var(--text-sub); cursor:pointer;">施工日未設定の案件のみ表示</label>
+          </div>
         </div>
         
         <!-- フィルター3：キーワード検索入力欄 -->
@@ -968,13 +972,7 @@
           document.getElementById("userDisplayLabel").textContent = `ログインユーザー: ${data.loginUser}`;
           localStorage.setItem('app_login_userName', data.loginUser);
         }
-        const select = document.getElementById("filterClient");
-        select.innerHTML = '<option value="">すべて</option>';
-        data.clientList.forEach(c => {
-          const opt = document.createElement("option");
-          opt.value = opt.textContent = c;
-          select.appendChild(opt);
-        });
+        initSelectWithOptions("filterClient", data.clientList, "発注元", "すべて");
         loader.style.display = "none";
         document.getElementById("mainApp").style.display = "block";
         // ログインが成功してメイン画面が出たら、ログアウトボタンを表示する
@@ -1011,12 +1009,13 @@
       const client = document.getElementById("filterClient").value;
       const startDate = document.getElementById("filterStartDate").value;
       const endDate = document.getElementById("filterEndDate").value;
+      const unscheduledOnly = document.getElementById("filterUnscheduledOnly").checked;
       
       let keyword = document.getElementById("searchValue").value;
       if (keyword) keyword = keyword.replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).toLowerCase().trim();
       
       try {
-        const records = await apiCall("searchRecordsExtended", { client, keyword, startDate, endDate });
+        const records = await apiCall("searchRecordsExtended", { client, keyword, startDate, endDate, unscheduledOnly });
         displayResults(records);
         loader.style.display = "none";
         btn.disabled = false;
@@ -1387,6 +1386,9 @@
       document.getElementById("filterStartDate").value = "";
       document.getElementById("filterEndDate").value = "";
       document.getElementById("searchValue").value = "";
+      document.getElementById("filterUnscheduledOnly").checked = false;
+      document.getElementById("filterStartDate").disabled = false;
+      document.getElementById("filterEndDate").disabled = false;
       
       document.getElementById("results").innerHTML = "";
       document.getElementById("searchCount").innerHTML = "";
@@ -1414,6 +1416,19 @@
       // 開始日が入力され、終了日が空の場合は開始日と同じ値を代入
       if (startDate && !endDate) {
         document.getElementById("filterEndDate").value = startDate;
+      }
+    };
+
+    // 「施工日未設定の案件のみ表示」チェック時は日付範囲入力を無効化する
+    window.handleUnscheduledOnlyChange = function() {
+      const checked = document.getElementById("filterUnscheduledOnly").checked;
+      const startEl = document.getElementById("filterStartDate");
+      const endEl = document.getElementById("filterEndDate");
+      startEl.disabled = checked;
+      endEl.disabled = checked;
+      if (checked) {
+        startEl.value = "";
+        endEl.value = "";
       }
     };
   
