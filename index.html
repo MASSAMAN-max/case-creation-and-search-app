@@ -1213,8 +1213,12 @@
       }
       countDiv.innerHTML = `<span style="color:var(--primary); font-size: 18px;">${records.length}</span> 件の案件を表示中`;
   
-      // 配列のコピーを作成して反転させてからループ処理を行う
-      [...records].reverse().forEach(record => {
+      // -----------------------------------------------------------------
+      // 【変更箇所】配列の末尾から先頭に向かって逆順に処理（コピー・並び替えなしで高速）
+      // -----------------------------------------------------------------
+      for (let index = records.length - 1; index >= 0; index--) {
+        const record = records[index];
+
         const item = document.createElement("div");
         item.className = "result-item";
         const parseDate = (d) => {
@@ -1490,7 +1494,7 @@
             }
           }
         }
-      });
+      }
     }
     
     // 検索条件をリセット
