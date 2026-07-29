@@ -303,7 +303,7 @@
       position: fixed;
       top: 20px;
       right: 20px;
-      transform: translateX(150%);  /* 初期状態：要素の実際の幅を基準に画面外へ隠す */
+      transform: translateX(120%);  /* 初期状態：要素の実際の幅を基準に画面外へ隠す */
       background: #10b981;  /* 成功時の緑色 */
       color: white;
       padding: 16px 24px;
@@ -726,7 +726,7 @@
           <!-- フォームフッター：キャンセル・登録ボタン -->
           <div style="display: flex; justify-content: flex-end; gap: 5px; margin-top: 30px;">
             <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">閉じる</button>
-            <button type="submit" class="btn btn-success" style="padding: 15px 21px;">
+            <button type="submit" id="createSubmitBtn" class="btn btn-success" style="padding: 15px 21px;">
               <span class="material-symbols-outlined">save</span> この内容で登録する
             </button>
           </div>
@@ -1434,7 +1434,7 @@
             </div>
   
             <div style="display:flex; gap:10px; margin-top:20px;">
-              <button class="btn btn-success" onclick="saveRecord('${record.No}', ${record.rowNumber})" style="padding: 10px 24px;">
+              <button class="btn btn-success" onclick="saveRecord('${record.No}', ${record.rowNumber}, this)" style="padding: 10px 24px;">
                 <span class="material-symbols-outlined">cloud_sync</span> 更新して保存
               </button>
             </div>
@@ -1832,6 +1832,7 @@
     window.openCreateModal = function() {
       document.getElementById("createModal").style.display = "flex";
       document.getElementById("createProjectForm").reset();
+      document.getElementById("createSubmitBtn").disabled = false;
       selectedFilesMap["NEW_PROJECT"] = [];
       document.getElementById("createFileList").innerHTML = "";
     
@@ -1949,6 +1950,8 @@
     // =================================================================
     async function handleCreateSubmit(event) {
       event.preventDefault();
+      const submitBtn = document.getElementById("createSubmitBtn");
+      submitBtn.disabled = true; // 二重送信防止（連打で複数リクエストが重なるのを防ぐ）
       const form = event.target;
       const formData = new FormData(form);
       const payload = {};
@@ -2061,8 +2064,9 @@
         }
     
       } catch (err) {
-        // 1段目失敗時も必ずローダーを消す
+        // 1段目失敗時も必ずローダーを消し、再入力・再送信できるようボタンを戻す
         loader.style.display = "none";
+        submitBtn.disabled = false;
         console.error("❌ 新規登録エラー:", err);
         
         Swal.fire({
@@ -2077,7 +2081,8 @@
     // =================================================================
     // 詳細データ修正保存処理
     // =================================================================
-    window.saveRecord = async function(rNum, rowNumber) {
+    window.saveRecord = async function(rNum, rowNumber, btnEl) {
+      if (btnEl) btnEl.disabled = true; // 二重送信防止
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "スプレッドシートを更新中...";
@@ -2186,6 +2191,7 @@
         // 2. UIの更新・元の画面（一覧）に戻す（再検索は挟まない）
         selectedFilesMap[rNum] = [];
         if (typeof renderFileList === 'function') renderFileList(rNum);
+        if (btnEl) btnEl.disabled = false;
         const itemEl = document.getElementById(`住所_${rNum}`)?.closest('.result-item');
         if (itemEl) itemEl.classList.remove('is-open');
         
@@ -2212,8 +2218,9 @@
         }
     
       } catch (err) {
-        // 1段目（シート書き込み失敗）のときも必ずローダーを消す
+        // 1段目（シート書き込み失敗）のときも必ずローダーを消し、ボタンを戻す
         loader.style.display = "none";
+        if (btnEl) btnEl.disabled = false;
         
         console.error("❌ シート書き込みエラー:", err);
         Swal.fire({
