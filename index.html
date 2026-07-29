@@ -1213,7 +1213,8 @@
       }
       countDiv.innerHTML = `<span style="color:var(--primary); font-size: 18px;">${records.length}</span> 件の案件を表示中`;
   
-      records.forEach(record => {
+      // 配列のコピーを作成して反転させてからループ処理を行う
+      [...records].reverse().forEach(record => {
         const item = document.createElement("div");
         item.className = "result-item";
         const parseDate = (d) => {
