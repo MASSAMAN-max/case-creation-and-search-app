@@ -302,21 +302,22 @@
     .toast-box {
       position: fixed;
       top: 20px;
-      right: -300px;  /* 初期状態：画面外に隠す */
+      right: 20px;
+      transform: translateX(120%);  /* 初期状態：要素の実際の幅を基準に画面外へ隠す */
       background: #10b981;  /* 成功時の緑色 */
       color: white;
       padding: 16px 24px;
       border-radius: 8px;
       font-weight: bold;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      transition: right 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       z-index: 9999;
       max-width: 350px;
       white-space: pre-wrap;  /* 改行・長文に対応 */
     }
     
     /* トースト表示時：スライドイン */
-    .toast-box.show { right: 20px; }
+    .toast-box.show { transform: translateX(0); }
 
     /* モーダルオーバーレイ：半透明の背景 */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6);
@@ -747,6 +748,7 @@
   <script>
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbzDU-eldEfHba9IA1vXFZDogvozxKlUOfp_e3XMjOZFj519yFskQrvykhzgp3G18Uic6w/exec';
     let appConfig = {};
+    let allRecordsCache = null; // 案件データの全件キャッシュ（アプリ起動/リロード時に1回だけ取得）
     const selectedFilesMap = {};
     let currentWorkCount = 1;
   
@@ -968,8 +970,12 @@
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "ログイン認証中 & データを読み込み中...";
       try {
-        const data = await apiCall("loadAppDataMaster");
+        const [data, records] = await Promise.all([
+          apiCall("loadAppDataMaster"),
+          apiCall("loadAllRecords")
+        ]);
         appConfig = data;
+        allRecordsCache = records;
         if (data.loginUser) {
           document.getElementById("userDisplayLabel").textContent = `ログインユーザー: ${data.loginUser}`;
           localStorage.setItem('app_login_userName', data.loginUser);
@@ -1006,20 +1012,22 @@
       const btn = document.getElementById("searchBtn");
       const resultsDiv = document.getElementById("results");
       const loader = document.getElementById("initLoader");
-      loader.style.display = "flex";
-      document.getElementById("loaderText").textContent = "データを検索中...";
       btn.disabled = true;
       
       const client = document.getElementById("filterClient").value;
       const startDate = document.getElementById("filterStartDate").value;
       const endDate = document.getElementById("filterEndDate").value;
       const unscheduledOnly = document.getElementById("filterUnscheduledOnly").checked;
-      
-      let keyword = document.getElementById("searchValue").value;
-      if (keyword) keyword = keyword.replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).toLowerCase().trim();
+      const keyword = document.getElementById("searchValue").value;
       
       try {
-        const records = await apiCall("searchRecordsExtended", { client, keyword, startDate, endDate, unscheduledOnly });
+        // キャッシュが無い場合（通信エラー等で初期読み込みに失敗した場合）は念のため取得し直す
+        if (!allRecordsCache) {
+          loader.style.display = "flex";
+          document.getElementById("loaderText").textContent = "データを読み込み中...";
+          allRecordsCache = await apiCall("loadAllRecords");
+        }
+        const records = filterRecordsClientSide(allRecordsCache, { client, keyword, startDate, endDate, unscheduledOnly });
         displayResults(records);
         loader.style.display = "none";
         btn.disabled = false;
@@ -1036,6 +1044,72 @@
           confirmButtonText: '了解'
         });
       }
+    }
+
+    // =================================================================
+    // クライアント側検索フィルタ（旧GAS側 searchRecordsExtended と同一ロジックを移植。
+    // サーバー側との二重管理を避けるため、絞り込みはここでのみ行う）
+    // =================================================================
+    const KANA_TO_HANKAKU_MAP = {
+      'ガ':'ｶﾞ','ギ':'ｷﾞ','グ':'ｸﾞ','ゲ':'ｹﾞ','ゴ':'ｺﾞ','ザ':'ｻﾞ','ジ':'ｼﾞ','ズ':'ｽﾞ','ゼ':'ｾﾞ','ゾ':'ｿﾞ',
+      'ダ':'ﾀﾞ','ヂ':'ﾁﾞ','ヅ':'ﾂﾞ','デ':'ﾃﾞ','ド':'ﾄﾞ','バ':'ﾊﾞ','ビ':'ﾋﾞ','ブ':'ﾌﾞ','ベ':'ﾍﾞ','ボ':'ﾎﾞ',
+      'パ':'ﾊﾟ','ピ':'ﾋﾟ','プ':'ﾌﾟ','ペ':'ﾍﾟ','ポ':'ﾎﾟ','ヴ':'ｳﾞ',
+      'ア':'ｱ','イ':'ｲ','ウ':'ｳ','エ':'ｴ','オ':'ｵ','カ':'ｶ','キ':'ｷ','ク':'ｸ','ケ':'ｹ','コ':'ｺ',
+      'サ':'ｻ','シ':'ｼ','ス':'ｽ','セ':'ｾ','ソ':'ｿ','タ':'ﾀ','チ':'ﾁ','ツ':'ﾂ','テ':'ﾃ','ト':'ﾄ',
+      'ナ':'ﾅ','ニ':'ﾆ','ヌ':'ﾇ','ネ':'ﾈ','ノ':'ﾉ','ハ':'ﾊ','ヒ':'ﾋ','フ':'ﾌ','ヘ':'ﾍ','ホ':'ﾎ',
+      'マ':'ﾏ','ミ':'ﾐ','ム':'ﾑ','メ':'ﾒ','モ':'ﾓ','ヤ':'ﾔ','ユ':'ﾕ','ヨ':'ﾖ',
+      'ラ':'ﾗ','リ':'ﾘ','ル':'ﾙ','レ':'ﾚ','ロ':'ﾛ','ワ':'ﾜ','ヲ':'ｦ','ン':'ﾝ',
+      'ァ':'ｧ','ィ':'ｨ','ゥ':'ｩ','ェ':'ｪ','ォ':'ｫ','ッ':'ｯ','ャ':'ｬ','ュ':'ｭ','ョ':'ｮ','ー':'ｰ'
+    };
+    const KANA_TO_HANKAKU_REGEX = new RegExp(Object.keys(KANA_TO_HANKAKU_MAP).join('|'), 'g');
+
+    function normalizeText(t) {
+      if (!t) return "";
+      let text = String(t).replace(KANA_TO_HANKAKU_REGEX, m => KANA_TO_HANKAKU_MAP[m]);
+      text = text.replace(/[！-～]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+      return text.trim().toLowerCase();
+    }
+
+    function filterRecordsClientSide(records, { client, keyword, startDate, endDate, unscheduledOnly }) {
+      const nClient = normalizeText(client);
+      const nKeyword = normalizeText(keyword);
+      const sDate = startDate ? new Date(startDate) : null;
+      const eDate = endDate ? new Date(endDate) : null;
+      const noDateFilter = !sDate && !eDate && !unscheduledOnly;
+      const searchStart = sDate || new Date("1900-01-01");
+      const searchEnd = eDate || new Date("2099-12-31");
+
+      return records.filter(r => {
+        if (nClient && normalizeText(r["発注元"]) !== nClient) return false;
+
+        let isDateMatched = false;
+        if (unscheduledOnly) {
+          // 施工日1〜4が1つも入っていない案件のみ対象にする
+          let hasAnyDate = false;
+          for (let n = 1; n <= 4; n++) {
+            const v = r[`施工日${n}`];
+            if (v && String(v).trim() !== "") { hasAnyDate = true; break; }
+          }
+          isDateMatched = !hasAnyDate;
+        } else if (noDateFilter) {
+          // 日付範囲・チェックボックスとも未指定の場合は、日付で絞り込まず全件を対象にする
+          isDateMatched = true;
+        } else {
+          for (let n = 1; n <= 4; n++) {
+            const v = r[`施工日${n}`];
+            if (!v) continue;
+            const d = new Date(String(v).split("T")[0]);
+            if (!isNaN(d.getTime()) && d >= searchStart && d <= searchEnd) { isDateMatched = true; break; }
+          }
+        }
+        if (!isDateMatched) return false;
+
+        if (nKeyword) {
+          const fullText = normalizeText(String(r["No"] || "") + String(r["案件名"] || "") + String(r["住所"] || ""));
+          if (!fullText.includes(nKeyword)) return false;
+        }
+        return true;
+      });
     }
   
     function getWeekday(dateStr) {
@@ -1954,9 +2028,8 @@
         loader.style.display = "none";
         closeCreateModal();
     
-        // 2. 状態のクリアと画面（一覧）の再検索
+        // 2. 状態のクリア（一覧の再検索は挟まず、そのまま元の画面に戻す）
         selectedFilesMap["NEW_PROJECT"] = [];
-        if (typeof search === 'function') search();
     
         // 3. 軽量なトースト通知（1段目完了）
         showToast("スプレッドシートへの登録が完了しました。バックグラウンド処理中...");
@@ -2110,10 +2183,11 @@
         // 1. ローダーを消して画面を解放
         loader.style.display = "none";
         
-        // 2. UIの更新・メイン画面への復帰
+        // 2. UIの更新・元の画面（一覧）に戻す（再検索は挟まない）
         selectedFilesMap[rNum] = [];
         if (typeof renderFileList === 'function') renderFileList(rNum);
-        if (typeof search === 'function') search(); // 再検索で画面反映
+        const itemEl = document.getElementById(`住所_${rNum}`)?.closest('.result-item');
+        if (itemEl) itemEl.classList.remove('is-open');
         
         // 3. 軽量なトースト通知（1段目完了）
         showToast("スプレッドシートへの保存が完了しました。バックグラウンド処理中...");
