@@ -8,19 +8,14 @@
 <meta name="theme-color" content="#ffffff">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-
   <!-- ベースURL設定：リンクを新タブで開かない -->
   <base target="_top">
-
   <!-- レスポンシブ対応とビューポート設定 -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  
   <!-- 外部フォント読み込み：日本語対応フォント（Plus Jakarta Sans, Roboto） -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-  
   <!-- Googleの Material Design アイコン読み込み -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-  
   <!-- SweetAlert2：モーダルダイアログ・アラート用ライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
@@ -406,6 +401,23 @@
       background-color: var(--primary-hover);
       box-shadow: 0 6px 16px rgba(74,144,226,0.4);
       transform: translateY(-3px);
+    }
+
+    /* 見出し（あ行・か行…）のスタイル設定 */
+    optgroup {
+      font-weight: bold;
+      color: #1e40af;            /* 文字色：濃いブルー */
+      background-color: #eff6ff; /* 背景色：薄いブルー */
+      font-style: normal;        /* 斜体を解除 */
+      padding: 4px 0;
+    }
+    
+    /* 選択肢（子要素）のスタイルを元に戻す設定 */
+    optgroup option {
+      color: #333333;            /* 文字色を通常色に */
+      background-color: #ffffff; /* 背景色を白に */
+      font-weight: normal;
+      padding: 4px 8px;
     }
       
   </style>
@@ -809,11 +821,6 @@
       }
     };
   
-  /*  const FILE_TYPES_DEF = {
-      "01": "Q R", "02": "工程", "03": "平面", "04": "立面", "05": "注文",
-      "06": "駐車", "07": "写真", "08": "見積", "09": "その他", "10": "地図", "20": "請求"
-    };　*/
-
     const FILE_TYPES_DEF = {
       "01": { name: "QR",       keywords: ["QR"] },
       "02": { name: "工程表",   keywords: ["工程表", "工程"] },
@@ -1145,13 +1152,13 @@
         .trim();
     }
 
-    // ★【修正版】セレクトボックス初期化関数
+    // ★【修正版】セレクトボックス初期化関数（optgroup見出し対応版）
     function initSelectWithOptions(elementId, dataList, suffix, defaultLabel = "選択してください") {
       const el = document.getElementById(elementId);
       if (!el) return;
-
+    
       let html = `<option value="">${defaultLabel}</option>`;
-
+    
       // 検索フィルタ（filterClientなど）以外の場合は「＋新規登録」を追加
       if (elementId !== "filterClient" && suffix) {
         html += `
@@ -1159,46 +1166,132 @@
           <option disabled>────────────</option>
         `;
       }
-
+    
+      let inGroup = false;
+    
       (dataList || []).forEach(v => {
         const val = extractValue(v);
-        
-        // ★ 発注元リスト（clientList）や特定のドロップダウンの場合に表示名を綺麗にする
-        const isClientSelect = (elementId === "filterClient" || elementId === "addClientSelect" || (suffix && suffix.includes("発注元")));
-        const text = isClientSelect ? formatDisplayText(val) : val;
-
-        html += `<option value="${val}">${text}</option>`;
+        if (!val) return;
+    
+        // ★ 見出し判定（オブジェクトのisHeaderフラグ、または "--- あ行 ---" 形式）
+        const isHeader = (typeof v === 'object' && v !== null && v.isHeader) || (typeof val === 'string' && val.startsWith('---'));
+    
+        if (isHeader) {
+          if (inGroup) html += `</optgroup>`;
+          const labelText = String(val).replace(/^---\s*|\s*---$/g, ''); // "--- あ行 ---" から "あ行" を抽出
+          html += `<optgroup label="${labelText}">`;
+          inGroup = true;
+        } else {
+          // 発注元リスト（clientList）や特定のドロップダウンの場合に表示名を綺麗にする
+          const isClientSelect = (elementId === "filterClient" || elementId === "addClientSelect" || (suffix && suffix.includes("発注元")));
+          const text = isClientSelect ? formatDisplayText(val) : val;
+    
+          html += `<option value="${val}">${text}</option>`;
+        }
       });
-
+    
+      if (inGroup) html += `</optgroup>`; // 最後にグループを閉じる
+    
       el.innerHTML = html;
     }
-
-    // 検索結果内のセレクトボックス生成（オブジェクト対応版・編集フォーム用）
+    
+    // 検索結果内のセレクトボックス生成（編集フォーム用・optgroup見出し対応版）
     function createOptionsHtml(masterList, currentVal, suffix) {
       let html = `
         <option value="">選択してください</option>
         <option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix}を登録)</option>
         <option disabled>────────────</option>
       `;
-
+    
       let exist = false;
-
+      let inGroup = false;
+    
       (masterList || []).forEach(v => {
         const val = extractValue(v);
-        const text = (suffix === "発注元") ? formatDisplayText(val) : val;
-        const sel = (val === currentVal) ? 'selected' : '';
-        if (sel) exist = true;
-        html += `<option value="${val}" ${sel}>${text}</option>`;
+        if (!val) return;
+    
+        // ★ 見出し判定
+        const isHeader = (typeof v === 'object' && v !== null && v.isHeader) || (typeof val === 'string' && val.startsWith('---'));
+    
+        if (isHeader) {
+          if (inGroup) html += `</optgroup>`;
+          const labelText = String(val).replace(/^---\s*|\s*---$/g, '');
+          html += `<optgroup label="${labelText}">`;
+          inGroup = true;
+        } else {
+          const text = (suffix === "発注元") ? formatDisplayText(val) : val;
+          const sel = (val === currentVal) ? 'selected' : '';
+          if (sel) exist = true;
+          html += `<option value="${val}" ${sel}>${text}</option>`;
+        }
       });
-
-      // 現在値がマスタにない場合だけ追加
+    
+      if (inGroup) html += `</optgroup>`;
+    
+      // 現在値がマスタにない場合だけ追加（optgroupの外側に追加）
       if (currentVal && !exist) {
         const text = (suffix === "発注元") ? formatDisplayText(currentVal) : currentVal;
         html += `<option value="${currentVal}" selected>${text}</option>`;
       }
-
+    
       return html;
     }
+
+    // A. 見出しあり用（発注元・担当者・工事担当者 に使用）
+    function renderGroupedSelect(selectEl, list) {
+      selectEl.innerHTML = '<option value="">選択してください</option>';
+      let currentGroup = null;
+    
+      list.forEach(item => {
+        const isObj = typeof item === 'object' && item !== null;
+        const name = isObj ? item.name : item;
+        const isHeader = isObj ? item.isHeader : name.startsWith('---');
+    
+        if (isHeader) {
+          const labelText = name.replace(/^---\s*|\s*---$/g, '');
+          currentGroup = document.createElement('optgroup');
+          currentGroup.label = labelText;
+          selectEl.appendChild(currentGroup);
+        } else {
+          const option = document.createElement('option');
+          option.value = isObj ? item.name : item;
+          option.textContent = name;
+          if (isObj && item.phone) option.dataset.phone = item.phone;
+    
+          if (currentGroup) {
+            currentGroup.appendChild(option);
+          } else {
+            selectEl.appendChild(option);
+          }
+        }
+      });
+    }
+    
+    // B. 通常用（工事内容・受注媒体・案件種別 などに使用）
+    function renderSimpleSelect(selectEl, list) {
+      selectEl.innerHTML = '<option value="">選択してください</option>';
+      list.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item;
+        option.textContent = item;
+        selectEl.appendChild(option);
+      });
+    }
+    
+    // -------------------------------------------------------------
+    // 初期化時の使用例
+    // -------------------------------------------------------------
+    const master = loadAppDataMaster();
+    
+    // ★ 見出し付きでレンダリング（選択不可・グループ分け）
+    renderGroupedSelect(document.getElementById('clientSelect'), master.clientList);      // 発注元
+    renderGroupedSelect(document.getElementById('managerSelect'), master.managerList);    // 担当者
+    renderGroupedSelect(document.getElementById('workerSelect'),  master.userList);       // 工事担当者
+    
+    // 通常通りレンダリング
+    renderSimpleSelect(document.getElementById('workContentSelect'), master.workContentList); // 工事内容
+    renderSimpleSelect(document.getElementById('mediaSelect'),       master.mediaList);       // 受注媒体
+    renderSimpleSelect(document.getElementById('projectTypeSelect'), master.projectTypeList); // 案件種別
     
     // =================================================================
     // 検索結果リスト表示
