@@ -208,8 +208,19 @@
     .uploadbox.dragover { border-color: var(--primary); background: #e0f2fe; }
     .uploadbox.dragover .cloud-icon { transform: translateY(-6px); /* クラウドアイコンが浮き上がる */ color: var(--primary); /* クラウドアイコンの色が主色に */ }
     
-    /* クラウドアイコン：トランジション設定で滑らかな動作 */
-    .cloud-icon { transition: transform 0.2s ease, color 0.2s ease; }
+    /* クラウドアイコン共通設定：サイズ統一・トランジション */
+    .cloud-icon {
+      font-size: 40px !important;
+      color: #60a5fa;
+      flex-shrink: 0;
+      display: inline-block;
+      line-height: 1;
+      letter-spacing: normal;
+      width: 40px;
+      height: 40px;
+      margin: 0 auto;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
     
     /* ファイル項目：表示済みファイル一覧のスタイル */
     .file-item { display: flex; align-items: center; background: white; padding: 8px 12px;
@@ -228,19 +239,6 @@
       background-color: #e3f2fd;
       color: #0d47a1;
       box-shadow: 0 2px 4px rgba(13,71,161,0.08);
-    }
-    
-    /* クラウドアイコン共通設定：サイズ統一 */
-    .cloud-icon {
-      font-size: 40px !important;
-      color: #60a5fa;
-      flex-shrink: 0;
-      display: inline-block;
-      line-height: 1;
-      letter-spacing: normal;
-      width: 40px;
-      height: 40px;
-      margin: 0 auto;
     }
     
     /* フォルダリンク：Google Drive等への外部リンクボタン */
@@ -488,7 +486,7 @@
       <!-- ヘッダー：タイトル・新規登録ボタン -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f0f2f5; padding-bottom: 12px; flex-wrap: wrap; gap: 12px;">
         <div style="font-size: 22px; font-weight: bold; color: #1e293b; display:flex; align-items:center; gap:8px;">
-          <span class="material-symbols-outlined" style="color:var(--primary); font-size:34px;">Assignment_Globe</span> 案件管理アプリ
+          <span class="material-symbols-outlined" style="color:var(--primary); font-size:34px;">assignment</span> 案件管理アプリ
         </div>
         <!-- 新規案件登録ボタン -->
         <button class="btn btn-success" onclick="openCreateModal()" style="font-size: 18px; padding: 14px 28px;">
@@ -582,7 +580,7 @@
           <!-- 発注元選択：ドロップダウンまたは新規入力 -->
           <div class="form-group" style="margin-top: 15px;">
             <label>発注元 <span class="badge-required">必須</span></label>
-            <select name="発注元" id="addClientSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newClientInputGroup')"></select>
+            <select name="発注元" id="addClientSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newClientInputGroup'); updateManagersByClient(this.value, 'addStaffSelect');"></select>
             <div id="newClientInputGroup" style="display: none; margin-top: 8px;">
               <input type="text" id="newClientInput" placeholder="新規発注元名を入力してください" style="width: 100%;">
             </div>
@@ -751,9 +749,7 @@
   <div id="toastNotification" class="toast-box"></div>
 
   <!-- トップへ戻るボタン -->
-  <button id="scrollToTopBtn" onclick="scrollToTop()" style="position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; border-radius: 50%;
-    background-color: var(--primary); color: white; border: none; cursor: pointer; display: none; z-index: 999; box-shadow: 0 4px 12px rgba(74,144,226,0.3);
-    transition: all 0.3s ease; align-items: center; justify-content: center;">
+  <button id="scrollToTopBtn" class="scrollToTopBtn" onclick="scrollToTop()">
     <span class="material-symbols-outlined" style="font-size: 24px;">arrow_upward</span>
   </button>
   
@@ -786,7 +782,7 @@
             
             <div class="form-group">
               <label style="margin-bottom: 0px; align-items: center; gap: 2px;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">Vacuum</span><span>工事内容 ${i}</span>
+                <span class="material-symbols-outlined" style="font-size: 18px;">construction</span><span>工事内容 ${i}</span>
               </label>
               <select name="工事内容${i}" id="newWorkContent_${i}" style="width:100%; margin-top: 2px;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_${i}')"></select>
               <div id="newWorkContentInputGroup_${i}" style="display: none; margin-top: 2px;">
@@ -796,7 +792,7 @@
             
             <div class="form-group">
               <label style="margin-bottom: 0px; align-items: center; gap: 2px;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">Supervisor_Account</span><span>工事担当者 ${i}</span>
+                <span class="material-symbols-outlined" style="font-size: 18px;">supervisor_account</span><span>工事担当者 ${i}</span>
               </label>
               <select name="工事担当者${i}" id="newWorker_${i}" style="width:100%; margin-top: 2px;" onchange="toggleNewInput(this, 'newWorkerInputGroup_${i}')"></select>
               <div id="newWorkerInputGroup_${i}" style="display: none; margin-top: 2px;">
@@ -1237,62 +1233,6 @@
       return html;
     }
 
-    // A. 見出しあり用（発注元・担当者・工事担当者 に使用）
-    function renderGroupedSelect(selectEl, list) {
-      selectEl.innerHTML = '<option value="">選択してください</option>';
-      let currentGroup = null;
-    
-      list.forEach(item => {
-        const isObj = typeof item === 'object' && item !== null;
-        const name = isObj ? item.name : item;
-        const isHeader = isObj ? item.isHeader : name.startsWith('---');
-    
-        if (isHeader) {
-          const labelText = name.replace(/^---\s*|\s*---$/g, '');
-          currentGroup = document.createElement('optgroup');
-          currentGroup.label = labelText;
-          selectEl.appendChild(currentGroup);
-        } else {
-          const option = document.createElement('option');
-          option.value = isObj ? item.name : item;
-          option.textContent = name;
-          if (isObj && item.phone) option.dataset.phone = item.phone;
-    
-          if (currentGroup) {
-            currentGroup.appendChild(option);
-          } else {
-            selectEl.appendChild(option);
-          }
-        }
-      });
-    }
-    
-    // B. 通常用（工事内容・受注媒体・案件種別 などに使用）
-    function renderSimpleSelect(selectEl, list) {
-      selectEl.innerHTML = '<option value="">選択してください</option>';
-      list.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item;
-        option.textContent = item;
-        selectEl.appendChild(option);
-      });
-    }
-    
-    // -------------------------------------------------------------
-    // 初期化時の使用例
-    // -------------------------------------------------------------
-    const master = loadAppDataMaster();
-    
-    // ★ 見出し付きでレンダリング（選択不可・グループ分け）
-    renderGroupedSelect(document.getElementById('clientSelect'), master.clientList);      // 発注元
-    renderGroupedSelect(document.getElementById('managerSelect'), master.managerList);    // 担当者
-    renderGroupedSelect(document.getElementById('workerSelect'),  master.userList);       // 工事担当者
-    
-    // 通常通りレンダリング
-    renderSimpleSelect(document.getElementById('workContentSelect'), master.workContentList); // 工事内容
-    renderSimpleSelect(document.getElementById('mediaSelect'),       master.mediaList);       // 受注媒体
-    renderSimpleSelect(document.getElementById('projectTypeSelect'), master.projectTypeList); // 案件種別
-    
     // =================================================================
     // 検索結果リスト表示
     // =================================================================
@@ -1937,11 +1877,6 @@
       initSelectWithOptions("addMediaSelect", appConfig.mediaList || [], "受注媒体");
       initSelectWithOptions("addProjectTypeSelect", appConfig.projectTypeList || [], "案件種別");
       initSelectWithOptions("addClientSelect", appConfig.clientList, "発注元");
-      initSelectWithOptions("filterClient", appConfig.clientList, "発注元", "すべて");
-      // 発注元変更時に担当者リストを更新
-      document.getElementById("addClientSelect").addEventListener("change", function() {
-        updateManagersByClient(this.value, "addStaffSelect");
-      });
   
       for (let i = 1; i <= 4; i++) {
         initSelectWithOptions(`newWorkContent_${i}`, appConfig.workContentList, "工事内容");
