@@ -1978,8 +1978,8 @@
       recognition.start();
     }
   
-    // =================================================================
-    // 新規登録データ送信処理（完全自動ヨミ生成＆2段階レスポンス）
+// =================================================================
+    // 新規登録データ送信処理（完全自動ヨミ生成＆2段階レスポンス統合版）
     // =================================================================
     async function handleCreateSubmit(event) {
       event.preventDefault();
@@ -2014,7 +2014,7 @@
         payload["担当者"] = document.getElementById("newStaffInput").value.trim();
         payload["isNewStaff"] = true;
       }
-    
+
       for (let i = 1; i <= 4; i++) {
         if (payload["工事内容" + i] === "(新規工事内容)") {
           payload["工事内容" + i] = document.getElementById(`newWorkContentInput_${i}`).value.trim();
@@ -2025,17 +2025,17 @@
           payload["isNewWorker"] = true;
         }
       }
-    
+
       payload["loginUser"] = localStorage.getItem('app_login_userName') || '';
       payload["作成日時"] = getNowDateTimeString();
-    
+
       // -------------------------------------------------------------
       // 検査日＋時刻の結合処理
       // -------------------------------------------------------------
       const inspectionDate = document.getElementById("newInspectionDate").value;
       const inspectionHour = document.getElementById("newInspectionHour").value;
       const inspectionMinute = document.getElementById("newInspectionMinute").value;
-    
+
       if (inspectionDate) {
         if (inspectionHour !== "" && inspectionMinute !== "") {
           const cleanHour = String(inspectionHour).replace(/[^0-9]/g, '').padStart(2, '0');
@@ -2047,7 +2047,7 @@
       } else {
         payload["検査日"] = "";
       }
-    
+
       // -------------------------------------------------------------
       // 添付ファイルのBase64エンコード準備
       // -------------------------------------------------------------
@@ -2061,116 +2061,78 @@
       } else {
         payload.files = [];
       }
-    
-      // -------------------------------------------------------------
-      // GAS への送信処理（2段階レスポンス構造）
-      // -------------------------------------------------------------
+
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "新規案件を登録中...";
-    
-      try {
-        // 【第1段階】スプレッドシートへの高速書き込み
-        payload.action = "createRecordSheetOnly";
-        
-        const response = await fetch(GAS_WEB_APP_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
-        
-        const result = await response.json();
-    
-        if (result.success) {
-          document.getElementById("loaderText").textContent = "バックグラウンド処理（Drive保存・カレンダー同期・マスタ＆ヨミ更新）を実行中...";
-    
-          // 【第2段階】重い処理（Drive保存/カレンダー同期/マスタ追加/ヨミ自動取得）を裏で非同期実行
-          const bgPayload = {
-            action: "processBackgroundTasks",
-            recordNo: result.recordNo,
-            ...payload
-          };
-    
-          fetch(GAS_WEB_APP_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(bgPayload)
-          }).catch(err => console.warn("バックグラウンド処理応答エラー:", err));
-    
-          // 画面復帰・クリア
-          alert(`新規案件（No. ${result.recordNo}）を登録しました！`);
-          form.reset();
-          if (typeof resetFileInputs === "function") resetFileInputs("NEW_PROJECT");
-          if (typeof closeModal === "function") closeModal("createModal");
-          if (typeof reloadAppMasterAndData === "function") await reloadAppMasterAndData();
-    
-        } else {
-          alert("登録に失敗しました: " + (result.message || "未知のエラー"));
-        }
-      } catch (error) {
-        console.error("送信エラー:", error);
-        alert("通信エラーが発生しました。ネットワーク状態を確認してください。");
-      } finally {
-        loader.style.display = "none";
-        submitBtn.disabled = false;
-      }
-    }
-    
+
       // =================================================================
-      // 【1段目】シート追加処理
+      // 【1段目】シート高速追加処理
       // =================================================================
       try {
         const fDataForSheetOnly = Object.assign({}, payload);
         delete fDataForSheetOnly.files; // 高速な1段目にはファイルの重いbase64データを含めない
+        
         const response = await apiCall("createRecordSheetOnly", { fData: fDataForSheetOnly });
         
         // 1. ローダー解除＆新規モーダルを閉じる
         loader.style.display = "none";
-        closeCreateModal();
-    
-        // 2. 状態のクリア（一覧の再検索は挟まず、そのまま元の画面に戻す）
+        if (typeof closeCreateModal === "function") closeCreateModal();
+
+        // 2. 状態のクリア
         selectedFilesMap["NEW_PROJECT"] = [];
-    
+        form.reset();
+
         // 3. 軽量なトースト通知（1段目完了）
-        showToast("データ登録が完了しました。その他カレンダー、ファイル登録等処理中...");
-    
+        if (typeof showToast === "function") {
+          showToast("データ登録が完了しました。その他カレンダー、ファイル登録等処理中...");
+        }
+
         // =================================================================
-        // 【2段目】重い処理を実行し、完了を待ってから最新化を確認する
+        // 【2段目】バックグラウンド処理（Drive保存/カレンダー同期/マスタ＆ヨミ更新）
         // =================================================================
         const newRowNumber = response.rowNumber;
         const flags = { inspectionDateChanged: !!payload["検査日"], isNew: true };
-    
+
         try {
           await apiCall("processBackgroundTasks", { fData: payload, rNum: newRowNumber, flags: flags });
-    
+
           // バックグラウンドでマスタデータを再取得・更新
           apiCall("loadAppDataMaster").then(data => {
-            if (data) appConfig = data;
+            if (data && typeof appConfig !== "undefined") appConfig = data;
           }).catch(console.error);
-    
-          // すべての処理完了 → 最新化するか選択
-          await promptReloadAfterAllProcessing();
+
+          // すべての処理完了 → 最新化の確認プロンプト
+          if (typeof promptReloadAfterAllProcessing === "function") {
+            await promptReloadAfterAllProcessing();
+          }
+
         } catch (bgErr) {
           console.error("❌ バックグラウンド処理エラー(新規登録):", bgErr);
+          if (typeof Swal !== "undefined") {
+            Swal.fire({
+              icon: 'error',
+              title: '背景処理でエラーが発生しました',
+              html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期や添付ファイル保存でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
+              confirmButtonText: '了解'
+            });
+          }
+        }
+
+      } catch (err) {
+        // 1段目失敗時も必ずローダーを消し、再入力できるようボタンを戻す
+        loader.style.display = "none";
+        console.error("❌ 新規登録エラー:", err);
+        
+        if (typeof Swal !== "undefined") {
           Swal.fire({
             icon: 'error',
-            title: '背景処理でエラーが発生しました',
-            html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期や添付ファイル保存でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
+            title: '登録エラーが発生しました',
+            html: `<strong>${err.message}</strong><br><br><small>詳細はコンソール（F12）を確認してください</small>`,
             confirmButtonText: '了解'
           });
         }
-    
-      } catch (err) {
-        // 1段目失敗時も必ずローダーを消し、再入力・再送信できるようボタンを戻す
-        loader.style.display = "none";
+      } finally {
         submitBtn.disabled = false;
-        console.error("❌ 新規登録エラー:", err);
-        
-        Swal.fire({
-          icon: 'error',
-          title: '登録エラーが発生しました',
-          html: `<strong>${err.message}</strong><br><br><small>詳細はコンソール（F12）を確認してください</small>`,
-          confirmButtonText: '了解'
-        });
       }
     }
     
