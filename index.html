@@ -1979,30 +1979,42 @@
     }
   
     // =================================================================
-    // 新規登録データ送信処理
+    // 新規登録データ送信処理（完全自動ヨミ生成＆2段階レスポンス）
     // =================================================================
     async function handleCreateSubmit(event) {
       event.preventDefault();
       const submitBtn = document.getElementById("createSubmitBtn");
-      submitBtn.disabled = true; // 二重送信防止（連打で複数リクエストが重なるのを防ぐ）
+      submitBtn.disabled = true; // 二重送信防止（連打対策）
+      
       const form = event.target;
       const formData = new FormData(form);
       const payload = {};
       formData.forEach((value, key) => { payload[key] = value; });
       
+      // -------------------------------------------------------------
       // 新規入力項目の取得・補正
+      // （isNewXxx = true を渡すことで、GAS側が自動的にgetYomi()を実行）
+      // -------------------------------------------------------------
       if (payload["受注媒体"] === "(新規受注媒体)") {
         payload["受注媒体"] = document.getElementById("newMediaInput").value.trim();
         payload["isNewMedia"] = true;
       }
+      
       if (payload["案件種別"] === "(新規案件種別)") {
         payload["案件種別"] = document.getElementById("newProjectTypeInput").value.trim();
         payload["isNewProjectType"] = true;
       }
+      
       if (payload["発注元"] === "(新規発注元)") {
         payload["発注元"] = document.getElementById("newClientInput").value.trim();
         payload["isNewClient"] = true;
       }
+      
+      if (payload["担当者"] === "(新規担当者)") {
+        payload["担当者"] = document.getElementById("newStaffInput").value.trim();
+        payload["isNewStaff"] = true;
+      }
+    
       for (let i = 1; i <= 4; i++) {
         if (payload["工事内容" + i] === "(新規工事内容)") {
           payload["工事内容" + i] = document.getElementById(`newWorkContentInput_${i}`).value.trim();
@@ -2013,15 +2025,13 @@
           payload["isNewWorker"] = true;
         }
       }
-      if (payload["担当者"] === "(新規担当者)") {
-        payload["担当者"] = document.getElementById("newStaffInput").value.trim();
-        payload["isNewStaff"] = true;
-      }
     
       payload["loginUser"] = localStorage.getItem('app_login_userName') || '';
       payload["作成日時"] = getNowDateTimeString();
     
-      // 検査日＋時刻の結合
+      // -------------------------------------------------------------
+      // 検査日＋時刻の結合処理
+      // -------------------------------------------------------------
       const inspectionDate = document.getElementById("newInspectionDate").value;
       const inspectionHour = document.getElementById("newInspectionHour").value;
       const inspectionMinute = document.getElementById("newInspectionMinute").value;
@@ -2038,19 +2048,72 @@
         payload["検査日"] = "";
       }
     
-      // 添付ファイルの準備
+      // -------------------------------------------------------------
+      // 添付ファイルのBase64エンコード準備
+      // -------------------------------------------------------------
       const files = selectedFilesMap["NEW_PROJECT"] || [];
+      const loader = document.getElementById("initLoader");
+      
       if (files.length > 0) {
-        document.getElementById("initLoader").style.display = "flex";
+        loader.style.display = "flex";
         document.getElementById("loaderText").textContent = "ファイルを準備中...";
         payload.files = await Promise.all(files.map(fileToBase64));
       } else {
         payload.files = [];
       }
     
-      const loader = document.getElementById("initLoader");
+      // -------------------------------------------------------------
+      // GAS への送信処理（2段階レスポンス構造）
+      // -------------------------------------------------------------
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "新規案件を登録中...";
+    
+      try {
+        // 【第1段階】スプレッドシートへの高速書き込み
+        payload.action = "createRecordSheetOnly";
+        
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+    
+        if (result.success) {
+          document.getElementById("loaderText").textContent = "バックグラウンド処理（Drive保存・カレンダー同期・マスタ＆ヨミ更新）を実行中...";
+    
+          // 【第2段階】重い処理（Drive保存/カレンダー同期/マスタ追加/ヨミ自動取得）を裏で非同期実行
+          const bgPayload = {
+            action: "processBackgroundTasks",
+            recordNo: result.recordNo,
+            ...payload
+          };
+    
+          fetch(GAS_WEB_APP_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(bgPayload)
+          }).catch(err => console.warn("バックグラウンド処理応答エラー:", err));
+    
+          // 画面復帰・クリア
+          alert(`新規案件（No. ${result.recordNo}）を登録しました！`);
+          form.reset();
+          if (typeof resetFileInputs === "function") resetFileInputs("NEW_PROJECT");
+          if (typeof closeModal === "function") closeModal("createModal");
+          if (typeof reloadAppMasterAndData === "function") await reloadAppMasterAndData();
+    
+        } else {
+          alert("登録に失敗しました: " + (result.message || "未知のエラー"));
+        }
+      } catch (error) {
+        console.error("送信エラー:", error);
+        alert("通信エラーが発生しました。ネットワーク状態を確認してください。");
+      } finally {
+        loader.style.display = "none";
+        submitBtn.disabled = false;
+      }
+    }
     
       // =================================================================
       // 【1段目】シート追加処理
