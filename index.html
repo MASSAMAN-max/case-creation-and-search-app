@@ -1163,30 +1163,40 @@
         `;
       }
     
-      let inGroup = false;
+      let currentGroup = null;
     
       (dataList || []).forEach(v => {
         const val = extractValue(v);
         if (!val) return;
     
-        // ★ 見出し判定（オブジェクトのisHeaderフラグ、または "--- あ行 ---" 形式）
-        const isHeader = (typeof v === 'object' && v !== null && v.isHeader) || (typeof val === 'string' && val.startsWith('---'));
-    
-        if (isHeader) {
-          if (inGroup) html += `</optgroup>`;
+        // ★ 見出し判定：
+        //   1) GASの attachGyou() が付与する gyou プロパティ（現行のマスタ形式）
+        //   2) 旧形式（isHeaderフラグ、または "--- あ行 ---" のようなダミー行）との互換性も維持
+        const gyou = (typeof v === 'object' && v !== null) ? v.gyou : null;
+        const isLegacyHeader = (typeof v === 'object' && v !== null && v.isHeader) || (typeof val === 'string' && val.startsWith('---'));
+
+        if (isLegacyHeader) {
+          if (currentGroup !== null) html += `</optgroup>`;
           const labelText = String(val).replace(/^---\s*|\s*---$/g, ''); // "--- あ行 ---" から "あ行" を抽出
           html += `<optgroup label="${labelText}">`;
-          inGroup = true;
-        } else {
-          // 発注元リスト（clientList）や特定のドロップダウンの場合に表示名を綺麗にする
-          const isClientSelect = (elementId === "filterClient" || elementId === "addClientSelect" || (suffix && suffix.includes("発注元")));
-          const text = isClientSelect ? formatDisplayText(val) : val;
-    
-          html += `<option value="${val}">${text}</option>`;
+          currentGroup = labelText;
+          return;
         }
+
+        if (gyou && gyou !== currentGroup) {
+          if (currentGroup !== null) html += `</optgroup>`;
+          html += `<optgroup label="${gyou}">`;
+          currentGroup = gyou;
+        }
+
+        // 発注元リスト（clientList）や特定のドロップダウンの場合に表示名を綺麗にする
+        const isClientSelect = (elementId === "filterClient" || elementId === "addClientSelect" || (suffix && suffix.includes("発注元")));
+        const text = isClientSelect ? formatDisplayText(val) : val;
+
+        html += `<option value="${val}">${text}</option>`;
       });
     
-      if (inGroup) html += `</optgroup>`; // 最後にグループを閉じる
+      if (currentGroup !== null) html += `</optgroup>`; // 最後にグループを閉じる
     
       el.innerHTML = html;
     }
@@ -1250,15 +1260,6 @@
       return html;
     }
     
-    // ドロップダウン要素への反映関数（共通関数を呼ぶだけ）
-    function populateSelect(elementId, dataList, suffix = "") {
-      const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
-      if (!el) return;
-    
-      const isFilter = (elementId === "filterClient" || elementId.includes("filter") || elementId.includes("Filter"));
-      el.innerHTML = createOptionsHtml(dataList, "", suffix, { isFilter: isFilter });
-    }
-
     // =================================================================
     // 検索結果リスト表示
     // =================================================================
