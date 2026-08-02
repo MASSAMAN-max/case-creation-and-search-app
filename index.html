@@ -1191,46 +1191,72 @@
       el.innerHTML = html;
     }
     
-    // 検索結果内のセレクトボックス生成（編集フォーム用・optgroup見出し対応版）
-    function createOptionsHtml(masterList, currentVal, suffix) {
-      let html = `
-        <option value="">選択してください</option>
-        <option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix}を登録)</option>
-        <option disabled>────────────</option>
-      `;
+    // =================================================================
+    // 共通: ドロップダウンHTML生成関数（optgroup自動生成対応）
+    // =================================================================
+    function createOptionsHtml(masterList, currentVal = "", suffix = "", options = {}) {
+      const { isFilter = false } = options;
+      let html = '';
+    
+      // 1. 先頭の選択肢 / 新規登録オプション
+      if (isFilter) {
+        html += `<option value="">すべて</option>`;
+      } else {
+        html += `<option value="">選択してください</option>`;
+        if (suffix) {
+          html += `
+            <option value="(新規${suffix})" style="color:var(--primary); font-weight:bold;">(新規${suffix}を登録)</option>
+            <option disabled>────────────</option>
+          `;
+        }
+      }
     
       let exist = false;
-      let inGroup = false;
+      let currentGroup = null;
     
       (masterList || []).forEach(v => {
-        const val = extractValue(v);
+        // オブジェクト/文字列の表記差を吸収
+        const val = (typeof v === 'object' && v !== null) ? (v.name || "") : String(v || "");
         if (!val) return;
     
-        // ★ 見出し判定
-        const isHeader = (typeof v === 'object' && v !== null && v.isHeader) || (typeof val === 'string' && val.startsWith('---'));
+        // GASから届いた gyou ("あ行" など) を取得
+        const gyou = (typeof v === 'object' && v !== null) ? v.gyou : null;
     
-        if (isHeader) {
-          if (inGroup) html += `</optgroup>`;
-          const labelText = String(val).replace(/^---\s*|\s*---$/g, '');
-          html += `<optgroup label="${labelText}">`;
-          inGroup = true;
-        } else {
-          const text = (suffix === "発注元") ? formatDisplayText(val) : val;
-          const sel = (val === currentVal) ? 'selected' : '';
-          if (sel) exist = true;
-          html += `<option value="${val}" ${sel}>${text}</option>`;
+        // 「行」が切り替わったら <optgroup> を切替
+        if (gyou && gyou !== currentGroup) {
+          if (currentGroup !== null) html += `</optgroup>`;
+          html += `<optgroup label="${gyou}">`;
+          currentGroup = gyou;
         }
+    
+        // 表示名の整形
+        const isClient = (suffix === "発注元" || suffix.includes("発注元"));
+        const text = isClient ? formatDisplayText(val) : val;
+        const sel = (val === currentVal) ? 'selected' : '';
+        if (sel) exist = true;
+    
+        html += `<option value="${val}" ${sel}>${text}</option>`;
       });
     
-      if (inGroup) html += `</optgroup>`;
+      if (currentGroup !== null) html += `</optgroup>`;
     
-      // 現在値がマスタにない場合だけ追加（optgroupの外側に追加）
-      if (currentVal && !exist) {
-        const text = (suffix === "発注元") ? formatDisplayText(currentVal) : currentVal;
+      // 2. 編集フォーム等：現在値がマスタ内に存在しない場合のフォールバック
+      if (currentVal && !exist && !isFilter) {
+        const isClient = (suffix === "発注元" || suffix.includes("発注元"));
+        const text = isClient ? formatDisplayText(currentVal) : currentVal;
         html += `<option value="${currentVal}" selected>${text}</option>`;
       }
     
       return html;
+    }
+    
+    // ドロップダウン要素への反映関数（共通関数を呼ぶだけ）
+    function populateSelect(elementId, dataList, suffix = "") {
+      const el = typeof elementId === 'string' ? document.getElementById(elementId) : elementId;
+      if (!el) return;
+    
+      const isFilter = (elementId === "filterClient" || elementId.includes("filter") || elementId.includes("Filter"));
+      el.innerHTML = createOptionsHtml(dataList, "", suffix, { isFilter: isFilter });
     }
 
     // =================================================================
