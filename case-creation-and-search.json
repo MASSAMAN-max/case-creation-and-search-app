@@ -1,8 +1,8 @@
 {
   "name": "案件管理アプリ",
   "short_name": "案件管理",
-  "start_url": "https://script.google.com/macros/s/AKfycbzDU-eldEfHba9IA1vXFZDogvozxKlUOfp_e3XMjOZFj519yFskQrvykhzgp3G18Uic6w/exec",
-  "display": "standalone",
+  "start_url": "/",
+  "scope": "/",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "icons": [
