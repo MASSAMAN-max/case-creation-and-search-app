@@ -3,6 +3,7 @@
   "short_name": "案件管理",
   "start_url": "/",
   "scope": "/",
+  "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "icons": [
