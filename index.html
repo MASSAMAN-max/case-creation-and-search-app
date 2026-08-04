@@ -393,6 +393,15 @@
       font-weight: normal;
       padding: 4px 8px;
     }
+
+    /* ログインユーザー表記とログアウトボタンを同系デザインで揃えるための共通スタイル */
+    .user-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 13px; font-weight: bold; padding: 4px 12px; border-radius: 20px;
+      background: #e2e8f0; color: var(--text-sub); border: none; cursor: default;
+    }
+    .user-pill-action { cursor: pointer; background: #f1f5f9; color: #64748b; transition: all 0.2s ease; }
+    .user-pill-action:hover { background-color: #fee2e2; color: #ef4444; }
       
   </style>
 </head>
@@ -447,13 +456,10 @@
   <!-- メインアプリ画面：認証後の表示 -->
   <div id="mainApp" style="display:none; padding: 12px;">
 
-    <!--<div style="display: flex; align-items: center; margin: 12px 12px 8px 12px;">
+    <div style="display: flex; align-items: center; margin: 12px 12px 8px 12px;">
       <!-- ユーザー表示ラベル（ログアウト機能統合） -->
-      <button type="button" id="userDisplayLabel" onclick="handleLogout()" title="クリックしてログアウト"
-        style="display: none; margin-left: auto; font-size: 13px; color: var(--text-sub); font-weight: bold; background: #e2e8f0; border: none;
-        padding: 4px 12px; border-radius: 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;">
-      </button>
-    <!--</div>
+      <button type="button" id="userDisplayLabel" class="user-pill user-pill-action" onclick="handleLogout()" title="クリックでログアウト"></button>
+    </div>
       
     <!-- 検索・フィルターセクション -->
     <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 24px;">
