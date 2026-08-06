@@ -8,14 +8,19 @@
 <meta name="theme-color" content="#ffffff">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+
   <!-- ベースURL設定：リンクを新タブで開かない -->
   <base target="_top">
+
   <!-- レスポンシブ対応とビューポート設定 -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  
   <!-- 外部フォント読み込み：日本語対応フォント（Plus Jakarta Sans, Roboto） -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  
   <!-- Googleの Material Design アイコン読み込み -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
   <!-- SweetAlert2：モーダルダイアログ・アラート用ライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
@@ -352,6 +357,30 @@
     /* ローディング：テキストのパルスアニメーション */
     @keyframes pulseText { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 
+    /* ログアウトボタン：左上に固定表示 */
+    .mini-logout-btn {
+      width: fit-content;
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: bold;
+      background-color: #f1f5f9;
+      color: #64748b;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    /* ログアウトボタン内のアイコン調整 */
+    .mini-logout-btn .material-symbols-outlined { font-size: 16px; }
+    
+    /* ログアウトボタンホバー状態：赤系のハイライト */
+    .mini-logout-btn:hover { background-color: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+
     /* トップへ戻るボタン追加 */
     .scrollToTopBtn {
       position: fixed;
@@ -393,15 +422,6 @@
       font-weight: normal;
       padding: 4px 8px;
     }
-
-    /* ログインユーザー表記とログアウトボタンを同系デザインで揃えるための共通スタイル */
-    .user-pill {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 13px; font-weight: bold; padding: 4px 12px; border-radius: 20px;
-      background: #e2e8f0; color: var(--text-sub); border: none; cursor: default;
-    }
-    .user-pill-action { cursor: pointer; background: #f1f5f9; color: #64748b; transition: all 0.2s ease; }
-    .user-pill-action:hover { background-color: #fee2e2; color: #ef4444; }
       
   </style>
 </head>
@@ -457,8 +477,12 @@
   <div id="mainApp" style="display:none; padding: 12px;">
 
     <div style="display: flex; align-items: center; margin: 12px 12px 8px 12px;">
-      <!-- ユーザー表示ラベル（ログアウト機能統合） -->
-      <button type="button" id="userDisplayLabel" class="user-pill user-pill-action" onclick="handleLogout()" title="クリックでログアウト"></button>
+      <!-- ログアウトボタン（左上） -->
+      <button type="button" id="logoutBtn" class="mini-logout-btn" onclick="handleLogout()" style="display:none;">
+        <span class="material-symbols-outlined">logout</span><span>ログアウト</span>
+      </button>
+      <!-- ユーザー表示ラベル（右上） -->
+      <span id="userDisplayLabel" style="margin-left: auto; font-size: 13px; color: var(--text-sub); font-weight: bold; background: #e2e8f0; padding: 4px 12px; border-radius: 20px;"></span>
     </div>
       
     <!-- 検索・フィルターセクション -->
@@ -753,62 +777,208 @@
     let allRecordsCache = null; // 案件データの全件キャッシュ（アプリ起動/リロード時に1回だけ取得）
     const selectedFilesMap = {};
     let currentWorkCount = 1;
-  
-    // 画面読み込み時に1〜4の入力グループを自動生成
-    document.addEventListener("DOMContentLoaded", () => {
-      const container = document.getElementById("dynamicWorkFieldsContainer");
-      let htmlContent = "";
-    
-      for (let i = 1; i <= 4; i++) {
-        // グループ1は最初から表示、2〜4は非表示（display: none）で作成
-        const displayStyle = (i === 1) ? "display: grid;" : "display: none; margin-top:20px; border-top:1px dashed #cbd5e1; padding-top:12px;";
-        const idAttribute = (i === 1) ? 'class="work-input-group"' : `id="addWorkGroup_${i}"`;
-    
-        htmlContent += `
-          <div ${idAttribute} style="${displayStyle} grid-template-columns: 1fr; gap: 2px;">
-            <div class="form-group">
-              <label style="margin-bottom: 0px; align-items: center; gap: 2px; margin-top:20px;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span><span>施工予定日 ${i}</span>
-                <span id="newDaySpan_${i}" style="font-weight:bold; color:var(--primary); margin-left:4px;"></span>
-              </label>
-              <input type="date" name="施工日${i}" onchange="updateInputWeekday(this, 'newDaySpan_${i}')" onclick="this.showPicker && this.showPicker();" style="margin-top: 2px; cursor:pointer;">
-            </div>
-            
-            <div class="form-group">
-              <label style="margin-bottom: 0px; align-items: center; gap: 2px;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">construction</span><span>工事内容 ${i}</span>
-              </label>
-              <select name="工事内容${i}" id="newWorkContent_${i}" style="width:100%; margin-top: 2px;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_${i}')"></select>
-              <div id="newWorkContentInputGroup_${i}" style="display: none; margin-top: 2px;">
-                <input type="text" id="newWorkContentInput_${i}" placeholder="新規工事内容を入力">
-              </div>
-            </div>
-            
-            <div class="form-group">
-              <label style="margin-bottom: 0px; align-items: center; gap: 2px;">
-                <span class="material-symbols-outlined" style="font-size: 18px;">supervisor_account</span><span>工事担当者 ${i}</span>
-              </label>
-              <select name="工事担当者${i}" id="newWorker_${i}" style="width:100%; margin-top: 2px;" onchange="toggleNewInput(this, 'newWorkerInputGroup_${i}')"></select>
-              <div id="newWorkerInputGroup_${i}" style="display: none; margin-top: 2px;">
-                <input type="text" id="newWorkerInput_${i}" placeholder="新規工事担当者名を入力">
-              </div>
+
+    // =================================================================
+    // 共通: HTMLエスケープ（動的に生成するHTMLに人名等を差し込む際の安全対策）
+    // =================================================================
+    function escapeHtml(str) {
+      return String(str == null ? "" : str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function escapeAttr(str) {
+      return String(str == null ? "" : str).replace(/"/g, '&quot;');
+    }
+
+    // 日付文字列/ISO文字列を <input type="date"> にそのまま渡せる "yyyy-MM-dd" 形式へ変換する
+    function parseDateForInput(d) {
+      if (!d) return "";
+      const str = String(d).split("T")[0].replace(/\//g, "-");
+      return /^\d{4}-\d{2}-\d{2}$/.test(str) ? str : "";
+    }
+
+    // =================================================================
+    // 共通: 工事担当者・複数選択ドロップダウン（チェックボックス方式）
+    // uid: 要素IDに使う一意な文字列（例: "new_1" や "edit_123_2"）
+    // fieldName: 実際に送信する値を持つhidden inputのname属性（例: "工事担当者1"）
+    // =================================================================
+    function buildWorkerMultiSelectHtml(uid, fieldName) {
+      return `
+        <div class="multi-select-wrapper" style="position:relative;">
+          <button type="button" class="multi-select-toggle" onclick="toggleWorkerDropdown('${uid}')" id="workerToggleBtn_${uid}"
+            style="width:100%; text-align:left; padding:10px; border:1px solid #adb5bd; border-radius:6px; background:white; cursor:pointer;
+                   display:flex; justify-content:space-between; align-items:center; box-sizing:border-box; margin-top:2px;">
+            <span id="workerSummary_${uid}" style="color:#94a3b8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">選択してください</span>
+            <span class="material-symbols-outlined" style="font-size:18px; color:#94a3b8; flex-shrink:0;">expand_more</span>
+          </button>
+          <div id="workerDropdown_${uid}" class="multi-select-dropdown"
+            style="display:none; position:absolute; z-index:30; background:white; border:1px solid #cbd5e1; border-radius:8px;
+                   max-height:220px; overflow-y:auto; width:100%; box-shadow:0 4px 14px rgba(0,0,0,0.15); margin-top:4px;">
+            <div id="workerCheckboxList_${uid}"></div>
+            <div style="padding:8px; border-top:1px solid #e2e8f0; display:flex; gap:4px;">
+              <input type="text" id="workerNewInput_${uid}" placeholder="新規担当者名を追加してEnter" style="flex:1; min-width:0; padding:8px;"
+                onkeydown="handleWorkerNewInputKeydown(event, '${uid}')" onclick="event.stopPropagation();">
             </div>
           </div>
-        `;
+          <input type="hidden" name="${fieldName}" id="workerHiddenInput_${uid}" value="">
+        </div>`;
+    }
+
+    function initWorkerMultiSelect(uid, userList, existingCsv) {
+      const listDiv = document.getElementById(`workerCheckboxList_${uid}`);
+      if (!listDiv) return;
+      const existing = String(existingCsv || "").split(",").map(s => s.trim()).filter(Boolean);
+      const masterNames = (userList || []).map(v => extractValue(v)).filter(Boolean);
+      // 既存データに含まれるが現在のマスタに無い名前（過去の登録等）も選べるように残す
+      const allNames = Array.from(new Set([...masterNames, ...existing]));
+
+      let html = "";
+      allNames.forEach(name => {
+        const checked = existing.includes(name) ? "checked" : "";
+        html += `<label style="display:flex; align-items:center; gap:6px; padding:7px 10px; cursor:pointer; font-size:14px;"
+                    onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
+          <input type="checkbox" value="${escapeAttr(name)}" ${checked} onchange="updateWorkerSelection('${uid}')"> ${escapeHtml(name)}
+        </label>`;
+      });
+      listDiv.innerHTML = html || '<div style="padding:10px; color:#94a3b8; font-size:13px;">候補がありません。下の欄から追加してください</div>';
+      updateWorkerSelection(uid);
+    }
+
+    window.updateWorkerSelection = function(uid) {
+      const listDiv = document.getElementById(`workerCheckboxList_${uid}`);
+      const hidden = document.getElementById(`workerHiddenInput_${uid}`);
+      const summary = document.getElementById(`workerSummary_${uid}`);
+      if (!listDiv || !hidden || !summary) return;
+      const checked = Array.from(listDiv.querySelectorAll('input[type="checkbox"]:checked')).map(c => c.value);
+      hidden.value = checked.join(",");
+      if (checked.length) {
+        summary.textContent = checked.join("、");
+        summary.style.color = "#1e293b";
+      } else {
+        summary.textContent = "選択してください";
+        summary.style.color = "#94a3b8";
       }
-      container.innerHTML = htmlContent;
-    });
-    
-    window.showNextWorkField = function() {
-      if (currentWorkCount < 4) {
-        currentWorkCount++;
-        const targetGroup = document.getElementById('addWorkGroup_' + currentWorkCount);
-        if (targetGroup) targetGroup.style.setProperty('display', 'grid', 'important');
-        if (currentWorkCount === 4) {
-          const addBtn = document.getElementById('addWorkBtn');
-          if (addBtn) addBtn.style.display = 'none';
+    };
+
+    window.toggleWorkerDropdown = function(uid) {
+      document.querySelectorAll('.multi-select-dropdown').forEach(d => {
+        if (d.id !== `workerDropdown_${uid}`) d.style.display = 'none';
+      });
+      const dd = document.getElementById(`workerDropdown_${uid}`);
+      if (!dd) return;
+      dd.style.display = (dd.style.display === 'none' || !dd.style.display) ? 'block' : 'none';
+    };
+
+    window.handleWorkerNewInputKeydown = function(event, uid) {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      const input = document.getElementById(`workerNewInput_${uid}`);
+      if (!input) return;
+      const name = input.value.trim();
+      if (!name) return;
+      const listDiv = document.getElementById(`workerCheckboxList_${uid}`);
+      const existingCheckbox = Array.from(listDiv.querySelectorAll('input[type="checkbox"]')).find(c => c.value === name);
+      if (existingCheckbox) {
+        existingCheckbox.checked = true;
+      } else {
+        if (listDiv.querySelector('input[type="checkbox"]') === null) listDiv.innerHTML = ""; // 「候補がありません」の表示を消す
+        const wrap = document.createElement('label');
+        wrap.style.cssText = "display:flex; align-items:center; gap:6px; padding:7px 10px; cursor:pointer; font-size:14px;";
+        wrap.addEventListener('mouseover', () => wrap.style.background = '#f1f5f9');
+        wrap.addEventListener('mouseout', () => wrap.style.background = 'white');
+        wrap.innerHTML = `<input type="checkbox" value="${escapeAttr(name)}" checked onchange="updateWorkerSelection('${uid}')"> ${escapeHtml(name)}`;
+        listDiv.appendChild(wrap);
+      }
+      input.value = "";
+      updateWorkerSelection(uid);
+    };
+
+    // ドロップダウンの外側をクリックしたら閉じる（全ウィジェット共通・1回だけ登録）
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll('.multi-select-wrapper').forEach(wrap => {
+        if (!wrap.contains(e.target)) {
+          const dd = wrap.querySelector('.multi-select-dropdown');
+          if (dd) dd.style.display = 'none';
         }
-      }
+      });
+    });
+  
+    // =================================================================
+    // 工事予定・担当割当セットのHTML生成（新規作成モーダル用）
+    // 施工予定日は開始/終了の範囲指定、工事担当者は複数選択に対応。
+    // セット数に上限は設けず、showNextWorkField() で何セットでも追加できる。
+    // =================================================================
+    function buildWorkFieldGroupHtml(i, isFirst) {
+      const removeBtnHtml = isFirst ? '' : `
+        <button type="button" onclick="removeLastWorkField()" title="この工事予定を削除"
+          style="position:absolute; top:14px; right:0; background:none; border:none; color:#ef4444; cursor:pointer; display:flex; align-items:center; padding:4px;">
+          <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+        </button>`;
+      const wrapperStyle = isFirst ? "" : "margin-top:20px; border-top:1px dashed #cbd5e1; padding-top:12px; position:relative;";
+      const groupIdAttr = isFirst ? 'class="work-input-group"' : `id="addWorkGroup_${i}" class="work-input-group"`;
+
+      return `
+        <div ${groupIdAttr} style="${wrapperStyle} display:grid; grid-template-columns: 1fr; gap: 2px;">
+          ${removeBtnHtml}
+          <div class="form-group">
+            <label style="margin-bottom: 0px; align-items: center; gap: 2px; margin-top:20px;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span><span>施工予定日 ${i}（開始〜終了）</span>
+            </label>
+            <div style="display:flex; align-items:flex-start; gap:6px;">
+              <div style="flex:1;">
+                <input type="date" name="施工日${i}開始" id="newWorkStart_${i}" onchange="updateInputWeekday(this, 'newDaySpanStart_${i}')" onclick="this.showPicker && this.showPicker();" style="width:100%; margin-top: 2px; cursor:pointer;">
+                <span id="newDaySpanStart_${i}" style="font-size:12px; font-weight:bold; color:var(--primary);"></span>
+              </div>
+              <span style="color:#94a3b8; margin-top:12px;">〜</span>
+              <div style="flex:1;">
+                <input type="date" name="施工日${i}終了" id="newWorkEnd_${i}" onchange="updateInputWeekday(this, 'newDaySpanEnd_${i}')" onclick="this.showPicker && this.showPicker();" style="width:100%; margin-top: 2px; cursor:pointer;">
+                <span id="newDaySpanEnd_${i}" style="font-size:12px; font-weight:bold; color:var(--primary);"></span>
+              </div>
+            </div>
+            <div style="font-size:12px; color:#94a3b8; margin-top:2px;">終了日が未入力の場合は開始日のみの単日予定として登録されます</div>
+          </div>
+          
+          <div class="form-group">
+            <label style="margin-bottom: 0px; align-items: center; gap: 2px;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">construction</span><span>工事内容 ${i}</span>
+            </label>
+            <select name="工事内容${i}" id="newWorkContent_${i}" style="width:100%; margin-top: 2px;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_${i}')"></select>
+            <div id="newWorkContentInputGroup_${i}" style="display: none; margin-top: 2px;">
+              <input type="text" id="newWorkContentInput_${i}" placeholder="新規工事内容を入力">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label style="margin-bottom: 0px; align-items: center; gap: 2px;">
+              <span class="material-symbols-outlined" style="font-size: 18px;">supervisor_account</span><span>工事担当者 ${i}（複数選択可）</span>
+            </label>
+            ${buildWorkerMultiSelectHtml('new_' + i, `工事担当者${i}`)}
+          </div>
+        </div>
+      `;
+    }
+
+    // 画面読み込み時は1セット目だけ生成する
+    document.addEventListener("DOMContentLoaded", () => {
+      const container = document.getElementById("dynamicWorkFieldsContainer");
+      container.innerHTML = buildWorkFieldGroupHtml(1, true);
+    });
+
+    // 工事日程・内容・担当のセットを1つ追加する（上限なし）
+    window.showNextWorkField = function() {
+      currentWorkCount++;
+      const container = document.getElementById("dynamicWorkFieldsContainer");
+      container.insertAdjacentHTML('beforeend', buildWorkFieldGroupHtml(currentWorkCount, false));
+      initSelectWithOptions(`newWorkContent_${currentWorkCount}`, appConfig.workContentList, "工事内容");
+      initWorkerMultiSelect(`new_${currentWorkCount}`, appConfig.userList, "");
+      const contentInputGroup = document.getElementById(`newWorkContentInputGroup_${currentWorkCount}`);
+      if (contentInputGroup) contentInputGroup.style.display = "none";
+    };
+
+    // 直前に追加したセットを1つ削除する（1セット目は削除不可）
+    window.removeLastWorkField = function() {
+      if (currentWorkCount <= 1) return;
+      const group = document.getElementById(`addWorkGroup_${currentWorkCount}`);
+      if (group) group.remove();
+      currentWorkCount--;
     };
   
     const FILE_TYPES_DEF = {
@@ -1094,25 +1264,31 @@
       return records.filter(r => {
         if (nClient && normalizeText(r["発注元"]) !== nClient) return false;
 
+        const workSetIndices = getRecordWorkSetIndices(r);
+
         let isDateMatched = false;
         if (unscheduledOnly) {
-          // 施工日1〜4が1つも入っていない案件のみ対象にする
-          let hasAnyDate = false;
-          for (let n = 1; n <= 4; n++) {
-            const v = r[`施工日${n}`];
-            if (v && String(v).trim() !== "") { hasAnyDate = true; break; }
-          }
+          // 施工日（開始）が1つも入っていない案件のみ対象にする
+          const hasAnyDate = workSetIndices.some(n => {
+            const v = r[`施工日${n}開始`];
+            return v && String(v).trim() !== "";
+          });
           isDateMatched = !hasAnyDate;
         } else if (noDateFilter) {
           // 日付範囲・チェックボックスとも未指定の場合は、日付で絞り込まず全件を対象にする
           isDateMatched = true;
         } else {
-          for (let n = 1; n <= 4; n++) {
-            const v = r[`施工日${n}`];
-            if (!v) continue;
-            const d = new Date(String(v).split("T")[0]);
-            if (!isNaN(d.getTime()) && d >= searchStart && d <= searchEnd) { isDateMatched = true; break; }
-          }
+          // 各工事セットの施工期間［開始〜終了］と検索期間が少しでも重なっていればヒット
+          isDateMatched = workSetIndices.some(n => {
+            const vStart = r[`施工日${n}開始`];
+            if (!vStart) return false;
+            const dStart = new Date(String(vStart).split("T")[0]);
+            if (isNaN(dStart.getTime())) return false;
+            const vEnd = r[`施工日${n}終了`];
+            const dEndRaw = (vEnd && String(vEnd).trim() !== "") ? new Date(String(vEnd).split("T")[0]) : dStart;
+            const dEnd = isNaN(dEndRaw.getTime()) ? dStart : dEndRaw;
+            return dStart <= searchEnd && dEnd >= searchStart;
+          });
         }
         if (!isDateMatched) return false;
 
@@ -1270,6 +1446,110 @@
     }
     
     // =================================================================
+    // 工事予定・担当割当セットのHTML生成（編集フォーム用）
+    // レコードに実際に値が入っているセット番号だけ初期表示し、
+    // 「追加」ボタンで無制限にセットを増やせる。
+    // =================================================================
+    const editWorkCounts = {}; // record.No -> 現在表示中の最大セット番号
+
+    function getRecordWorkSetIndices(record) {
+      const indices = new Set();
+      Object.keys(record).forEach(k => {
+        const m = k.match(/^工事内容(\d+)$/);
+        if (m) indices.add(parseInt(m[1], 10));
+      });
+      return Array.from(indices).sort((a, b) => a - b);
+    }
+
+    function getRecordActiveWorkSetIndices(record) {
+      const all = getRecordWorkSetIndices(record);
+      const active = all.filter(i => record[`工事内容${i}`] || record[`施工日${i}開始`] || record[`施工日${i}終了`] || record[`工事担当者${i}`]);
+      return active.length ? active : [1];
+    }
+
+    function buildEditWorkFieldGroupHtml(recordNo, i, cContent, cStart, cEnd, cWorkerCsv, isFirst) {
+      const removeBtnHtml = isFirst ? '' : `
+        <button type="button" onclick="removeEditWorkField('${recordNo}')" title="この工事予定を削除"
+          style="position:absolute; top:8px; right:0; background:none; border:none; color:#ef4444; cursor:pointer; padding:4px;">
+          <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+        </button>`;
+      const uid = `edit_${recordNo}_${i}`;
+      return `
+        <div class="work-section" id="editWorkGroup_${recordNo}_${i}" style="position:relative;">
+          ${removeBtnHtml}
+          <div>
+            <label>施工予定日 ${i}（開始）
+              <span id="editDaySpanStart_${recordNo}_${i}" style="font-weight:bold; color:var(--primary);">${getWeekday(cStart)}</span>
+            </label>
+            <input type="date" id="editWorkStart_${recordNo}_${i}" value="${cStart || ''}" onchange="updateInputWeekday(this, 'editDaySpanStart_${recordNo}_${i}')" onclick="this.showPicker?.()" style="cursor:pointer;">
+          </div>
+          <div>
+            <label>施工予定日 ${i}（終了）
+              <span id="editDaySpanEnd_${recordNo}_${i}" style="font-weight:bold; color:var(--primary);">${getWeekday(cEnd)}</span>
+            </label>
+            <input type="date" id="editWorkEnd_${recordNo}_${i}" value="${cEnd || ''}" onchange="updateInputWeekday(this, 'editDaySpanEnd_${recordNo}_${i}')" onclick="this.showPicker?.()" style="cursor:pointer;">
+          </div>
+          <div>
+            <label>工事内容 ${i}</label>
+            <select id="editWorkContent_${recordNo}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkContentGroup_${recordNo}_${i}')">
+              ${createOptionsHtml(appConfig.workContentList || [], cContent, '工事内容')}
+            </select>
+            <div id="newEditWorkContentGroup_${recordNo}_${i}" style="display:none; margin-top:3px;">
+              <input type="text" id="newEditWorkContentInput_${recordNo}_${i}" placeholder="新規工事内容">
+            </div>
+          </div>
+          <div style="grid-column: span 3;">
+            <label>工事担当者 ${i}（複数選択可）</label>
+            ${buildWorkerMultiSelectHtml(uid, '')}
+          </div>
+        </div>`;
+    }
+
+    function buildEditWorkFieldsContainerHtml(record) {
+      const indices = getRecordActiveWorkSetIndices(record);
+      editWorkCounts[record.No] = indices[indices.length - 1];
+      let html = `<div id="editWorkFieldsContainer_${record.No}" style="display:flex; flex-direction:column; gap:12px;">`;
+      indices.forEach((i, idx) => {
+        const cContent = record['工事内容' + i] || '';
+        const cStart = parseDateForInput(record['施工日' + i + '開始']);
+        const cEnd = parseDateForInput(record['施工日' + i + '終了']);
+        const cWorkerCsv = record['工事担当者' + i] || '';
+        html += buildEditWorkFieldGroupHtml(record.No, i, cContent, cStart, cEnd, cWorkerCsv, idx === 0);
+      });
+      html += `</div>
+        <button type="button" class="btn" style="margin-top:12px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="addEditWorkField('${record.No}')">
+          <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span> 施工日・工事内容・担当を追加
+        </button>`;
+      return html;
+    }
+
+    // 編集フォーム内の工事担当者マルチセレクトを、記録済みの選択値で初期化する
+    function initEditWorkFieldSelections(record) {
+      getRecordActiveWorkSetIndices(record).forEach(i => {
+        const cWorkerCsv = record['工事担当者' + i] || '';
+        initWorkerMultiSelect(`edit_${record.No}_${i}`, appConfig.userList, cWorkerCsv);
+      });
+    }
+
+    window.addEditWorkField = function(recordNo) {
+      editWorkCounts[recordNo] = (editWorkCounts[recordNo] || 1) + 1;
+      const i = editWorkCounts[recordNo];
+      const container = document.getElementById(`editWorkFieldsContainer_${recordNo}`);
+      if (!container) return;
+      container.insertAdjacentHTML('beforeend', buildEditWorkFieldGroupHtml(recordNo, i, '', '', '', '', false));
+      initSelectWithOptions(`editWorkContent_${recordNo}_${i}`, appConfig.workContentList || [], '工事内容');
+      initWorkerMultiSelect(`edit_${recordNo}_${i}`, appConfig.userList, '');
+    };
+
+    window.removeEditWorkField = function(recordNo) {
+      const i = editWorkCounts[recordNo];
+      if (!i || i <= 1) return;
+      const group = document.getElementById(`editWorkGroup_${recordNo}_${i}`);
+      if (group) group.remove();
+      editWorkCounts[recordNo] = i - 1;
+    };
+
+    // =================================================================
     // 検索結果リスト表示
     // =================================================================
     function displayResults(records) {
@@ -1290,11 +1570,7 @@
 
         const item = document.createElement("div");
         item.className = "result-item";
-        const parseDate = (d) => {
-          if (!d) return "";
-          const str = String(d).split("T")[0].replace(/\//g, "-");
-          return /^\d{4}-\d{2}-\d{2}$/.test(str) ? str : "";
-        };
+        const parseDate = parseDateForInput;
         const savedBadges = String(record.保存済みファイル || "").split(",").map(s => s.trim()).filter(Boolean);
         
         let badgeHtml = '<div style="margin-top:6px; margin-bottom:2px; display:flex; flex-wrap:wrap; gap:4px; align-items:center;">';
@@ -1342,22 +1618,31 @@
         
         let workScheduleHtml = '<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">';
         let hasAnyWork = false;
-        for (let i = 1; i <= 4; i++) {
+        getRecordWorkSetIndices(record).forEach(i => {
           const wContent = record['工事内容' + i];
-          const wDate = record['施工日' + i];
-          const wWorker = record['工事担当者' + i] || '';
-          if (wContent || wDate || wWorker) {
+          const wStart = record['施工日' + i + '開始'];
+          const wEnd = record['施工日' + i + '終了'];
+          const wWorkerCsv = record['工事担当者' + i] || '';
+          const wWorker = wWorkerCsv.split(',').map(s => s.trim()).filter(Boolean).join('、');
+          if (wContent || wStart || wEnd || wWorkerCsv) {
             hasAnyWork = true;
-            const fDate = (wDate && /^\d{4}-\d{2}-\d{2}$/.test(wDate.split("T")[0])) ? wDate.split("T")[0].replace(/-/g, '/') : (wDate || "未定");
-            const wDay = getWeekday(wDate);
+            const fmt = (d) => (d && /^\d{4}-\d{2}-\d{2}$/.test(String(d).split("T")[0])) ? String(d).split("T")[0].replace(/-/g, '/') : "";
+            let dateLabel;
+            if (wStart && wEnd && wStart !== wEnd) {
+              dateLabel = `${fmt(wStart)}${getWeekday(wStart)} 〜 ${fmt(wEnd)}${getWeekday(wEnd)}`;
+            } else if (wStart) {
+              dateLabel = `${fmt(wStart)}${getWeekday(wStart)}`;
+            } else {
+              dateLabel = "未定";
+            }
             workScheduleHtml += `
               <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:14px; align-items:center; background:#f1f5f9; padding:6px 12px; border-radius:6px; width:fit-content;">
-                <span style="display:flex; align-items:center; gap:4px; color:#555;"><span class="material-symbols-outlined" style="font-size:16px;">calendar_month</span> ${fDate}${wDay}</span>
+                <span style="display:flex; align-items:center; gap:4px; color:#555;"><span class="material-symbols-outlined" style="font-size:16px;">calendar_month</span> ${dateLabel}</span>
                 <span style="display:flex; align-items:center; gap:4px; font-weight:bold; color:#334155;"><span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);">construction</span> ${wContent || "内容未定"}</span>
                 ${wWorker ? `<span style="display:flex; align-items:center; gap:4px; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:bold;"><span class="material-symbols-outlined" style="font-size:14px;">person</span> ${wWorker}</span>` : ''}
               </div>`;
           }
-        }
+        });
         if(!hasAnyWork) workScheduleHtml += `<div style="font-size:14px; color:#94a3b8;">📅 工事予定なし</div>`;
         workScheduleHtml += '</div>';
   
@@ -1427,39 +1712,8 @@
               </div>
             </div>
   
-            <div style="display:flex; flex-direction:column; gap:12px;">
-              ${[1, 2, 3, 4].map(i => {
-                const cContent = record['工事内容' + i] || '';
-                const cDate = parseDate(record['施工日' + i]);
-                const cWorker = record['工事担当者' + i] || '';
-                return `
-                  <div class="work-section">
-                    <div>
-                      <label>施工予定日 ${i} 
-                        <span id="editDaySpan_${record.No}_${i}" style="font-weight:bold; color:var(--primary);">${getWeekday(cDate)}</span>
-                      </label>
-                      <input type="date" id="editWorkDate_${record.No}_${i}" value="${cDate}" onchange="updateInputWeekday(this, 'editDaySpan_${record.No}_${i}')" onclick="this.showPicker?.()" style="cursor:pointer;">
-                    </div>    
-                    <div>
-                      <label>工事内容 ${i}</label>
-                      <select id="editWorkContent_${record.No}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkContentGroup_${record.No}_${i}')">
-                        ${createOptionsHtml(appConfig.workContentList || [], cContent, '工事内容')}
-                      </select>
-                      <div id="newEditWorkContentGroup_${record.No}_${i}" style="display:none; margin-top:3px;">
-                        <input type="text" id="newEditWorkContentInput_${record.No}_${i}" placeholder="新規工事内容">
-                      </div>
-                    </div>
-                    <div>
-                      <label>工事担当者 ${i}</label>
-                      <select id="editWorker_${record.No}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkerGroup_${record.No}_${i}')">
-                        ${createOptionsHtml(appConfig.userList, cWorker, '工事担当者')}
-                      </select>
-                      <div id="newEditWorkerGroup_${record.No}_${i}" style="display:none; margin-top:3px;">
-                        <input type="text" id="newEditWorkerInput_${record.No}_${i}" placeholder="新規工事担当者">
-                      </div>
-                    </div> 
-                  </div>`;
-              }).join('')} 
+            <div>
+              ${buildEditWorkFieldsContainerHtml(record)}
             </div>
   
             <div class="form-group" style="margin-top:14px;">
@@ -1516,6 +1770,9 @@
         `;
         container.appendChild(item);
   
+        // 工事担当者マルチセレクト（編集フォーム）を記録済みの値で初期化する
+        initEditWorkFieldSelections(record);
+
         // 新規登録と同じ条件で担当者ドロップダウンを生成・初期化する処理
         const staffSelId = `editStaffSelect_${record.No}`;
         updateManagersByClient(record.発注元, staffSelId);
@@ -1917,10 +2174,11 @@
       initSelectWithOptions("addProjectTypeSelect", appConfig.projectTypeList || [], "案件種別");
       initSelectWithOptions("addClientSelect", appConfig.clientList, "発注元");
   
-      for (let i = 1; i <= 4; i++) {
-        initSelectWithOptions(`newWorkContent_${i}`, appConfig.workContentList, "工事内容");
-        initSelectWithOptions(`newWorker_${i}`, appConfig.userList, "工事担当者");
-      }
+      // 工事予定・担当割当セットを1セット目だけにリセットしてから初期化する
+      currentWorkCount = 1;
+      document.getElementById("dynamicWorkFieldsContainer").innerHTML = buildWorkFieldGroupHtml(1, true);
+      initSelectWithOptions(`newWorkContent_1`, appConfig.workContentList, "工事内容");
+      initWorkerMultiSelect('new_1', appConfig.userList, "");
   
       //  新規登録モーダル内の担当者マスタ展開（ヘルパー適用版）
       const staffSel = document.getElementById("addStaffSelect");
@@ -1931,17 +2189,11 @@
       });
       staffSel.innerHTML += `<option value="(新規担当者)" style="color:var(--primary); font-weight:bold;">(新規担当者)</option>`;
   
-      currentWorkCount = 1;
-      [2, 3, 4].forEach(i => document.getElementById('addWorkGroup_' + i).style.display = 'none');
-      document.getElementById("addWorkBtn").style.display = 'flex';
       document.getElementById("newMediaInputGroup").style.display = "none";
       document.getElementById("newProjectTypeInputGroup").style.display = "none"; 
       document.getElementById("newClientInputGroup").style.display = "none";
       document.getElementById("newStaffInputGroup").style.display = "none";
-      for (let i = 1; i <= 4; i++) {
-        document.getElementById(`newWorkContentInputGroup_${i}`).style.display = "none";
-        document.getElementById(`newWorkerInputGroup_${i}`).style.display = "none";
-      }
+      document.getElementById("newWorkContentInputGroup_1").style.display = "none";
     };
   
     window.closeCreateModal = function() { document.getElementById("createModal").style.display = "none"; };
@@ -2054,14 +2306,19 @@
         payload["isNewStaff"] = true;
       }
 
-      for (let i = 1; i <= 4; i++) {
+      // 工事担当者は複数選択ウィジェットのhidden inputに既にカンマ区切りで値が入っているため、
+      // FormDataの時点で payload["工事担当者{i}"] に正しい値が入っている（追加の処理は不要）。
+      for (let i = 1; i <= currentWorkCount; i++) {
         if (payload["工事内容" + i] === "(新規工事内容)") {
           payload["工事内容" + i] = document.getElementById(`newWorkContentInput_${i}`).value.trim();
           payload["isNewWorkContent"] = true;
         }
-        if (payload["工事担当者" + i] === "(新規工事担当者)") {
-          payload["工事担当者" + i] = document.getElementById(`newWorkerInput_${i}`).value.trim();
-          payload["isNewWorker"] = true;
+        // 施工予定日：終了日が開始日より前になっている場合は入れ替えて補正する
+        const sVal = payload["施工日" + i + "開始"];
+        const eVal = payload["施工日" + i + "終了"];
+        if (sVal && eVal && eVal < sVal) {
+          payload["施工日" + i + "開始"] = eVal;
+          payload["施工日" + i + "終了"] = sVal;
         }
       }
 
@@ -2227,10 +2484,21 @@
         fData["検査日"] = "";
       }
       
-      // 工事日程・内容・担当者
-      for (let i = 1; i <= 4; i++) {
-        fData["施工日" + i] = document.getElementById(`editWorkDate_${rNum}_${i}`).value;
-      
+      // 工事日程・内容・担当者（セット数は無制限。画面に実際に存在するセットだけ処理する）
+      const maxWorkIndex = editWorkCounts[rNum] || 1;
+      for (let i = 1; i <= maxWorkIndex; i++) {
+        const startEl = document.getElementById(`editWorkStart_${rNum}_${i}`);
+        const endEl = document.getElementById(`editWorkEnd_${rNum}_${i}`);
+        if (!startEl) continue; // このセットは「削除」されて画面上に存在しない
+
+        let startVal = startEl.value;
+        let endVal = endEl ? endEl.value : "";
+        if (startVal && endVal && endVal < startVal) { // 開始・終了が逆転していたら入れ替えて補正
+          const tmp = startVal; startVal = endVal; endVal = tmp;
+        }
+        fData["施工日" + i + "開始"] = startVal;
+        fData["施工日" + i + "終了"] = endVal;
+
         const cSel = document.getElementById(`editWorkContent_${rNum}_${i}`);
         if (cSel.value === "(新規工事内容)") {
           fData["工事内容" + i] = document.getElementById(`newEditWorkContentInput_${rNum}_${i}`).value.trim();
@@ -2238,14 +2506,10 @@
         } else {
           fData["工事内容" + i] = cSel.value;
         }
-      
-        const wSel = document.getElementById(`editWorker_${rNum}_${i}`);
-        if (wSel.value === "(新規工事担当者)") {
-          fData["工事担当者" + i] = document.getElementById(`newEditWorkerInput_${rNum}_${i}`).value.trim();
-          fData["isNewWorker"] = true;
-        } else {
-          fData["工事担当者" + i] = wSel.value;
-        }
+
+        // 工事担当者は複数選択ウィジェットのhidden inputにカンマ区切りで格納されている
+        const workerHidden = document.getElementById(`workerHiddenInput_edit_${rNum}_${i}`);
+        fData["工事担当者" + i] = workerHidden ? workerHidden.value : "";
       }
       
       const staffSel = document.getElementById(`editStaffSelect_${rNum}`);
@@ -2398,7 +2662,7 @@
       const result = await Swal.fire({
         title: 'ログアウトしますか？',
         text: "ログイン情報をクリアして最初の画面に戻ります。",
-        icon: 'question',                 // 質問マークのアイコン
+        icon: 'question',                // 質問マークのアイコン
         showCancelButton: true,          // キャンセルボタンを表示
         confirmButtonColor: '#ef4444',   // ログアウトボタンの色（赤）
         cancelButtonColor: '#64748b',    // キャンセルボタンの色（グレー）
@@ -2414,11 +2678,11 @@
         if (idInput) idInput.value = "";
         if (passInput) passInput.value = "";
     
-        // 2. ユーザー表示ラベル（ログアウトボタン）を隠す
-        const userLabel = document.getElementById("userDisplayLabel");
-        if (userLabel) userLabel.style.display = "none";
+        // 2. ログアウトボタンを隠す
+        const logoutBtn = document.getElementById("logoutBtn");
+        if (logoutBtn) logoutBtn.style.display = "none";
     
-        // 3. ブラウザに記憶されている自動ログイン用の情報を完全に削除
+        // 3.  ブラウザに記憶されている自動ログイン用の情報を完全に削除
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
         localStorage.removeItem('app_login_userName');
