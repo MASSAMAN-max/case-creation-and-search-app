@@ -1011,26 +1011,36 @@
     async function apiCall(action, payload = {}, retriesLeft = 2) {
       const loginId = localStorage.getItem('app_login_id');
       const password = localStorage.getItem('app_login_password');
+    
       payload.loginId = loginId;
       payload.password = password;
+    
       try {
-        const response = await fetch(GAS_URL, {
+        const response = await fetch("/api/gas", {
           method: "POST",
-          body: JSON.stringify({ action: action, payload: payload })
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            action: action,
+            payload: payload
+          })
         });
-        if (!response.ok) throw new Error(`HTTPエラー! ステータス: ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`HTTPエラー! ステータス: ${response.status}`);
+        } 
         const resData = await response.json();
-        if (resData.status === "error") throw new Error(resData.message);
+        if (resData.status === "error") {
+          throw new Error(resData.message);
+        }
         return resData.data;
       } catch (err) {
-        // ★ GAS特有の既知の挙動対策：
-        //   Webアプリの応答は script.googleusercontent.com/macros/echo を経由して返されるが、
-        //   サーバー側の処理自体は成功しているのに、この中継だけがまれに404で失敗することがある。
-        //   HTTPエラー（＝この中継失敗の可能性が高いもの）に限り、少し待ってから自動で再試行する。
-        //   （resData.status === "error" のような、GASが正しく返してきたアプリ側エラーは再試行しない）
         const isTransientHttpError = err.message.startsWith("HTTPエラー");
+    
         if (isTransientHttpError && retriesLeft > 0) {
-          console.warn(`⚠️ ${action}: 通信エラーのため再試行します（残り${retriesLeft}回）: ${err.message}`);
+          console.warn(
+            `⚠️ ${action}: 通信エラーのため再試行します（残り${retriesLeft}回）: ${err.message}`
+          );
           await new Promise(r => setTimeout(r, 1200));
           return apiCall(action, payload, retriesLeft - 1);
         }
