@@ -929,7 +929,7 @@
             </label>
             <div style="display:flex; align-items:flex-start; gap:6px;">
               <div style="flex:1;">
-                <input type="date" name="施工日${i}開始" id="newWorkStart_${i}" onchange="updateInputWeekday(this, 'newDaySpanStart_${i}')" onchange="handleStartDateChange2()" onclick="this.showPicker && this.showPicker();" style="width:100%; margin-top: 2px; cursor:pointer;">
+                <input type="date" name="施工日${i}開始" id="newWorkStart_${i}" onchange="updateInputWeekday(this, 'newDaySpanStart_${i}')" onchange="handleStartDateChange2()"  onclick="this.?. &&  this.?.()";" style="width:100%; margin-top: 2px; cursor:pointer;">
                 <span id="newDaySpanStart_${i}" style="font-size:12px; font-weight:bold; color:var(--primary);"></span>
                 
               </div>
@@ -1487,7 +1487,7 @@
             <label>施工予定日 ${i}（開始）
               <span id="editDaySpanStart_${recordNo}_${i}" style="font-weight:bold; color:var(--primary);">${getWeekday(cStart)}</span>
             </label>
-            <input type="date" id="editWorkStart_${recordNo}_${i}" value="${cStart || ''}" onchange="handleStartDateChange3()" onchange="updateInputWeekday(this, 'editDaySpanStart_${recordNo}_${i}')" onclick="this.showPicker?.()" style="cursor:pointer;">
+            <input type="date" id="editWorkStart_${recordNo}_${i}" value="${cStart || ''}" onchange="handleStartDateChange3()" onchange="updateInputWeekday(this, 'editDaySpanStart_${recordNo}_${i}')"  onclick="this.?.()" style="cursor:pointer;">
           </div>
           <div>
             <label>施工予定日 ${i}（終了）
