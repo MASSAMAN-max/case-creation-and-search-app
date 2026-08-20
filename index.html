@@ -516,7 +516,7 @@
         <div style="display: flex; flex-wrap: wrap; gap: 10px; flex: 2; min-width: 280px;">
           <div style="flex: 1; min-width: 130px;">
             <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（開始）</label>
-            <input type="date" id="filterStartDate" style="width: 100%; cursor: pointer;" onchange="handleStartDateChange()" onclick="this.showPicker?.()">
+            <input type="date" id="filterStartDate" style="width: 100%; cursor: pointer;" onchange="handleStartDateChange()" onclick="this.?.()">
           </div>
           <div style="flex: 1; min-width: 130px;">
             <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（終了）</label>
@@ -929,8 +929,9 @@
             </label>
             <div style="display:flex; align-items:flex-start; gap:6px;">
               <div style="flex:1;">
-                <input type="date" name="施工日${i}開始" id="newWorkStart_${i}" onchange="updateInputWeekday(this, 'newDaySpanStart_${i}')" onclick="this.showPicker && this.showPicker();" style="width:100%; margin-top: 2px; cursor:pointer;">
+                <input type="date" name="施工日${i}開始" id="newWorkStart_${i}" onchange="updateInputWeekday(this, 'newDaySpanStart_${i}')" onchange="handleStartDateChange2()" onclick="this.showPicker && this.showPicker();" style="width:100%; margin-top: 2px; cursor:pointer;">
                 <span id="newDaySpanStart_${i}" style="font-size:12px; font-weight:bold; color:var(--primary);"></span>
+                
               </div>
               <span style="color:#94a3b8; margin-top:12px;">〜</span>
               <div style="flex:1;">
@@ -1486,7 +1487,7 @@
             <label>施工予定日 ${i}（開始）
               <span id="editDaySpanStart_${recordNo}_${i}" style="font-weight:bold; color:var(--primary);">${getWeekday(cStart)}</span>
             </label>
-            <input type="date" id="editWorkStart_${recordNo}_${i}" value="${cStart || ''}" onchange="updateInputWeekday(this, 'editDaySpanStart_${recordNo}_${i}')" onclick="this.showPicker?.()" style="cursor:pointer;">
+            <input type="date" id="editWorkStart_${recordNo}_${i}" value="${cStart || ''}" onchange="handleStartDateChange3()" onchange="updateInputWeekday(this, 'editDaySpanStart_${recordNo}_${i}')" onclick="this.showPicker?.()" style="cursor:pointer;">
           </div>
           <div>
             <label>施工予定日 ${i}（終了）
@@ -1872,6 +1873,26 @@
       }
     };
 
+    // ：開始日が変更されたら終了日に自動代入
+    window.handleStartDateChange2 = function() {
+      const workstartDate = document.getElementById("newWorkStart_${i}").value;
+      const workendDate = document.getElementById("newWorkEnd_${i}").value;
+      // 開始日が入力され、終了日が空の場合は開始日と同じ値を代入
+      if (workstartDate && !workendDate) {
+        document.getElementById("newWorkEnd_${i}").value = workstartDate;
+      }
+    };
+
+    // ：開始日が変更されたら終了日に自動代入
+    window.handleStartDateChange3 = function() {
+      const editstartDate = document.getElementById("editWorkStart_${recordNo}_${i}").value;
+      const editendDate = document.getElementById("editWorkEnd_${recordNo}_${i}").value;
+      // 開始日が入力され、終了日が空の場合は開始日と同じ値を代入
+      if (editstartDate && !editendDate) {
+        document.getElementById("editWorkEnd_${recordNo}_${i}").value = editstartDate;
+      }
+    };
+    
     // 「施工日未設定の案件のみ表示」チェック時は日付範囲入力を無効化する
     window.handleUnscheduledOnlyChange = function() {
       const checked = document.getElementById("filterUnscheduledOnly").checked;
