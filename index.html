@@ -1049,10 +1049,7 @@
     }
   
     document.addEventListener("DOMContentLoaded", async () => {
-      if (!GAS_URL) {
-        showToast("設定エラー: GAS_URLが設定されていません。", true);
-        return;
-      }
+
       initializeInspectionTimeSelects();
       const savedId = localStorage.getItem('app_login_id');
       const savedPassword = localStorage.getItem('app_login_password');
