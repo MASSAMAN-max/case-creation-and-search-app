@@ -48,13 +48,15 @@
       font-weight: 500;
     }
     
-    /* フォーム要素共通スタイル：input, select, textarea の標準化 */
+    /* フォーム要素共通スタイル：input, select, textarea の標準化
+       ※「工事担当者」選択欄（.multi-select-toggle）と統一したデザイン（枠線1px・角丸6px・padding10px）に合わせる。
+         font-sizeの16pxはモバイルでの自動ズーム防止のため維持。 */
     input, select, textarea {
       font-family: inherit;
       font-size: 16px !important;  /* モバイルでのズーム防止 */
-      padding: 12px;
-      border: 2px solid var(--border);
-      border-radius: 8px;
+      padding: 10px;
+      border: 1px solid #adb5bd;
+      border-radius: 6px;
       box-sizing: border-box;
       background: white;
     }
@@ -551,6 +553,18 @@
           <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">発注元で絞り込み</label>
           <select id="filterClient" style="width: 100%; background-color: #fafafa;"><option value="">すべて</option></select>
         </div>
+
+        <!-- フィルター1-2：工事内容（複数選択可）。何も選択しない場合はすべて対象 -->
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">工事内容で絞り込み（複数選択可）</label>
+          <div id="filterWorkContentContainer"></div>
+        </div>
+
+        <!-- フィルター1-3：工事担当者（複数選択可）。何も選択しない場合はすべて対象 -->
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">工事担当者で絞り込み（複数選択可）</label>
+          <div id="filterWorkerContainer"></div>
+        </div>
         
         <!-- フィルター2：施工日の日付範囲選択 -->
         <div style="display: flex; flex-wrap: wrap; gap: 10px; flex: 2; min-width: 280px;">
@@ -857,11 +871,11 @@
           <div id="workerDropdown_${uid}" class="multi-select-dropdown"
             style="display:none; position:absolute; z-index:30; background:white; border:1px solid #cbd5e1; border-radius:8px;
                    max-height:220px; overflow-y:auto; width:100%; box-shadow:0 4px 14px rgba(0,0,0,0.15); margin-top:4px;">
-            <div id="workerCheckboxList_${uid}"></div>
-            <div style="padding:8px; border-top:1px solid #e2e8f0; display:flex; gap:4px;">
+            <div style="padding:8px; border-bottom:1px solid #e2e8f0; display:flex; gap:4px; position:sticky; top:0; background:white; z-index:1;">
               <input type="text" id="workerNewInput_${uid}" placeholder="新規担当者名を追加してEnter" style="flex:1; min-width:0; padding:8px;"
                 onkeydown="handleWorkerNewInputKeydown(event, '${uid}')" onclick="event.stopPropagation();">
             </div>
+            <div id="workerCheckboxList_${uid}"></div>
           </div>
           <input type="hidden" name="${fieldName}" id="workerHiddenInput_${uid}" value="">
         </div>`;
@@ -875,21 +889,31 @@
       // 既存データに含まれるが現在のマスタに無い名前（過去の登録等）も選べるように残す
       const allNames = Array.from(new Set([...masterNames, ...existing]));
 
-      // 発注元セレクトと同様に、サーバー側(attachGyou)が付与した「行」情報でグループ化する
+      // 発注元セレクトと同様に、サーバー側(attachGyou)が付与した「行」情報があればグループ化する。
+      // 工事内容リストのようにgyou情報を持たない（オブジェクトではなく文字列の）リストの場合は、
+      // 見出し無しのフラットな一覧として表示する。
       const nameToGyou = {};
+      let hasGyouInfo = false;
       (userList || []).forEach(v => {
-        if (typeof v === 'object' && v !== null && v.name) nameToGyou[v.name] = v.gyou || "その他";
+        if (typeof v === 'object' && v !== null && v.name) {
+          nameToGyou[v.name] = v.gyou || "その他";
+          hasGyouInfo = true;
+        }
       });
-      existing.forEach(name => { if (!nameToGyou[name]) nameToGyou[name] = "その他"; });
+      if (hasGyouInfo) {
+        existing.forEach(name => { if (!nameToGyou[name]) nameToGyou[name] = "その他"; });
+      }
 
       let html = "";
       let currentGroup = null;
       allNames.forEach(name => {
-        const gyou = nameToGyou[name] || "その他";
-        if (gyou !== currentGroup) {
-          if (currentGroup !== null) html += `</div>`;
-          html += `<div class="worker-group-label">${escapeHtml(gyou)}</div><div class="worker-group-body">`;
-          currentGroup = gyou;
+        if (hasGyouInfo) {
+          const gyou = nameToGyou[name] || "その他";
+          if (gyou !== currentGroup) {
+            if (currentGroup !== null) html += `</div>`;
+            html += `<div class="worker-group-label">${escapeHtml(gyou)}</div><div class="worker-group-body">`;
+            currentGroup = gyou;
+          }
         }
         const checked = existing.includes(name) ? "checked" : "";
         html += `
@@ -901,9 +925,46 @@
             <span class="worker-toggle-label">${escapeHtml(name)}</span>
           </label>`;
       });
-      if (currentGroup !== null) html += `</div>`;
+      if (hasGyouInfo && currentGroup !== null) html += `</div>`;
       listDiv.innerHTML = html || '<div style="padding:10px; color:#94a3b8; font-size:13px;">候補がありません。下の欄から追加してください</div>';
       updateWorkerSelection(uid);
+    }
+
+    // フィルター用など、「新規追加」欄を持たない多肢選択トグルUIを生成する。
+    // 内部のHTML構造・ID命名（workerXxx_${uid}）はbuildWorkerMultiSelectHtmlと共通のため、
+    // updateWorkerSelection() や initWorkerMultiSelect() をそのまま流用できる。
+    function buildFilterMultiSelectHtml(uid, placeholderLabel) {
+      return `
+        <div class="multi-select-wrapper" style="position:relative;">
+          <button type="button" class="multi-select-toggle" onclick="toggleWorkerDropdown('${uid}')" id="workerToggleBtn_${uid}"
+            style="width:100%; text-align:left; padding:10px; border:1px solid #adb5bd; border-radius:6px; background:#fafafa; cursor:pointer;
+                   display:flex; justify-content:space-between; align-items:center; box-sizing:border-box;">
+            <span id="workerSummary_${uid}" style="color:#94a3b8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${placeholderLabel}</span>
+            <span class="material-symbols-outlined" style="font-size:18px; color:#94a3b8; flex-shrink:0;">expand_more</span>
+          </button>
+          <div id="workerDropdown_${uid}" class="multi-select-dropdown"
+            style="display:none; position:absolute; z-index:30; background:white; border:1px solid #cbd5e1; border-radius:8px;
+                   max-height:260px; overflow-y:auto; width:100%; box-shadow:0 4px 14px rgba(0,0,0,0.15); margin-top:4px;">
+            <div id="workerCheckboxList_${uid}"></div>
+          </div>
+          <input type="hidden" id="workerHiddenInput_${uid}" value="">
+        </div>`;
+    }
+
+    // 検索フィルター用の多肢選択トグルを、選択状態をすべて未選択にリセットする
+    function resetFilterMultiSelect(uid) {
+      const listDiv = document.getElementById(`workerCheckboxList_${uid}`);
+      if (listDiv) {
+        listDiv.querySelectorAll('input[type="checkbox"]').forEach(c => { c.checked = false; });
+      }
+      if (typeof updateWorkerSelection === "function") updateWorkerSelection(uid);
+    }
+
+    // 検索フィルター用の多肢選択トグルの、現在選択されている値の配列を取得する
+    function getFilterMultiSelectValues(uid) {
+      const hidden = document.getElementById(`workerHiddenInput_${uid}`);
+      if (!hidden || !hidden.value) return [];
+      return hidden.value.split(",").map(s => s.trim()).filter(Boolean);
     }
 
     window.updateWorkerSelection = function(uid) {
@@ -1005,9 +1066,9 @@
           
           <div class="form-group">
             <label style="margin-bottom: 0px; align-items: center; gap: 2px;">
-              <span class="material-symbols-outlined" style="font-size: 18px;">construction</span><span>工事内容 ${i}</span>
+              <span class="material-symbols-outlined" style="font-size: 18px;">construction</span><span>工事内容 ${i}</span> <span class="badge-required">必須</span>
             </label>
-            <select name="工事内容${i}" id="newWorkContent_${i}" style="width:100%; margin-top: 2px;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_${i}')"></select>
+            <select name="工事内容${i}" id="newWorkContent_${i}" required style="width:100%; margin-top: 2px;" onchange="toggleNewInput(this, 'newWorkContentInputGroup_${i}')"></select>
             <div id="newWorkContentInputGroup_${i}" style="display: none; margin-top: 2px;">
               <input type="text" id="newWorkContentInput_${i}" placeholder="新規工事内容を入力">
             </div>
@@ -1236,6 +1297,13 @@
           localStorage.setItem('app_login_userName', data.loginUser);
         }
         initSelectWithOptions("filterClient", data.clientList, "発注元", "すべて");
+
+        // 検索フィルター：工事内容・工事担当者（複数選択トグル）を初期化
+        document.getElementById("filterWorkContentContainer").innerHTML = buildFilterMultiSelectHtml("filterWorkContent", "工事内容を選択");
+        initWorkerMultiSelect("filterWorkContent", data.workContentList || [], "");
+        document.getElementById("filterWorkerContainer").innerHTML = buildFilterMultiSelectHtml("filterWorker", "工事担当者を選択");
+        initWorkerMultiSelect("filterWorker", data.userList || [], "");
+
         loader.style.display = "none";
         document.getElementById("mainApp").style.display = "block";
         // ログインが成功してメイン画面が出たら、ログアウトボタンを表示する
@@ -1274,6 +1342,8 @@
       const endDate = document.getElementById("filterEndDate").value;
       const unscheduledOnly = document.getElementById("filterUnscheduledOnly").checked;
       const keyword = document.getElementById("searchValue").value;
+      const workContentFilter = getFilterMultiSelectValues("filterWorkContent");
+      const workerFilter = getFilterMultiSelectValues("filterWorker");
       
       try {
         // キャッシュが無い場合（通信エラー等で初期読み込みに失敗した場合）は念のため取得し直す
@@ -1282,7 +1352,7 @@
           document.getElementById("loaderText").textContent = "データを読み込み中...";
           allRecordsCache = await apiCall("loadAllRecords");
         }
-        const records = filterRecordsClientSide(allRecordsCache, { client, keyword, startDate, endDate, unscheduledOnly });
+        const records = filterRecordsClientSide(allRecordsCache, { client, keyword, startDate, endDate, unscheduledOnly, workContentFilter, workerFilter });
         displayResults(records);
         loader.style.display = "none";
         btn.disabled = false;
@@ -1325,7 +1395,7 @@
       return text.trim().toLowerCase();
     }
 
-    function filterRecordsClientSide(records, { client, keyword, startDate, endDate, unscheduledOnly }) {
+    function filterRecordsClientSide(records, { client, keyword, startDate, endDate, unscheduledOnly, workContentFilter = [], workerFilter = [] }) {
       const nClient = normalizeText(client);
       const nKeyword = normalizeText(keyword);
       const sDate = startDate ? new Date(startDate) : null;
@@ -1338,6 +1408,24 @@
         if (nClient && normalizeText(r["発注元"]) !== nClient) return false;
 
         const workSetIndices = getRecordWorkSetIndices(r);
+
+        // 工事内容フィルター（複数選択・OR条件）：
+        // 何も選択されていなければ絞り込まず全件対象。選択されている場合は、
+        // 案件が持つ複数の工事セットのうち、いずれか1つでも選択内容に一致すればヒット。
+        if (workContentFilter.length > 0) {
+          const hasMatchedContent = workSetIndices.some(n => workContentFilter.includes(String(r[`工事内容${n}`] || "").trim()));
+          if (!hasMatchedContent) return false;
+        }
+
+        // 工事担当者フィルター（複数選択・OR条件）：
+        // 各工事セットの担当者はカンマ区切りで複数入っているため、そのいずれかが選択リストに含まれればヒット。
+        if (workerFilter.length > 0) {
+          const hasMatchedWorker = workSetIndices.some(n => {
+            const names = String(r[`工事担当者${n}`] || "").split(",").map(s => s.trim()).filter(Boolean);
+            return names.some(name => workerFilter.includes(name));
+          });
+          if (!hasMatchedWorker) return false;
+        }
 
         let isDateMatched = false;
         if (unscheduledOnly) {
@@ -1584,11 +1672,10 @@
                 <span id="${endSpanId}" style="font-size:12px; font-weight:bold; color:var(--primary);">${getWeekday(cEnd)}</span>
               </div>
             </div>
-            <div style="font-size:12px; color:#94a3b8; margin-top:2px;">終了日が未入力の場合は開始日と同じ日付が自動で入ります</div>
           </div>
           <div>
-            <label>工事内容 ${i}</label>
-            <select id="editWorkContent_${recordNo}_${i}" style="width:100%;" onchange="toggleEditNewInput(this, 'newEditWorkContentGroup_${recordNo}_${i}')">
+            <label>工事内容 ${i} <span class="badge-required">必須</span></label>
+            <select id="editWorkContent_${recordNo}_${i}" required style="width:100%;" onchange="toggleEditNewInput(this, 'newEditWorkContentGroup_${recordNo}_${i}')">
               ${createOptionsHtml(appConfig.workContentList || [], cContent, '工事内容')}
             </select>
             <div id="newEditWorkContentGroup_${recordNo}_${i}" style="display:none; margin-top:3px;">
@@ -1934,6 +2021,8 @@
       document.getElementById("filterUnscheduledOnly").checked = false;
       document.getElementById("filterStartDate").disabled = false;
       document.getElementById("filterEndDate").disabled = false;
+      resetFilterMultiSelect("filterWorkContent");
+      resetFilterMultiSelect("filterWorker");
       
       document.getElementById("results").innerHTML = "";
       document.getElementById("searchCount").innerHTML = "";
@@ -2483,9 +2572,9 @@
         selectedFilesMap["NEW_PROJECT"] = [];
         form.reset();
 
-        // 3. 軽量なトースト通知（1段目完了）
+        // 3. 軽量なトースト通知（1段目完了）※2段目完了の通知が出るまで表示し続ける
         if (typeof showToast === "function") {
-          showToast("データ登録が完了しました。その他カレンダー、ファイル登録等処理中...");
+          showToast("データ登録が完了しました。その他カレンダー、ファイル登録等処理中...", false, true);
         }
 
         // =================================================================
@@ -2509,6 +2598,9 @@
 
         } catch (bgErr) {
           console.error("❌ バックグラウンド処理エラー(新規登録):", bgErr);
+          // 持続表示中の「処理中...」トーストをここで消す（エラー内容はSwalダイアログで案内する）
+          const toastEl = document.getElementById("toastNotification");
+          if (toastEl) toastEl.classList.remove("show");
           if (typeof Swal !== "undefined") {
             Swal.fire({
               icon: 'error',
@@ -2544,7 +2636,7 @@
       if (btnEl) btnEl.disabled = true; // 二重送信防止
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
-      document.getElementById("loaderText").textContent = "スプレッドシートを更新中...";
+      document.getElementById("loaderText").textContent = "データを更新中";
       
       // 1. フォームデータの収集
       const fData = {
@@ -2646,7 +2738,7 @@
       // 【1段目】シート書き込み処理
       // =================================================================
       try {
-        document.getElementById("loaderText").textContent = "シートを更新中...";
+        document.getElementById("loaderText").textContent = "データを更新中";
         const fDataForSheetOnly = Object.assign({}, fData);
         delete fDataForSheetOnly.files; // 高速な1段目にはファイルの重いbase64データを含めない
         const response = await apiCall("updateRecordSheetOnly", { fData: fDataForSheetOnly, rNum: rowNumber });
@@ -2661,8 +2753,8 @@
         const itemEl = document.getElementById(`住所_${rNum}`)?.closest('.result-item');
         if (itemEl) itemEl.classList.remove('is-open');
         
-        // 3. 軽量なトースト通知（1段目完了）
-        showToast("データ登録が完了しました。その他カレンダー、ファイル登録等処理中...");
+        // 3. 軽量なトースト通知（1段目完了）※2段目完了の通知が出るまで表示し続ける
+        showToast("データ登録が完了しました。その他カレンダー、ファイル登録等処理中...", false, true);
     
         // =================================================================
         // 【2段目】重い処理を実行し、完了したらリロードせず一覧をリアルタイムに最新化する
@@ -2675,6 +2767,9 @@
           await refreshListAfterAllProcessing();
         } catch (bgErr) {
           console.error("❌ バックグラウンド処理エラー:", bgErr);
+          // 持続表示中の「処理中...」トーストをここで消す（エラー内容はSwalダイアログで案内する）
+          const toastEl = document.getElementById("toastNotification");
+          if (toastEl) toastEl.classList.remove("show");
           Swal.fire({
             icon: 'error',
             title: '背景処理でエラーが発生しました',
@@ -2698,7 +2793,11 @@
       }
     };
   
-    function showToast(message, isError = false) {
+    // persist=true の場合は自動非表示にせず、次のshowToast呼び出し（＝2段目完了などの通知）が
+    // 来るまで表示し続ける。既存のタイマーが残っていると新しい表示を誤って消してしまうため、
+    // 呼び出しのたびに前回のタイマーを必ずクリアする。
+    let _toastHideTimer = null;
+    function showToast(message, isError = false, persist = false) {
       const toast = document.getElementById("toastNotification");
       toast.innerText = message;
       
@@ -2710,10 +2809,18 @@
       }
       // 表示
       toast.classList.add("show");
-      // 10秒後に自動で隠す
-      setTimeout(() => {
-        toast.classList.remove("show");
-      }, 10000);
+
+      if (_toastHideTimer) {
+        clearTimeout(_toastHideTimer);
+        _toastHideTimer = null;
+      }
+      if (!persist) {
+        // 10秒後に自動で隠す
+        _toastHideTimer = setTimeout(() => {
+          toast.classList.remove("show");
+          _toastHideTimer = null;
+        }, 10000);
+      }
     }
 
     // =================================================================
