@@ -410,6 +410,46 @@
       transform: translateY(-3px);
     }
 
+    /* 工事担当者選択：行ごとのグループ見出し（発注元セレクトのoptgroupと同系配色で統一） */
+    .worker-group-label {
+      font-weight: bold;
+      color: #1e40af;
+      background-color: #eff6ff;
+      font-size: 13px;
+      padding: 6px 12px;
+    }
+    .worker-group-body { display: flex; flex-direction: column; }
+
+    /* 工事担当者選択：1行分（トグル＋名前）。左詰めで視認性を確保 */
+    .worker-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      text-align: left;
+      gap: 10px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-size: 15px;
+      color: #1e293b;
+    }
+    .worker-toggle-row:hover { background: #f1f5f9; }
+    .worker-toggle-label { text-align: left; overflow-wrap: anywhere; }
+
+    /* トグルスイッチ本体（チェックボックスの見た目をトグル化） */
+    .toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1; transition: 0.2s; border-radius: 22px;
+    }
+    .toggle-slider::before {
+      position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+      background-color: white; transition: 0.2s; border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .toggle-switch input:checked + .toggle-slider { background-color: var(--success); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+
     /* 見出し（あ行・か行…）のスタイル設定 */
     optgroup {
       font-weight: bold;
@@ -835,14 +875,33 @@
       // 既存データに含まれるが現在のマスタに無い名前（過去の登録等）も選べるように残す
       const allNames = Array.from(new Set([...masterNames, ...existing]));
 
-      let html = "";
-      allNames.forEach(name => {
-        const checked = existing.includes(name) ? "checked" : "";
-        html += `<label style="display:flex; align-items:center; gap:6px; padding:7px 10px; cursor:pointer; font-size:14px;"
-                    onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
-          <input type="checkbox" value="${escapeAttr(name)}" ${checked} onchange="updateWorkerSelection('${uid}')"> ${escapeHtml(name)}
-        </label>`;
+      // 発注元セレクトと同様に、サーバー側(attachGyou)が付与した「行」情報でグループ化する
+      const nameToGyou = {};
+      (userList || []).forEach(v => {
+        if (typeof v === 'object' && v !== null && v.name) nameToGyou[v.name] = v.gyou || "その他";
       });
+      existing.forEach(name => { if (!nameToGyou[name]) nameToGyou[name] = "その他"; });
+
+      let html = "";
+      let currentGroup = null;
+      allNames.forEach(name => {
+        const gyou = nameToGyou[name] || "その他";
+        if (gyou !== currentGroup) {
+          if (currentGroup !== null) html += `</div>`;
+          html += `<div class="worker-group-label">${escapeHtml(gyou)}</div><div class="worker-group-body">`;
+          currentGroup = gyou;
+        }
+        const checked = existing.includes(name) ? "checked" : "";
+        html += `
+          <label class="worker-toggle-row">
+            <span class="toggle-switch">
+              <input type="checkbox" value="${escapeAttr(name)}" ${checked} onchange="updateWorkerSelection('${uid}')">
+              <span class="toggle-slider"></span>
+            </span>
+            <span class="worker-toggle-label">${escapeHtml(name)}</span>
+          </label>`;
+      });
+      if (currentGroup !== null) html += `</div>`;
       listDiv.innerHTML = html || '<div style="padding:10px; color:#94a3b8; font-size:13px;">候補がありません。下の欄から追加してください</div>';
       updateWorkerSelection(uid);
     }
@@ -886,10 +945,13 @@
       } else {
         if (listDiv.querySelector('input[type="checkbox"]') === null) listDiv.innerHTML = ""; // 「候補がありません」の表示を消す
         const wrap = document.createElement('label');
-        wrap.style.cssText = "display:flex; align-items:center; gap:6px; padding:7px 10px; cursor:pointer; font-size:14px;";
-        wrap.addEventListener('mouseover', () => wrap.style.background = '#f1f5f9');
-        wrap.addEventListener('mouseout', () => wrap.style.background = 'white');
-        wrap.innerHTML = `<input type="checkbox" value="${escapeAttr(name)}" checked onchange="updateWorkerSelection('${uid}')"> ${escapeHtml(name)}`;
+        wrap.className = 'worker-toggle-row';
+        wrap.innerHTML = `
+          <span class="toggle-switch">
+            <input type="checkbox" value="${escapeAttr(name)}" checked onchange="updateWorkerSelection('${uid}')">
+            <span class="toggle-slider"></span>
+          </span>
+          <span class="worker-toggle-label">${escapeHtml(name)}</span>`;
         listDiv.appendChild(wrap);
       }
       input.value = "";
@@ -929,7 +991,7 @@
             </label>
             <div style="display:flex; align-items:flex-start; gap:6px;">
               <div style="flex:1;">
-                <input type="date" name="施工日${i}開始" id="newWorkStart_${i}" onchange="updateInputWeekday(this, 'newDaySpanStart_${i}')" onclick="this.showPicker && this.showPicker();" style="width:100%; margin-top: 2px; cursor:pointer;">
+                <input type="date" name="施工日${i}開始" id="newWorkStart_${i}" onchange="handleWorkStartDateChange(this, 'newWorkEnd_${i}', 'newDaySpanStart_${i}', 'newDaySpanEnd_${i}')" onclick="this.showPicker && this.showPicker();" style="width:100%; margin-top: 2px; cursor:pointer;">
                 <span id="newDaySpanStart_${i}" style="font-size:12px; font-weight:bold; color:var(--primary);"></span>
               </div>
               <span style="color:#94a3b8; margin-top:12px;">〜</span>
@@ -1049,7 +1111,6 @@
     }
   
     document.addEventListener("DOMContentLoaded", async () => {
-
       initializeInspectionTimeSelects();
       const savedId = localStorage.getItem('app_login_id');
       const savedPassword = localStorage.getItem('app_login_password');
@@ -1325,6 +1386,19 @@
       const span = document.getElementById(spanId);
       if (span) span.textContent = getWeekday(inputEl.value);
     };
+
+    // 施工予定日「開始」が変更されたときの処理（新規登録・編集フォーム共通）
+    // ・開始日の曜日表示を更新
+    // ・終了日が未入力（空欄）の場合のみ、終了日に開始日と同じ日付を自動セットする
+    //   （終了日に既に値が入っている場合は、ユーザーが意図して設定した値を上書きしない）
+    window.handleWorkStartDateChange = function(startEl, endElId, startSpanId, endSpanId) {
+      updateInputWeekday(startEl, startSpanId);
+      const endEl = document.getElementById(endElId);
+      if (endEl && !endEl.value && startEl.value) {
+        endEl.value = startEl.value;
+        updateInputWeekday(endEl, endSpanId);
+      }
+    };
   
     // オブジェクト対応の値抽出
     function extractValue(v) {
@@ -1486,31 +1560,42 @@
           <span class="material-symbols-outlined" style="font-size:20px;">close</span>
         </button>`;
       const uid = `edit_${recordNo}_${i}`;
+      const startSpanId = `editDaySpanStart_${recordNo}_${i}`;
+      const endSpanId = `editDaySpanEnd_${recordNo}_${i}`;
+      // ★変更点：グリッドの横並び（3列）をやめ、新規登録フォームと同じ縦積み構成に統一。
+      //   スマホ・PCどちらでも常に「施工予定日（開始〜終了）」→「工事内容」→「工事担当者」の順で表示される。
       return `
-        <div class="work-section" id="editWorkGroup_${recordNo}_${i}" style="position:relative;">
+        <div class="work-section" id="editWorkGroup_${recordNo}_${i}" style="position:relative; display:flex; flex-direction:column; gap:12px;">
           ${removeBtnHtml}
           <div>
-            <label>施工予定日 ${i}（開始）
-              <span id="editDaySpanStart_${recordNo}_${i}" style="font-weight:bold; color:var(--primary);">${getWeekday(cStart)}</span>
-            </label>
-            <input type="date" id="editWorkStart_${recordNo}_${i}" value="${cStart || ''}" onchange="updateInputWeekday(this, 'editDaySpanStart_${recordNo}_${i}')" onclick="this.showPicker?.()" style="cursor:pointer;">
-          </div>
-          <div>
-            <label>施工予定日 ${i}（終了）
-              <span id="editDaySpanEnd_${recordNo}_${i}" style="font-weight:bold; color:var(--primary);">${getWeekday(cEnd)}</span>
-            </label>
-            <input type="date" id="editWorkEnd_${recordNo}_${i}" value="${cEnd || ''}" onchange="updateInputWeekday(this, 'editDaySpanEnd_${recordNo}_${i}')" onclick="this.showPicker?.()" style="cursor:pointer;">
+            <label>施工予定日 ${i}（開始〜終了）</label>
+            <div style="display:flex; align-items:flex-start; gap:6px; margin-top:4px;">
+              <div style="flex:1;">
+                <input type="date" id="editWorkStart_${recordNo}_${i}" value="${cStart || ''}"
+                  onchange="handleWorkStartDateChange(this, 'editWorkEnd_${recordNo}_${i}', '${startSpanId}', '${endSpanId}')"
+                  onclick="this.showPicker?.()" style="width:100%; cursor:pointer;">
+                <span id="${startSpanId}" style="font-size:12px; font-weight:bold; color:var(--primary);">${getWeekday(cStart)}</span>
+              </div>
+              <span style="color:#94a3b8; margin-top:12px;">〜</span>
+              <div style="flex:1;">
+                <input type="date" id="editWorkEnd_${recordNo}_${i}" value="${cEnd || ''}"
+                  onchange="updateInputWeekday(this, '${endSpanId}')"
+                  onclick="this.showPicker?.()" style="width:100%; cursor:pointer;">
+                <span id="${endSpanId}" style="font-size:12px; font-weight:bold; color:var(--primary);">${getWeekday(cEnd)}</span>
+              </div>
+            </div>
+            <div style="font-size:12px; color:#94a3b8; margin-top:2px;">終了日が未入力の場合は開始日と同じ日付が自動で入ります</div>
           </div>
           <div>
             <label>工事内容 ${i}</label>
-            <select id="editWorkContent_${recordNo}_${i}" onchange="toggleEditNewInput(this, 'newEditWorkContentGroup_${recordNo}_${i}')">
+            <select id="editWorkContent_${recordNo}_${i}" style="width:100%;" onchange="toggleEditNewInput(this, 'newEditWorkContentGroup_${recordNo}_${i}')">
               ${createOptionsHtml(appConfig.workContentList || [], cContent, '工事内容')}
             </select>
             <div id="newEditWorkContentGroup_${recordNo}_${i}" style="display:none; margin-top:3px;">
               <input type="text" id="newEditWorkContentInput_${recordNo}_${i}" placeholder="新規工事内容">
             </div>
           </div>
-          <div style="grid-column: span 3;">
+          <div>
             <label>工事担当者 ${i}（複数選択可）</label>
             ${buildWorkerMultiSelectHtml(uid, '')}
           </div>
@@ -2228,7 +2313,10 @@
         return;
       }
       
-      const input = button.closest('.voice-input-wrapper').querySelector('input');
+      // ★修正: 備考欄は<textarea>のため、inputだけでなくtextareaも検索対象に含める
+      //   （これが無いと備考欄では input が null になり、直後の input.style... でエラーになって
+      //    recognition.start() まで到達せず、マイクが反応していないように見えていた）
+      const input = button.closest('.voice-input-wrapper').querySelector('input, textarea');
       const recognition = new SpeechRecognition();
       recognition.lang = 'ja-JP';
       recognition.continuous = false;
