@@ -182,12 +182,22 @@
     /* 案件タイトル：大きめのフォント */
     .anken-title { font-size: 20px; font-weight: bold; color: #0f172a; }
     
-    /* 詳細情報カード：グリッドで2列配置（枠は持たず、間隔のみで区切る） */
+    /* 詳細情報カード：各項目を縦に積み、必要な行だけ横並び（flex比率で幅を制御） */
     .detail-card {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 14px;
       margin-bottom: 20px;
+    }
+    /* 2項目を横並びにする行の共通スタイル */
+    .detail-card .field-row { display: flex; gap: 8px; width: 100%; }
+    .detail-card .field-row > .data-row-input { min-width: 0; }
+
+    /* 案件種別:緯度経度 の比率　PC:1/4:3/4　→　スマホ:2/4:2/4 */
+    .field-projecttype { flex: 1; }
+    .field-latlng { flex: 3; }
+    @media (max-width: 780px) {
+      .field-latlng { flex: 1; }
     }
     
     /* データ行：ラベルと入力欄の縦積み */
@@ -336,11 +346,24 @@
     /* 必須バッジ：赤い小さなラベル */
     .badge-required { background-color: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-left: 8px; vertical-align: middle; }
 
-    /* レスポンシブデザイン：タブレット・モバイル対応 */
+    /* 新規案件登録フォーム：常に横並びにしたい2項目の行（画面幅に関わらず崩れない） */
+    .form-row-2col { display: flex; gap: 12px; margin-bottom: 18px; }
+    .form-row-2col > .form-group { flex: 1; min-width: 0; margin-bottom: 0; }
+
+    /* 新規案件登録フォーム：PCでは横並び、スマホでは縦積みに切り替える行（例：発注元・案件名） */
+    .form-row-responsive { display: flex; gap: 12px; margin-bottom: 18px; }
+    .form-row-responsive > .form-group { min-width: 0; margin-bottom: 0; }
+    .form-row-responsive > .form-group.col-1 { flex: 1; }
+    .form-row-responsive > .form-group.col-2 { flex: 2; }
+    @media (max-width: 780px) {
+      .form-row-responsive { flex-direction: column; }
+    }
+
+    /* レスポンシブデザイン：タブレット・モバイル対応
+       ※ detail-card / work-section は既にflexベースの構成に変更済みのため、
+         以前ここにあった grid-template-columns の強制上書きは不要になった（削除）。 */
     @media (max-width: 780px) {
       .drag-drop-text { display: none; }
-      .detail-card, .work-section { grid-template-columns: 1fr;  /* 1列に統合 */ }
-      .work-section div[style*="grid-column: span 2"] { grid-column: span 1 !important; }
     }
 
     /* ローディング：回転アニメーション */
@@ -650,10 +673,10 @@
         <!-- 新規案件登録フォーム -->
         <form id="createProjectForm" onsubmit="handleCreateSubmit(event)">
     
-          <!-- セクション1：基本情報（受注媒体・案件種別） -->
-          <div style="display: flex; gap: 12px; width: 100%; flex-wrap: wrap;">
+          <!-- セクション1：基本情報（受注媒体・案件種別）※画面幅に関わらず常に横並び -->
+          <div class="form-row-2col">
             <!-- 受注媒体選択：ドロップダウンまたは新規入力 -->
-            <div class="form-group" style="flex: 1; min-width: 200px;">
+            <div class="form-group">
               <label>受注媒体 <span class="badge-required">必須</span></label>
               <select name="受注媒体" id="addMediaSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newMediaInputGroup')"></select>
               <div id="newMediaInputGroup" style="display: none; margin-top: 3px;">
@@ -662,7 +685,7 @@
             </div>
         
             <!-- 案件種別選択：ドロップダウンまたは新規入力 -->
-            <div class="form-group" style="flex: 1; min-width: 200px;">
+            <div class="form-group">
               <label>案件種別 <span class="badge-required">必須</span></label>
               <select name="案件種別" id="addProjectTypeSelect" required style="width: 100%;" onchange="toggleNewInput(this, 'newProjectTypeInputGroup')"></select>
               <div id="newProjectTypeInputGroup" style="display: none; margin-top: 3px;">
@@ -671,23 +694,26 @@
             </div>
           </div>
     
-          <!-- 発注元選択：ドロップダウンまたは新規入力 -->
-          <div class="form-group" style="margin-top: 15px;">
-            <label>発注元 <span class="badge-required">必須</span></label>
-            <select name="発注元" id="addClientSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newClientInputGroup'); updateManagersByClient(this.value, 'addStaffSelect');"></select>
-            <div id="newClientInputGroup" style="display: none; margin-top: 8px;">
-              <input type="text" id="newClientInput" placeholder="新規発注元名を入力してください" style="width: 100%;">
+          <!-- 発注元・案件名 ※PCでは横並び（発注元1:案件名2）、スマホでは縦積み -->
+          <div class="form-row-responsive">
+            <!-- 発注元選択：ドロップダウンまたは新規入力 -->
+            <div class="form-group col-1">
+              <label>発注元 <span class="badge-required">必須</span></label>
+              <select name="発注元" id="addClientSelect" required style="width:100%;" onchange="toggleNewInput(this, 'newClientInputGroup'); updateManagersByClient(this.value, 'addStaffSelect');"></select>
+              <div id="newClientInputGroup" style="display: none; margin-top: 8px;">
+                <input type="text" id="newClientInput" placeholder="新規発注元名を入力してください" style="width: 100%;">
+              </div>
             </div>
-          </div>
     
-          <!-- 案件名入力欄 -->
-          <div class="form-group">
-            <label>案件名 <span class="badge-required">必須</span></label>
-            <div class="voice-input-wrapper">
-              <input type="text" id="project_name" name="案件名" placeholder="例：〇〇様邸新築工事" required>
-              <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
-                <span class="material-symbols-outlined">mic</span>
-              </button>
+            <!-- 案件名入力欄 -->
+            <div class="form-group col-2">
+              <label>案件名 <span class="badge-required">必須</span></label>
+              <div class="voice-input-wrapper">
+                <input type="text" id="project_name" name="案件名" placeholder="例：〇〇様邸新築工事" required>
+                <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+                  <span class="material-symbols-outlined">mic</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -724,32 +750,36 @@
             <input type="text" name="緯度経度" placeholder="例：36.8420,137.4060" style="width: 100%;">
           </div>
     
-          <!-- 延床面積 -->
-          <div class="form-group">
-            <label><span class="material-symbols-outlined">square_foot</span> 延床面積</label>
-            <input type="text" id="room_area" name="延床面積" placeholder="例：85㎡" style="width: 100%;">
-          </div>
-    
-          <!-- セクション4：担当者情報 -->
-          <!-- 担当者選択：ドロップダウンまたは新規入力 -->
-          <div class="form-group">
-            <label><span class="material-symbols-outlined">person</span> 担当者</label>
-            <select name="担当者" id="addStaffSelect" style="width:100%;" onchange="handleStaffChange(this, 'addPhoneInput', 'newStaffInputGroup')"></select>
-            <div id="newStaffInputGroup" style="display: none; margin-top: 8px;">
-              <input type="text" id="newStaffInput" placeholder="新規担当者名を入力してください" style="width: 100%;">
+          <!-- 延床面積・キーBOX ※画面幅に関わらず常に横並び -->
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label><span class="material-symbols-outlined">square_foot</span> 延床面積</label>
+              <input type="text" id="room_area" name="延床面積" placeholder="例：85㎡" style="width: 100%;">
+            </div>
+
+            <!-- キーBOX（暗証番号・保管場所） -->
+            <div class="form-group">
+              <label><span class="material-symbols-outlined">key</span> キーBOX</label>
+              <input type="text" id="key_box" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所" style="width: 100%;">
             </div>
           </div>
     
-          <!-- 連絡先（担当者選択時に自動入力） -->
-          <div class="form-group">
-            <label><span class="material-symbols-outlined">phone</span> 連絡先</label>
-            <input type="text" name="連絡先" id="addPhoneInput" placeholder="担当者を選択すると自動反映されます" style="width: 100%;">
-          </div>
+          <!-- セクション4：担当者情報 ※画面幅に関わらず常に横並び -->
+          <div class="form-row-2col">
+            <!-- 担当者選択：ドロップダウンまたは新規入力 -->
+            <div class="form-group">
+              <label><span class="material-symbols-outlined">person</span> 担当者</label>
+              <select name="担当者" id="addStaffSelect" style="width:100%;" onchange="handleStaffChange(this, 'addPhoneInput', 'newStaffInputGroup')"></select>
+              <div id="newStaffInputGroup" style="display: none; margin-top: 8px;">
+                <input type="text" id="newStaffInput" placeholder="新規担当者名を入力してください" style="width: 100%;">
+              </div>
+            </div>
     
-          <!-- キーBOX（暗証番号・保管場所） -->
-          <div class="form-group">
-            <label><span class="material-symbols-outlined">key</span> キーBOX</label>
-            <input type="text" id="key_box" name="キーBOX" placeholder="キーBOXの暗証番号や保管場所" style="width: 100%;">
+            <!-- 連絡先（担当者選択時に自動入力） -->
+            <div class="form-group">
+              <label><span class="material-symbols-outlined">phone</span> 連絡先</label>
+              <input type="text" name="連絡先" id="addPhoneInput" placeholder="担当者を選択すると自動反映されます" style="width: 100%;">
+            </div>
           </div>
     
           <!-- 備考欄 -->
@@ -1882,9 +1912,9 @@
           <div class="result-details">
             <div class="detail-card">
             
-              <div style="display: flex; gap: 8px; width: 100%;">
+              <div class="field-row">
               
-                <div class="data-row-input" style="flex: 1; min-width: 0;">
+                <div class="data-row-input field-projecttype">
                   <label>案件種別</label>
                   <select id="addProjectTypeSelect_${record.No}" onchange="toggleEditNewInput(this, 'newProjectTypeInputGroup_${record.No}')">
                     ${createOptionsHtml(appConfig.projectTypeList, record['案件種別'] || '', '案件種別')}
@@ -1894,35 +1924,39 @@
                   </div>
                 </div>
                 
-                <div class="data-row-input" style="flex: 1; min-width: 0;">
+                <div class="data-row-input field-latlng">
                   <label>緯度経度</label>
                   <input type="text" id="緯度経度_${record.No}" value="${record.緯度経度 || ''}" style="width: 100%;">
                 </div>
               </div>
               
-              <div class="data-row-input" style="grid-column: span 2;"><label>所在地（住所）</label>
+              <div class="data-row-input"><label>所在地（住所）</label>
                 <input type="text" id="住所_${record.No}" value="${record.住所 || ''}">
               </div>
               
-              <div class="data-row-input"><label>延床面積</label>
-                <input type="text" id="延床面積_${record.No}" value="${record.延床面積 || ''}">
-              </div>
-              
-              <div class="data-row-input"><label>キーBOX</label>
-                <input type="text" id="キーBOX_${record.No}" value="${record.キーBOX || ''}">
-              </div>
-              
-              <div class="data-row-input" style="grid-column: span 2;"><label>担当者</label>
-                <select id="editStaffSelect_${record.No}" data-client="${record.発注元}" onchange="handleEditStaffChange(this, '${record.No}')">
-                  ${staffOptionsHtml}
-                </select>
-                <div id="newEditStaffGroup_${record.No}" style="display:none; margin-top:3px;">
-                  <input type="text" id="newEditStaffInput_${record.No}" placeholder="新規担当者名">
+              <div class="field-row">
+                <div class="data-row-input" style="flex: 1;"><label>延床面積</label>
+                  <input type="text" id="延床面積_${record.No}" value="${record.延床面積 || ''}">
+                </div>
+                
+                <div class="data-row-input" style="flex: 1;"><label>キーBOX</label>
+                  <input type="text" id="キーBOX_${record.No}" value="${record.キーBOX || ''}">
                 </div>
               </div>
               
-              <div class="data-row-input" style="grid-column: span 2;"><label>連絡先</label>
-                <input type="text" id="editPhoneInput_${record.No}" value="${record.連絡先 || ''}">
+              <div class="field-row">
+                <div class="data-row-input" style="flex: 1;"><label>担当者</label>
+                  <select id="editStaffSelect_${record.No}" data-client="${record.発注元}" onchange="handleEditStaffChange(this, '${record.No}')">
+                    ${staffOptionsHtml}
+                  </select>
+                  <div id="newEditStaffGroup_${record.No}" style="display:none; margin-top:3px;">
+                    <input type="text" id="newEditStaffInput_${record.No}" placeholder="新規担当者名">
+                  </div>
+                </div>
+                
+                <div class="data-row-input" style="flex: 1;"><label>連絡先</label>
+                  <input type="text" id="editPhoneInput_${record.No}" value="${record.連絡先 || ''}">
+                </div>
               </div>
             </div>
   
