@@ -8,14 +8,19 @@
 <meta name="theme-color" content="#ffffff">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+
   <!-- ベースURL設定：リンクを新タブで開かない -->
   <base target="_top">
+
   <!-- レスポンシブ対応とビューポート設定 -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  
   <!-- 外部フォント読み込み：日本語対応フォント（Plus Jakarta Sans, Roboto） -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  
   <!-- Googleの Material Design アイコン読み込み -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
   <!-- SweetAlert2：モーダルダイアログ・アラート用ライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
@@ -44,11 +49,11 @@
     }
     
     /* フォーム要素共通スタイル：input, select, textarea の標準化
-       ※「工事担当者」選択欄（）と統一したデザイン（枠線1px・角丸6px・padding10px）に合わせる。
+       ※「工事担当者」選択欄（.multi-select-toggle）と統一したデザイン（枠線1px・角丸6px・padding10px）に合わせる。
          font-sizeの16pxはモバイルでの自動ズーム防止のため維持。 */
     input, select, textarea {
       font-family: inherit;
-      font-size: 13px !important;  /* モバイルでのズーム防止 */
+      font-size: 16px !important;  /* モバイルでのズーム防止 */
       padding: 10px;
       border: 1px solid #adb5bd;
       border-radius: 6px;
@@ -177,29 +182,25 @@
     /* 案件タイトル：大きめのフォント */
     .anken-title { font-size: 20px; font-weight: bold; color: #0f172a; }
     
-    /* 詳細情報カード：グリッドで2列配置 */
+    /* 詳細情報カード：グリッドで2列配置（枠は持たず、間隔のみで区切る） */
     .detail-card {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
-      background: #edf2f7;
-      padding: 18px;
-      border-radius: 10px;
       margin-bottom: 20px;
-      border: 1px solid #cbd5e1;
     }
     
     /* データ行：ラベルと入力欄の縦積み */
     .data-row-input { display: flex; flex-direction: column; }
     .data-row-input label { font-size: 13px; color: #475569; font-weight: bold; margin-bottom: 4px; }
-    .data-row-input input, .data-row-input select { width: 100%; padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box; }
+    .data-row-input input, .data-row-input select { width: 100%; }
 
     /* 施工予定セクション：3列グリッド（日付・内容・担当） */
     .work-section { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; background: #fff;
       border: 2px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-bottom: 10px;
     }
     .work-section label { display: block; font-size: 13px; color: var(--text-sub); font-weight: bold; margin-bottom: 4px; }
-    .work-section select, .work-section input { width: 100%; padding: 10px; }
+    .work-section select, .work-section input { width: 100%; }
     
     /* アップロードボックス：ドラッグ&ドロップ対応エリア */
     .uploadbox { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s;
@@ -446,6 +447,28 @@
     }
     .toggle-switch input:checked + .toggle-slider { background-color: var(--success); }
     .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+    /* 「工事担当者」選択ボタン等、input/selectと見た目を揃えたいボタン共通クラス。
+       個別にインラインで枠線・角丸・paddingを指定するのではなく、input/select/textareaと
+       同じグローバルデザイン（1px solid #adb5bd、角丸6px、padding10px）に統一する。 */
+    .control-btn {
+      width: 100%;
+      text-align: left;
+      padding: 10px;
+      border: 1px solid #adb5bd;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 16px;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .control-btn:focus { border-color: var(--primary); outline: none; background: #fdfdfd; }
+    /* 検索フィルター欄のセレクトと同じ薄いグレー背景にする場合に付与する補助クラス */
+    .control-btn.control-btn-filter { background: #fafafa; }
 
     /* 見出し（あ行・か行…）のスタイル設定 */
     optgroup {
@@ -857,9 +880,7 @@
     function buildWorkerMultiSelectHtml(uid, fieldName) {
       return `
         <div class="multi-select-wrapper" style="position:relative;">
-          <button type="button" class="multi-select-toggle" onclick="toggleWorkerDropdown('${uid}')" id="workerToggleBtn_${uid}"
-            style="width:100%; text-align:left; padding:10px; border:1px solid #adb5bd; border-radius:6px; background:white; cursor:pointer;
-                   display:flex; justify-content:space-between; align-items:center; box-sizing:border-box; margin-top:2px;">
+          <button type="button" class="control-btn multi-select-toggle" onclick="toggleWorkerDropdown('${uid}')" id="workerToggleBtn_${uid}" style="margin-top:2px;">
             <span id="workerSummary_${uid}" style="color:#94a3b8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">選択してください</span>
             <span class="material-symbols-outlined" style="font-size:18px; color:#94a3b8; flex-shrink:0;">expand_more</span>
           </button>
@@ -867,8 +888,8 @@
             style="display:none; position:absolute; z-index:30; background:white; border:1px solid #cbd5e1; border-radius:8px;
                    max-height:220px; overflow-y:auto; width:100%; box-shadow:0 4px 14px rgba(0,0,0,0.15); margin-top:4px;">
             <div style="padding:8px; border-bottom:1px solid #e2e8f0; display:flex; gap:4px; position:sticky; top:0; background:white; z-index:1;">
-              <input type="text" id="workerNewInput_${uid}" placeholder="新規担当者名を追加してEnter" style="flex:1; min-width:0; padding:8px;"
-                onkeydown="handleWorkerNewInputKeydown(event, '${uid}')" onclick="event.stopPropagation();">
+              <input type="text" id="workerNewInput_${uid}" placeholder="新規担当者名を追加してEnter" autocomplete="off" style="flex:1; min-width:0; padding:8px;"
+                onkeydown="handleWorkerNewInputKeydown(event, '${uid}')" onblur="commitWorkerNewInput('${uid}')" onclick="event.stopPropagation();">
             </div>
             <div id="workerCheckboxList_${uid}"></div>
           </div>
@@ -931,9 +952,7 @@
     function buildFilterMultiSelectHtml(uid, placeholderLabel) {
       return `
         <div class="multi-select-wrapper" style="position:relative;">
-          <button type="button" class="multi-select-toggle" onclick="toggleWorkerDropdown('${uid}')" id="workerToggleBtn_${uid}"
-            style="width:100%; text-align:left; padding:10px; border:1px solid #adb5bd; border-radius:6px; background:#fafafa; cursor:pointer;
-                   display:flex; justify-content:space-between; align-items:center; box-sizing:border-box;">
+          <button type="button" class="control-btn control-btn-filter multi-select-toggle" onclick="toggleWorkerDropdown('${uid}')" id="workerToggleBtn_${uid}">
             <span id="workerSummary_${uid}" style="color:#94a3b8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${placeholderLabel}</span>
             <span class="material-symbols-outlined" style="font-size:18px; color:#94a3b8; flex-shrink:0;">expand_more</span>
           </button>
@@ -989,12 +1008,24 @@
 
     window.handleWorkerNewInputKeydown = function(event, uid) {
       if (event.key !== 'Enter') return;
+      // 日本語入力(IME)で変換候補を確定する際のEnterはここでは無視する。
+      // これを見分けずに処理すると、変換確定のたびに（変換途中の文字列で）誤登録されたり、
+      // ブラウザ側のオートフィル候補確定によってフォーカスが次の項目へ移ってしまうことがある。
+      if (event.isComposing || event.keyCode === 229) return;
       event.preventDefault();
+      event.stopPropagation();
+      commitWorkerNewInput(uid);
+    };
+
+    // 新規担当者入力欄の内容を選択リストへ反映する共通処理。
+    // Enterキー確定時・入力欄からフォーカスが外れた時（クリックで閉じた場合等）の両方から呼ばれる。
+    window.commitWorkerNewInput = function(uid) {
       const input = document.getElementById(`workerNewInput_${uid}`);
       if (!input) return;
       const name = input.value.trim();
       if (!name) return;
       const listDiv = document.getElementById(`workerCheckboxList_${uid}`);
+      if (!listDiv) return;
       const existingCheckbox = Array.from(listDiv.querySelectorAll('input[type="checkbox"]')).find(c => c.value === name);
       if (existingCheckbox) {
         existingCheckbox.checked = true;
@@ -1056,7 +1087,6 @@
                 <span id="newDaySpanEnd_${i}" style="font-size:12px; font-weight:bold; color:var(--primary);"></span>
               </div>
             </div>
-            <div style="font-size:12px; color:#94a3b8; margin-top:2px;">終了日が未入力の場合は開始日のみの単日予定として登録されます</div>
           </div>
           
           <div class="form-group">
@@ -1874,11 +1904,11 @@
                 <input type="text" id="住所_${record.No}" value="${record.住所 || ''}">
               </div>
               
-              <div class="data-row-input" style="grid-column: span 2;"><label>延床面積</label>
+              <div class="data-row-input"><label>延床面積</label>
                 <input type="text" id="延床面積_${record.No}" value="${record.延床面積 || ''}">
               </div>
               
-              <div class="data-row-input" style="grid-column: span 2;"><label>キーBOX</label>
+              <div class="data-row-input"><label>キーBOX</label>
                 <input type="text" id="キーBOX_${record.No}" value="${record.キーBOX || ''}">
               </div>
               
