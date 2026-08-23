@@ -1378,17 +1378,18 @@
       await initializeApp();
     }
   
+    // 案件データのバックグラウンド読み込み中のPromiseを保持する。
+    // search()実行時にこれが残っていればawaitするだけにして、二重に読み込みに行かないようにする。
+    let recordsLoadingPromise = null;
+
     async function initializeApp() {
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
-      document.getElementById("loaderText").textContent = "ログイン認証中 & データを読み込み中...";
+      document.getElementById("loaderText").textContent = "ログイン認証中...";
       try {
-        const [data, records] = await Promise.all([
-          apiCall("loadAppDataMaster"),
-          apiCall("loadAllRecords")
-        ]);
+        // ① まずログイン認証を兼ねるマスタデータ取得のみを待つ。ここが通ればログイン成功。
+        const data = await apiCall("loadAppDataMaster");
         appConfig = data;
-        allRecordsCache = records;
         if (data.loginUser) {
           document.getElementById("userDisplayLabel").textContent = `ログインユーザー: ${data.loginUser}`;
           localStorage.setItem('app_login_userName', data.loginUser);
@@ -1401,12 +1402,18 @@
         document.getElementById("filterWorkerContainer").innerHTML = buildFilterMultiSelectHtml("filterWorker", "工事担当者を選択");
         initWorkerMultiSelect("filterWorker", data.userList || [], "");
 
+        // ② 認証が完了した時点で、案件データの読み込み完了を待たずにすぐメイン画面を表示する
         loader.style.display = "none";
         document.getElementById("mainApp").style.display = "block";
         // ログインが成功してメイン画面が出たら、ログアウトボタンを表示する
         const logoutBtn = document.getElementById("logoutBtn");
         if (logoutBtn) logoutBtn.style.display = "flex";
+
+        // ③ 案件データはメイン画面表示をブロックせず、裏側で読み込む
+        loadAllRecordsInBackground();
+
         // 保存処理後のリロードであれば、直前の検索条件を復元して再検索する
+        // （restorePendingSearchStateIfAny内のsearch()が、必要であれば上のバックグラウンド読み込みの完了を待つ）
         restorePendingSearchStateIfAny();
       } catch (err) {
         // 1. ローダーを非表示にする
@@ -1426,9 +1433,39 @@
         window.location.reload();
       }
     }
+
+    // 案件データ（loadAllRecords）をバックグラウンドで読み込む。
+    // 完了するとallRecordsCacheにセットされ、以後の検索で使われる。
+    // 既に読み込み中の場合は、そのPromiseをそのまま返す（二重読み込み防止）。
+    function loadAllRecordsInBackground() {
+      if (recordsLoadingPromise) return recordsLoadingPromise;
+      const countDiv = document.getElementById("searchCount");
+      if (countDiv && !countDiv.innerHTML) {
+        countDiv.innerHTML = '<span style="color:#94a3b8;">案件データを読み込み中...</span>';
+      }
+      recordsLoadingPromise = apiCall("loadAllRecords")
+        .then(records => {
+          allRecordsCache = records;
+          recordsLoadingPromise = null;
+          const cd = document.getElementById("searchCount");
+          if (cd && cd.innerHTML.includes("読み込み中")) cd.innerHTML = "";
+          return records;
+        })
+        .catch(err => {
+          recordsLoadingPromise = null;
+          console.error("❌ 案件データの読み込みに失敗しました:", err);
+          const cd = document.getElementById("searchCount");
+          if (cd) cd.innerHTML = '<span style="color:#ef4444;">案件データの読み込みに失敗しました。検索ボタンで再試行してください。</span>';
+          throw err;
+        });
+      return recordsLoadingPromise;
+    }
     
     // 日程検索
-    async function search() {
+    // shouldScroll: 検索結果が表示された際に画面を少し下へスクロールするかどうか（既定はtrue）。
+    //   保存後のバックグラウンド更新（refreshListAfterAllProcessing）など、
+    //   ユーザー操作を伴わない自動再描画のときはfalseを渡してスクロールしないようにする。
+    async function search(shouldScroll = true) {
       const btn = document.getElementById("searchBtn");
       const resultsDiv = document.getElementById("results");
       const loader = document.getElementById("initLoader");
@@ -1443,17 +1480,22 @@
       const workerFilter = getFilterMultiSelectValues("filterWorker");
       
       try {
-        // キャッシュが無い場合（通信エラー等で初期読み込みに失敗した場合）は念のため取得し直す
+        // キャッシュが無い場合：バックグラウンド読み込みが進行中ならその完了を待ち、
+        // まだ何も走っていなければ（通信エラー等で初期読み込みに失敗した場合）念のため取得し直す
         if (!allRecordsCache) {
           loader.style.display = "flex";
           document.getElementById("loaderText").textContent = "データを読み込み中...";
-          allRecordsCache = await apiCall("loadAllRecords");
+          await loadAllRecordsInBackground();
         }
         const records = filterRecordsClientSide(allRecordsCache, { client, keyword, startDate, endDate, unscheduledOnly, workContentFilter, workerFilter });
         displayResults(records);
         loader.style.display = "none";
         btn.disabled = false;
         resultsDiv.style.opacity = "1";
+        // 検索結果が1件以上あれば、結果が見える位置まで少し下にスクロールする
+        if (shouldScroll && records && records.length > 0) {
+          scrollToSearchResults();
+        }
       } catch (err) {
         loader.style.display = "none";
         btn.disabled = false;
@@ -1466,6 +1508,18 @@
           confirmButtonText: '了解'
         });
       }
+    }
+
+    // 検索結果（件数表示）が画面上部に少し余裕を持って見える位置までスムーズにスクロールする
+    function scrollToSearchResults() {
+      const target = document.getElementById("searchCount");
+      if (!target) return;
+      // 描画が完了してから位置を計算するため、わずかに遅延させる
+      setTimeout(() => {
+        const rect = target.getBoundingClientRect();
+        const targetY = window.pageYOffset + rect.top - 80;
+        window.scrollTo({ top: Math.max(targetY, 0), behavior: "smooth" });
+      }, 50);
     }
 
     // =================================================================
@@ -1833,20 +1887,48 @@
     // =================================================================
     // 検索結果リスト表示
     // =================================================================
-    function displayResults(records) {
+    // 検索結果のページング設定（50件ずつ表示）
+    const RESULTS_PAGE_SIZE = 50;
+    let currentSearchResults = [];
+    let currentSearchPage = 1;
+
+    // resetPage=true（既定）の場合は1ページ目から表示し直す。
+    // ページ送りボタンからの再描画時のみfalseを渡す。
+    function displayResults(records, resetPage = true) {
+      currentSearchResults = records || [];
+      if (resetPage) currentSearchPage = 1;
+      renderCurrentResultsPage();
+    }
+
+    function renderCurrentResultsPage() {
       const container = document.getElementById("results");
       const countDiv = document.getElementById("searchCount");
       container.innerHTML = "";
+      const records = currentSearchResults;
       if (!records || records.length === 0) {
         countDiv.innerHTML = "条件に一致する案件は見つかりませんでした。";
         return;
       }
-      countDiv.innerHTML = `<span style="color:var(--primary); font-size: 18px;">${records.length}</span> 件の案件を表示中`;
+
+      const totalCount = records.length;
+      const totalPages = Math.max(1, Math.ceil(totalCount / RESULTS_PAGE_SIZE));
+      if (currentSearchPage > totalPages) currentSearchPage = totalPages;
+      if (currentSearchPage < 1) currentSearchPage = 1;
+      const startNo = (currentSearchPage - 1) * RESULTS_PAGE_SIZE;
+      const endNo = Math.min(startNo + RESULTS_PAGE_SIZE, totalCount);
+
+      countDiv.innerHTML = `<span style="color:var(--primary); font-size: 18px;">${totalCount}</span> 件の案件を表示中`
+        + (totalPages > 1 ? `（${startNo + 1}〜${endNo}件目 / ${currentSearchPage}〜${totalPages}ページ）` : '');
   
       // -----------------------------------------------------------------
-      // 【変更箇所】配列の末尾から先頭に向かって逆順に処理（コピー・並び替えなしで高速）
+      // 【変更箇所】配列の末尾から先頭に向かって逆順に処理し、現在のページ範囲（50件分）だけ描画する
+      // （並び順は従来通り「新しい方が先」を維持したままページングする）
       // -----------------------------------------------------------------
+      let displayedCount = 0;
       for (let index = records.length - 1; index >= 0; index--) {
+        if (displayedCount >= endNo) break;
+        if (displayedCount < startNo) { displayedCount++; continue; }
+        displayedCount++;
         const record = records[index];
 
         const item = document.createElement("div");
@@ -2111,6 +2193,45 @@
           }
         }
       }
+
+      if (totalPages > 1) {
+        renderResultsPagination(totalPages);
+      }
+    }
+
+    // ページ送りボタン（前へ／次へ）を結果一覧の末尾に描画する
+    function renderResultsPagination(totalPages) {
+      const container = document.getElementById("results");
+      const nav = document.createElement("div");
+      nav.style.cssText = "display:flex; justify-content:center; align-items:center; gap:12px; margin:20px 0 8px 0; flex-wrap:wrap;";
+      nav.innerHTML = `
+        <button type="button" class="btn btn-secondary" id="pagerPrevBtn" style="padding:10px 18px;">
+          <span class="material-symbols-outlined">chevron_left</span> 前へ
+        </button>
+        <span style="font-weight:bold; color:#475569;">${currentSearchPage} / ${totalPages} ページ</span>
+        <button type="button" class="btn btn-secondary" id="pagerNextBtn" style="padding:10px 18px;">
+          次へ <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+      `;
+      container.appendChild(nav);
+
+      const prevBtn = document.getElementById("pagerPrevBtn");
+      const nextBtn = document.getElementById("pagerNextBtn");
+      if (prevBtn) {
+        if (currentSearchPage <= 1) { prevBtn.disabled = true; prevBtn.style.opacity = "0.5"; prevBtn.style.cursor = "default"; }
+        prevBtn.onclick = () => goToSearchResultsPage(currentSearchPage - 1);
+      }
+      if (nextBtn) {
+        if (currentSearchPage >= totalPages) { nextBtn.disabled = true; nextBtn.style.opacity = "0.5"; nextBtn.style.cursor = "default"; }
+        nextBtn.onclick = () => goToSearchResultsPage(currentSearchPage + 1);
+      }
+    }
+
+    // 指定ページへ移動して再描画し、結果の先頭が見える位置までスクロールする
+    function goToSearchResultsPage(page) {
+      currentSearchPage = page;
+      renderCurrentResultsPage();
+      scrollToSearchResults();
     }
     
     // 検索条件をリセット
@@ -2125,6 +2246,8 @@
       resetFilterMultiSelect("filterWorkContent");
       resetFilterMultiSelect("filterWorker");
       
+      currentSearchResults = [];
+      currentSearchPage = 1;
       document.getElementById("results").innerHTML = "";
       document.getElementById("searchCount").innerHTML = "";
     };
@@ -2963,7 +3086,8 @@
       try {
         allRecordsCache = await apiCall("loadAllRecords");
         // 現在の絞り込み条件を維持したまま再描画（search()はDOM上の現在のフィルタ値を読んで再描画する）
-        search();
+        // 保存後の自動更新であり、ユーザーが自ら検索した訳ではないため画面はスクロールさせない
+        search(false);
         showToast("最新の情報を一覧に反映しました。");
       } catch (e) {
         console.error("❌ 一覧の自動更新に失敗しました:", e);
