@@ -607,37 +607,13 @@
         </button>
       </div>
     
-      <!-- フィルター・検索エリア -->
+      <!-- フィルター・検索エリア（常時表示：発注元・キーワードのみ） -->
       <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
         
         <!-- フィルター1：発注元選択ドロップダウン -->
         <div style="flex: 1; min-width: 200px;">
           <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">発注元で絞り込み</label>
           <select id="filterClient" style="width: 100%; background-color: #fafafa;"><option value="">すべて</option></select>
-        </div>
-
-        <!-- フィルター1-2：工事内容（複数選択可）。何も選択しない場合はすべて対象 -->
-        <div style="flex: 1; min-width: 200px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">工事内容で絞り込み（複数選択可）</label>
-          <div id="filterWorkContentContainer"></div>
-        </div>
-
-        <!-- フィルター1-3：工事担当者（複数選択可）。何も選択しない場合はすべて対象 -->
-        <div style="flex: 1; min-width: 200px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">工事担当者で絞り込み（複数選択可）</label>
-          <div id="filterWorkerContainer"></div>
-        </div>
-        
-        <!-- フィルター2：施工日の日付範囲選択 -->
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; flex: 2; min-width: 280px;">
-          <div style="flex: 1; min-width: 130px;">
-            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（開始）</label>
-            <input type="date" id="filterStartDate" style="width: 100%; cursor: pointer;" onchange="handleStartDateChange()" onclick="this.showPicker?.()">
-          </div>
-          <div style="flex: 1; min-width: 130px;">
-            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（終了）</label>
-            <input type="date" id="filterEndDate" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
-          </div>
         </div>
         
         <!-- フィルター3：キーワード検索入力欄 -->
@@ -646,7 +622,7 @@
           <input type="text" id="searchValue" placeholder="文字を入力（Enterキーでも検索できます）" style="width: 100%;">
         </div>
         
-        <!-- 検索・クリアボタン -->
+        <!-- 検索・クリア・詳細検索ボタン -->
         <div style="display: flex; gap: 8px; min-width: 280px; flex: 1;">
           <button id="searchBtn" class="btn btn-primary" onclick="search()" style="flex: 1; padding: 13px; font-size:18px;">
             <span class="material-symbols-outlined">search</span> 検索する
@@ -657,15 +633,56 @@
         </div>
       </div>
 
-      <!-- 施工日未設定の案件のみ表示するチェックボックス（フィルター行の下に独立配置） -->
-      <div style="display: flex; align-items: center; gap: 6px; margin-top: 12px;">
-        <input type="checkbox" id="filterUnscheduledOnly" onchange="handleUnscheduledOnlyChange()" style="width:16px; height:16px; cursor:pointer;">
-        <label for="filterUnscheduledOnly" style="font-size: 0.85rem; color: var(--text-sub); cursor:pointer;">施工日未設定の案件のみ表示</label>
+      <!-- 詳細検索の開閉ボタン -->
+      <div style="margin-top: 14px;">
+        <button type="button" id="toggleAdvancedSearchBtn" class="btn" onclick="toggleAdvancedSearch()"
+          style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:10px 18px; font-size:15px;">
+          <span class="material-symbols-outlined" id="advancedSearchIcon" style="transition: transform 0.2s;">tune</span> 詳細検索
+        </button>
+      </div>
+
+      <!-- 詳細検索エリア（工事内容・工事担当者・施工日・施工日未設定）：既定は非表示 -->
+      <div id="advancedSearchArea" style="display:none; margin-top: 16px; padding-top: 16px; border-top: 2px solid #f0f2f5;">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+
+          <!-- フィルター1-2：工事内容（複数選択可）。何も選択しない場合はすべて対象 -->
+          <div style="flex: 1; min-width: 200px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">工事内容で絞り込み（複数選択可）</label>
+            <div id="filterWorkContentContainer"></div>
+          </div>
+
+          <!-- フィルター1-3：工事担当者（複数選択可）。何も選択しない場合はすべて対象 -->
+          <div style="flex: 1; min-width: 200px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">工事担当者で絞り込み（複数選択可）</label>
+            <div id="filterWorkerContainer"></div>
+          </div>
+          
+          <!-- フィルター2：施工日の日付範囲選択 -->
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; flex: 2; min-width: 280px;">
+            <div style="flex: 1; min-width: 130px;">
+              <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（開始）</label>
+              <input type="date" id="filterStartDate" style="width: 100%; cursor: pointer;" onchange="handleStartDateChange()" onclick="this.showPicker?.()">
+            </div>
+            <div style="flex: 1; min-width: 130px;">
+              <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub); font-size: 0.9rem;">施工日（終了）</label>
+              <input type="date" id="filterEndDate" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+            </div>
+          </div>
+        </div>
+
+        <!-- 施工日未設定の案件のみ表示するチェックボックス -->
+        <div style="display: flex; align-items: center; gap: 6px; margin-top: 12px;">
+          <input type="checkbox" id="filterUnscheduledOnly" onchange="handleUnscheduledOnlyChange()" style="width:16px; height:16px; cursor:pointer;">
+          <label for="filterUnscheduledOnly" style="font-size: 0.85rem; color: var(--text-sub); cursor:pointer;">施工日未設定の案件のみ表示</label>
+        </div>
       </div>
     </div>
     
     <!-- 検索結果件数表示 -->
     <div id="searchCount" style="margin-bottom: 12px; font-weight: bold; font-size: 16px; padding-left: 4px;"></div>
+
+    <!-- 検索結果ページ送りボタン（上部）：JavaScriptで動的生成 -->
+    <div id="searchPagerTop"></div>
     
     <!-- 検索結果表示エリア：JavaScriptで動的生成 -->
     <div id="results"></div>
@@ -1903,7 +1920,9 @@
     function renderCurrentResultsPage() {
       const container = document.getElementById("results");
       const countDiv = document.getElementById("searchCount");
+      const topPagerDiv = document.getElementById("searchPagerTop");
       container.innerHTML = "";
+      if (topPagerDiv) topPagerDiv.innerHTML = "";
       const records = currentSearchResults;
       if (!records || records.length === 0) {
         countDiv.innerHTML = "条件に一致する案件は見つかりませんでした。";
@@ -1917,7 +1936,7 @@
       const startNo = (currentSearchPage - 1) * RESULTS_PAGE_SIZE;
       const endNo = Math.min(startNo + RESULTS_PAGE_SIZE, totalCount);
 
-      countDiv.innerHTML = `<span style="color:var(--primary); font-size: 18px;">${totalCount}</span> 件の案件を表示中`
+      countDiv.innerHTML = `<span style="color:var(--primary); font-size: 18px;">${totalCount}</span> 件を表示中`
         + (totalPages > 1 ? `（${startNo + 1}〜${endNo}件目 / ${currentSearchPage}〜${totalPages}ページ）` : '');
   
       // -----------------------------------------------------------------
@@ -2195,28 +2214,34 @@
       }
 
       if (totalPages > 1) {
-        renderResultsPagination(totalPages);
+        renderResultsPagination(totalPages, topPagerDiv);
+        renderResultsPagination(totalPages, container);
       }
     }
 
-    // ページ送りボタン（前へ／次へ）を結果一覧の末尾に描画する
-    function renderResultsPagination(totalPages) {
-      const container = document.getElementById("results");
+    // ページ送りボタン（前へ／次へ）を指定したコンテナ（上部 or 下部）に描画する。
+    // 同じページ内に複数箇所ボタンを置くため、ボタンIDが重複しないよう毎回ユニークなIDを振る。
+    let _pagerInstanceCounter = 0;
+    function renderResultsPagination(totalPages, targetContainer) {
+      if (!targetContainer) return;
+      _pagerInstanceCounter++;
+      const prevId = `pagerPrevBtn_${_pagerInstanceCounter}`;
+      const nextId = `pagerNextBtn_${_pagerInstanceCounter}`;
       const nav = document.createElement("div");
-      nav.style.cssText = "display:flex; justify-content:center; align-items:center; gap:12px; margin:20px 0 8px 0; flex-wrap:wrap;";
+      nav.style.cssText = "display:flex; justify-content:center; align-items:center; gap:12px; margin:12px 0; flex-wrap:wrap;";
       nav.innerHTML = `
-        <button type="button" class="btn btn-secondary" id="pagerPrevBtn" style="padding:10px 18px;">
+        <button type="button" class="btn btn-secondary" id="${prevId}" style="padding:10px 18px;">
           <span class="material-symbols-outlined">chevron_left</span> 前へ
         </button>
         <span style="font-weight:bold; color:#475569;">${currentSearchPage} / ${totalPages} ページ</span>
-        <button type="button" class="btn btn-secondary" id="pagerNextBtn" style="padding:10px 18px;">
+        <button type="button" class="btn btn-secondary" id="${nextId}" style="padding:10px 18px;">
           次へ <span class="material-symbols-outlined">chevron_right</span>
         </button>
       `;
-      container.appendChild(nav);
+      targetContainer.appendChild(nav);
 
-      const prevBtn = document.getElementById("pagerPrevBtn");
-      const nextBtn = document.getElementById("pagerNextBtn");
+      const prevBtn = document.getElementById(prevId);
+      const nextBtn = document.getElementById(nextId);
       if (prevBtn) {
         if (currentSearchPage <= 1) { prevBtn.disabled = true; prevBtn.style.opacity = "0.5"; prevBtn.style.cursor = "default"; }
         prevBtn.onclick = () => goToSearchResultsPage(currentSearchPage - 1);
@@ -2249,7 +2274,24 @@
       currentSearchResults = [];
       currentSearchPage = 1;
       document.getElementById("results").innerHTML = "";
+      document.getElementById("searchPagerTop").innerHTML = "";
       document.getElementById("searchCount").innerHTML = "";
+    };
+
+    // 詳細検索エリア（工事内容・工事担当者・施工日・施工日未設定）の開閉
+    window.toggleAdvancedSearch = function() {
+      const area = document.getElementById("advancedSearchArea");
+      const icon = document.getElementById("advancedSearchIcon");
+      const btn = document.getElementById("toggleAdvancedSearchBtn");
+      if (!area) return;
+      const isOpen = area.style.display !== "none";
+      area.style.display = isOpen ? "none" : "block";
+      if (icon) icon.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+      if (btn) {
+        btn.style.background = isOpen ? "#f1f5f9" : "#e0edff";
+        btn.style.color = isOpen ? "#475569" : "var(--primary)";
+        btn.style.borderColor = isOpen ? "#cbd5e1" : "var(--primary)";
+      }
     };
   
     // トップへスクロール
