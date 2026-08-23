@@ -938,9 +938,15 @@
           <div id="workerDropdown_${uid}" class="multi-select-dropdown"
             style="display:none; position:absolute; z-index:30; background:white; border:1px solid #cbd5e1; border-radius:8px;
                    max-height:220px; overflow-y:auto; width:100%; box-shadow:0 4px 14px rgba(0,0,0,0.15); margin-top:4px;">
-            <div style="padding:8px; border-bottom:1px solid #e2e8f0; display:flex; gap:4px; position:sticky; top:0; background:white; z-index:1;">
-              <input type="text" id="workerNewInput_${uid}" placeholder="新規担当者名を追加してEnter" autocomplete="off" style="flex:1; min-width:0; padding:8px;"
-                onkeydown="handleWorkerNewInputKeydown(event, '${uid}')" onblur="commitWorkerNewInput('${uid}')" onclick="event.stopPropagation();">
+            <div style="position:sticky; top:0; background:white; z-index:2; border-bottom:1px solid #e2e8f0;">
+              <div style="display:flex; align-items:center; justify-content:flex-end; padding:8px 10px 4px 10px;">
+                <button type="button" class="btn btn-sm" style="font-size:14px; padding:8px 18px;"
+                  onclick="event.stopPropagation(); closeWorkerDropdown('${uid}');">選択</button>
+              </div>
+              <div style="padding:4px 10px 8px 10px; display:flex; gap:4px;">
+                <input type="text" id="workerNewInput_${uid}" placeholder="新規担当者名を追加" autocomplete="off" style="flex:1; min-width:0; padding:8px;"
+                  onkeydown="handleWorkerNewInputKeydown(event, '${uid}')" onblur="commitWorkerNewInput('${uid}')" onclick="event.stopPropagation();">
+              </div>
             </div>
             <div id="workerCheckboxList_${uid}"></div>
           </div>
@@ -1010,6 +1016,10 @@
           <div id="workerDropdown_${uid}" class="multi-select-dropdown"
             style="display:none; position:absolute; z-index:30; background:white; border:1px solid #cbd5e1; border-radius:8px;
                    max-height:260px; overflow-y:auto; width:100%; box-shadow:0 4px 14px rgba(0,0,0,0.15); margin-top:4px;">
+            <div style="position:sticky; top:0; background:white; z-index:2; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:flex-end; padding:8px 10px;">
+              <button type="button" class="btn btn-sm" style="font-size:14px; padding:8px 18px;"
+                onclick="event.stopPropagation(); closeWorkerDropdown('${uid}');">選択</button>
+            </div>
             <div id="workerCheckboxList_${uid}"></div>
           </div>
           <input type="hidden" id="workerHiddenInput_${uid}" value="">
@@ -1057,22 +1067,30 @@
       dd.style.display = (dd.style.display === 'none' || !dd.style.display) ? 'block' : 'none';
     };
 
+    // 右上の「選択」ボタン押下時の処理：
+    // ・新規担当者入力欄にまだ確定していない文字列が残っていれば、まず選択リストへ反映する
+    // ・そのうえでドロップダウンを閉じて元の画面（フォーム）に戻す
+    // これにより、リスト外の狭い余白をタップしなくても確実に閉じられるようになる。
+    window.closeWorkerDropdown = function(uid) {
+      commitWorkerNewInput(uid);
+      const dd = document.getElementById(`workerDropdown_${uid}`);
+      if (dd) dd.style.display = 'none';
+    };
+
+    // 新規担当者入力欄でのEnterキーは何もしない（登録も画面移動も行わない）。
+    // 以前はEnterで登録・確定を行っていたが、IMEやブラウザのオートフィルとの相性で
+    // 意図せず他の入力欄へフォーカスが移ってしまう不具合が繰り返し発生していたため廃止し、
+    // 確定操作は右上の「選択」ボタン（closeWorkerDropdown）に一本化した。
+    // ここではEnterによるフォーム送信・フォーカス移動だけを確実に防止する。
     window.handleWorkerNewInputKeydown = function(event, uid) {
       if (event.key !== 'Enter') return;
-      // この入力欄でのEnterは、IME変換確定かどうかに関わらず必ずデフォルト動作
-      // （フォーム送信・次の項目へのフォーカス移動）を止める。
-      // ※以前はIME変換確定時に早期returnしてpreventDefaultを呼ばずにいたため、
-      //   変換確定のEnterでフォームの次の項目へフォーカスが飛んでしまう不具合があった。
       event.preventDefault();
       event.stopPropagation();
-      // 日本語入力(IME)で変換候補を確定するだけのEnterでは、まだ文字列が確定しきっていない
-      // ことがあるため、実際の登録処理は行わず、変換確定後の次のEnterで登録する。
-      if (event.isComposing || event.keyCode === 229) return;
-      commitWorkerNewInput(uid);
     };
 
     // 新規担当者入力欄の内容を選択リストへ反映する共通処理。
-    // Enterキー確定時・入力欄からフォーカスが外れた時（クリックで閉じた場合等）の両方から呼ばれる。
+    // 入力欄からフォーカスが外れた時（他をタップした場合）と、
+    // 「選択」ボタン押下時（closeWorkerDropdown経由）の両方から呼ばれる。
     window.commitWorkerNewInput = function(uid) {
       const input = document.getElementById(`workerNewInput_${uid}`);
       if (!input) return;
