@@ -364,6 +364,27 @@
          以前ここにあった grid-template-columns の強制上書きは不要になった（削除）。 */
     @media (max-width: 780px) {
       .drag-drop-text { display: none; }
+
+      /* 工事担当者・工事内容などのトグル選択リストは、スマホでは画面中央に大きく表示する
+         （発注元セレクトのネイティブピッカーのような存在感を持たせる）。
+         box-shadowの巨大なスプレッドで背景全体を暗くする定番のCSSテクニックを使い、
+         専用のオーバーレイ要素を追加せずに実現している。 */
+      .multi-select-dropdown {
+        position: fixed !important;
+        top: 6vh !important;
+        left: 4vw !important;
+        right: 4vw !important;
+        bottom: 6vh !important;
+        width: auto !important;
+        max-height: none !important;
+        margin-top: 0 !important;
+        border-radius: 16px !important;
+        box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55), 0 20px 50px rgba(0,0,0,0.35) !important;
+        z-index: 6000 !important;
+      }
+      .worker-toggle-row { font-size: 17px; padding: 14px; }
+      .worker-group-label { font-size: 14px; padding: 10px 14px; }
+      .multi-select-dropdown input[type="text"] { font-size: 16px; padding: 12px; }
     }
 
     /* ローディング：回転アニメーション */
@@ -1038,12 +1059,15 @@
 
     window.handleWorkerNewInputKeydown = function(event, uid) {
       if (event.key !== 'Enter') return;
-      // 日本語入力(IME)で変換候補を確定する際のEnterはここでは無視する。
-      // これを見分けずに処理すると、変換確定のたびに（変換途中の文字列で）誤登録されたり、
-      // ブラウザ側のオートフィル候補確定によってフォーカスが次の項目へ移ってしまうことがある。
-      if (event.isComposing || event.keyCode === 229) return;
+      // この入力欄でのEnterは、IME変換確定かどうかに関わらず必ずデフォルト動作
+      // （フォーム送信・次の項目へのフォーカス移動）を止める。
+      // ※以前はIME変換確定時に早期returnしてpreventDefaultを呼ばずにいたため、
+      //   変換確定のEnterでフォームの次の項目へフォーカスが飛んでしまう不具合があった。
       event.preventDefault();
       event.stopPropagation();
+      // 日本語入力(IME)で変換候補を確定するだけのEnterでは、まだ文字列が確定しきっていない
+      // ことがあるため、実際の登録処理は行わず、変換確定後の次のEnterで登録する。
+      if (event.isComposing || event.keyCode === 229) return;
       commitWorkerNewInput(uid);
     };
 
