@@ -1246,11 +1246,16 @@
     }
   
     async function apiCall(action, payload = {}, retriesLeft = 2) {
-      const loginId = localStorage.getItem('app_login_id');
-      const password = localStorage.getItem('app_login_password');
-    
-      payload.loginId = loginId;
-      payload.password = password;
+      // 🔐 ログイン簡略化のセキュリティ対策：
+      // ブラウザにはID/パスワードそのものは保存せず、ログイントークンのみを保存する。
+      // トークンがあればそれだけを送信し、無い場合（初回ログイン等）だけID/パスワードを送信する。
+      const token = localStorage.getItem('app_login_token');
+      if (token) {
+        payload.token = token;
+      } else {
+        payload.loginId = localStorage.getItem('app_login_id');
+        payload.password = localStorage.getItem('app_login_password');
+      }
     
       try {
         const response = await fetch("/api/gas", {
@@ -1287,9 +1292,8 @@
   
     document.addEventListener("DOMContentLoaded", async () => {
       initializeInspectionTimeSelects();
-      const savedId = localStorage.getItem('app_login_id');
-      const savedPassword = localStorage.getItem('app_login_password');
-      if (savedId && savedPassword) {
+      const savedToken = localStorage.getItem('app_login_token');
+      if (savedToken) {
         initializeApp();
       } else {
         document.getElementById("initLoader").style.display = "none";
@@ -1389,6 +1393,7 @@
       if (!id || !pw) return showToast("IDとパスワードを入力してください。", true);
       const btn = document.getElementById("loginBtn");
       btn.disabled = true; btn.textContent = "認証中...";
+      localStorage.removeItem('app_login_token'); // 念のため古いトークンをクリアしてからID/パスワードでログインする
       localStorage.setItem('app_login_id', id);
       localStorage.setItem('app_login_password', pw);
       document.getElementById("loginScreen").style.display = "none";
@@ -1411,6 +1416,14 @@
           document.getElementById("userDisplayLabel").textContent = `ログインユーザー: ${data.loginUser}`;
           localStorage.setItem('app_login_userName', data.loginUser);
         }
+        // 🔐 ID/パスワードでの認証が成功した場合、サーバーから新しいログイントークンが返ってくる。
+        //   これを保存し、代わりにID/パスワードは（ログイン処理の一時保持用に入れていたものを）直ちに削除する。
+        //   以後の通信はこのトークンのみで行われ、パスワードそのものはブラウザに残らない。
+        if (data.token) {
+          localStorage.setItem('app_login_token', data.token);
+        }
+        localStorage.removeItem('app_login_id');
+        localStorage.removeItem('app_login_password');
         initSelectWithOptions("filterClient", data.clientList, "発注元", "すべて");
 
         // 検索フィルター：工事内容・工事担当者（複数選択トグル）を初期化
@@ -1445,6 +1458,7 @@
         });
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
+        localStorage.removeItem('app_login_token');
         localStorage.removeItem('app_login_userName');
         // 3. ユーザーがOKを押した後にリロードが走る
         window.location.reload();
@@ -3160,13 +3174,26 @@
         // 2. ログアウトボタンを隠す
         const logoutBtn = document.getElementById("logoutBtn");
         if (logoutBtn) logoutBtn.style.display = "none";
+
+        // 3. サーバー側のトークンも確実に失効させる（漏洩時の悪用防止のため、
+        //    ブラウザ側だけでなくGAS側のホワイトリストからもトークンを消す）
+        const tokenToRevoke = localStorage.getItem('app_login_token');
+        if (tokenToRevoke) {
+          try {
+            await apiCall("logout", { token: tokenToRevoke });
+          } catch (revokeErr) {
+            // 失効APIが失敗しても、ローカルの情報は必ず消してログアウト自体は完了させる
+            console.error("❌ サーバー側トークンの失効に失敗しました:", revokeErr);
+          }
+        }
     
-        // 3.  ブラウザに記憶されている自動ログイン用の情報を完全に削除
+        // 4. ブラウザに記憶されている自動ログイン用の情報を完全に削除
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
+        localStorage.removeItem('app_login_token');
         localStorage.removeItem('app_login_userName');
     
-        // 4. すべてをクリアした状態で画面をリロード
+        // 5. すべてをクリアした状態で画面をリロード
         window.location.reload();
       }
     };
