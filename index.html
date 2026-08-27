@@ -2587,33 +2587,56 @@
     // 従来通りそのまま送信する。
     // =================================================================
     const MAX_IMAGE_DIMENSION = 1600; // 長辺の最大ピクセル数（これより大きい画像のみ縮小）
-    const IMAGE_JPEG_QUALITY = 0.75;  // 再圧縮時のJPEG品質
+    const IMAGE_JPEG_QUALITY = 0.75;  // 再圧縮時のJPEG品質（初回）
+    const TARGET_MAX_BYTES = 1.2 * 1024 * 1024; // 圧縮後の目標上限（約1.2MB）。これを超える場合はさらに画質を下げる
+    const MIN_JPEG_QUALITY = 0.35; // これ以上は画質を下げない下限
+
+    // 指定した画質でキャンバスに描画してJPEG Blobを作る（1回分の処理）
+    function drawToJpegBlob(img, width, height, quality) {
+      return new Promise((resolve, reject) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob => {
+          if (!blob) { reject(new Error("画像の圧縮に失敗しました")); return; }
+          resolve(blob);
+        }, 'image/jpeg', quality);
+      });
+    }
 
     function compressImageFile(file) {
       return new Promise((resolve, reject) => {
         const img = new Image();
         const objectUrl = URL.createObjectURL(file);
-        img.onload = () => {
+        img.onload = async () => {
           URL.revokeObjectURL(objectUrl);
-          let { width, height } = img;
-          if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
-            if (width >= height) {
-              height = Math.round(height * (MAX_IMAGE_DIMENSION / width));
-              width = MAX_IMAGE_DIMENSION;
-            } else {
-              width = Math.round(width * (MAX_IMAGE_DIMENSION / height));
-              height = MAX_IMAGE_DIMENSION;
+          try {
+            let { width, height } = img;
+            if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+              if (width >= height) {
+                height = Math.round(height * (MAX_IMAGE_DIMENSION / width));
+                width = MAX_IMAGE_DIMENSION;
+              } else {
+                width = Math.round(width * (MAX_IMAGE_DIMENSION / height));
+                height = MAX_IMAGE_DIMENSION;
+              }
             }
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          canvas.toBlob(blob => {
-            if (!blob) { reject(new Error("画像の圧縮に失敗しました")); return; }
+
+            // 1回目は通常品質で圧縮し、それでもまだ目標サイズを超えていれば、
+            // 画質を段階的に下げながら再圧縮する（安全装置：どんなに大きい元画像でも
+            // 最終的には一定サイズ以下に収まるようにする）。
+            let quality = IMAGE_JPEG_QUALITY;
+            let blob = await drawToJpegBlob(img, width, height, quality);
+            while (blob.size > TARGET_MAX_BYTES && quality > MIN_JPEG_QUALITY) {
+              quality = Math.max(MIN_JPEG_QUALITY, quality - 0.15);
+              blob = await drawToJpegBlob(img, width, height, quality);
+            }
             resolve(blob);
-          }, 'image/jpeg', IMAGE_JPEG_QUALITY);
+          } catch (err) {
+            reject(err);
+          }
         };
         img.onerror = (err) => { URL.revokeObjectURL(objectUrl); reject(err); };
         img.src = objectUrl;
@@ -2661,6 +2684,25 @@
       });
     }
   
+    // =================================================================
+    // 添付ファイルのアップロード（413エラー対策：1枚ずつ個別リクエストで送信）
+    // -----------------------------------------------------------------------
+    // 以前は写真データを他の更新データ（カレンダー同期・マスタ更新等）と同じ
+    // processBackgroundTasksリクエストにまとめて送っていたが、これだと写真の枚数・
+    // サイズによってはVercel側のリクエストサイズ上限（プラットフォーム側のハードリミット
+    // であり、こちらの設定では変更できない）を超えて413エラーになることがあった。
+    // 対策として、写真は他のデータと分離し、GAS側に用意されている「uploadbox」アクション
+    // （ファイルアップロード専用）を使って1枚ずつ個別のリクエストで順番に送信する。
+    // こうすることで、1回のリクエストサイズは常に「写真1枚分」に収まり、
+    // 枚数がいくら増えても413エラーが起きにくくなる。
+    // =================================================================
+    async function uploadFilesOneByOne(rowNumber, files) {
+      if (!files || files.length === 0) return;
+      for (const f of files) {
+        await apiCall("uploadbox", { rowNumber: rowNumber, fileType: f.fileType, filesData: [f] });
+      }
+    }
+
     /* 発注元に基づいて担当者リストを動的に更新 */
     window.updateManagersByClient = function(selectedClient, staffSelectId) {
       const staffSel = document.getElementById(staffSelectId);
@@ -2934,12 +2976,18 @@
 
         // =================================================================
         // 【2段目】バックグラウンド処理（Drive保存/カレンダー同期/マスタ＆ヨミ更新）
+        // 413エラー対策：写真データ(payload.files)は processBackgroundTasks には含めず、
+        // uploadFilesOneByOne() で1枚ずつ別リクエストとして送信する。
         // =================================================================
         const newRowNumber = response.rowNumber;
         const flags = { inspectionDateChanged: !!payload["検査日"], isNew: true };
+        const filesToUpload = payload.files || [];
+        const payloadWithoutFiles = Object.assign({}, payload);
+        delete payloadWithoutFiles.files;
 
         try {
-          await apiCall("processBackgroundTasks", { fData: payload, rNum: newRowNumber, flags: flags });
+          await apiCall("processBackgroundTasks", { fData: payloadWithoutFiles, rNum: newRowNumber, flags: flags });
+          await uploadFilesOneByOne(newRowNumber, filesToUpload);
 
           // バックグラウンドでマスタデータを再取得・更新
           apiCall("loadAppDataMaster").then(data => {
@@ -3113,11 +3161,17 @@
     
         // =================================================================
         // 【2段目】重い処理を実行し、完了したらリロードせず一覧をリアルタイムに最新化する
+        // 413エラー対策：写真データ(fData.files)は processBackgroundTasks には含めず、
+        // uploadFilesOneByOne() で1枚ずつ別リクエストとして送信する。
         // =================================================================
         const flags = (response && response.flags) ? response.flags : {};
+        const filesToUpload = fData.files || [];
+        const fDataForBackgroundTasks = Object.assign({}, fData);
+        delete fDataForBackgroundTasks.files;
         
         try {
-          await apiCall("processBackgroundTasks", { fData: fData, rNum: rowNumber, flags: flags });
+          await apiCall("processBackgroundTasks", { fData: fDataForBackgroundTasks, rNum: rowNumber, flags: flags });
+          await uploadFilesOneByOne(rowNumber, filesToUpload);
           // すべての処理完了 → 一覧を自動的に最新化
           await refreshListAfterAllProcessing();
         } catch (bgErr) {
