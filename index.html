@@ -2576,13 +2576,88 @@
       if (selectedFilesMap[key]) { selectedFilesMap[key].splice(idx, 1); renderFileList(key); }
     };
   
-    function fileToBase64(fileObj) {
+    // =================================================================
+    // 添付ファイルの送信前圧縮処理（413エラー対策）
+    // -----------------------------------------------------------------------
+    // スマホのカメラ写真はそのままだと数MB〜十数MBになることがあり、Base64化すると
+    // さらに約1.33倍に膨らむため、サーバー（Vercel中継）側のリクエストサイズ上限を
+    // 超えて413エラーになることがある。
+    // 対策として、画像ファイル（image/*）のみ送信前にキャンバスで縮小・JPEG再圧縮して
+    // サイズを抑える。PDF等の画像以外のファイルはキャンバスで扱えないため対象外とし、
+    // 従来通りそのまま送信する。
+    // =================================================================
+    const MAX_IMAGE_DIMENSION = 1600; // 長辺の最大ピクセル数（これより大きい画像のみ縮小）
+    const IMAGE_JPEG_QUALITY = 0.75;  // 再圧縮時のJPEG品質
+
+    function compressImageFile(file) {
       return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(fileObj.file);
-        reader.onload = () => resolve({ base64: reader.result.split(',')[1], name: fileObj.file.name, type: fileObj.file.type, fileType: fileObj.fileType
-        });
-        reader.onerror = (err) => reject(err);
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          let { width, height } = img;
+          if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+            if (width >= height) {
+              height = Math.round(height * (MAX_IMAGE_DIMENSION / width));
+              width = MAX_IMAGE_DIMENSION;
+            } else {
+              width = Math.round(width * (MAX_IMAGE_DIMENSION / height));
+              height = MAX_IMAGE_DIMENSION;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(blob => {
+            if (!blob) { reject(new Error("画像の圧縮に失敗しました")); return; }
+            resolve(blob);
+          }, 'image/jpeg', IMAGE_JPEG_QUALITY);
+        };
+        img.onerror = (err) => { URL.revokeObjectURL(objectUrl); reject(err); };
+        img.src = objectUrl;
+      });
+    }
+
+    function fileToBase64(fileObj) {
+      return new Promise(async (resolve, reject) => {
+        try {
+          const originalFile = fileObj.file;
+          let sourceBlob = originalFile;
+          let outputType = originalFile.type;
+          let outputName = originalFile.name;
+
+          // 画像ファイルのみ、送信前に縮小・再圧縮する。
+          // 元々小さい画像や、圧縮に失敗した場合は、元のファイルをそのまま使う（安全側の動作）。
+          if (originalFile.type && originalFile.type.startsWith('image/')) {
+            try {
+              sourceBlob = await compressImageFile(originalFile);
+              outputType = 'image/jpeg';
+              // 圧縮後はJPEG形式になるため、拡張子もそれに合わせて変更する
+              const dotIdx = outputName.lastIndexOf(".");
+              const baseName = dotIdx !== -1 ? outputName.substring(0, dotIdx) : outputName;
+              outputName = baseName + ".jpg";
+            } catch (compressErr) {
+              console.warn('⚠️ 画像圧縮に失敗したため、元のファイルをそのまま送信します:', compressErr);
+              sourceBlob = originalFile;
+              outputType = originalFile.type;
+              outputName = originalFile.name;
+            }
+          }
+
+          const reader = new FileReader();
+          reader.readAsDataURL(sourceBlob);
+          reader.onload = () => resolve({
+            base64: reader.result.split(',')[1],
+            name: outputName,
+            type: outputType,
+            fileType: fileObj.fileType
+          });
+          reader.onerror = (err) => reject(err);
+        } catch (err) {
+          reject(err);
+        }
       });
     }
   
