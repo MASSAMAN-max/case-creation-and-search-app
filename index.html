@@ -23,6 +23,17 @@
   
   <!-- SweetAlert2：モーダルダイアログ・アラート用ライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- PDF.js：PDFの送信前圧縮機能で、PDFの各ページをCanvasに描画するために使用（413エラー対策） -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (typeof pdfjsLib !== "undefined") {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+  </script>
+
+  <!-- jsPDF：圧縮した画像から新しいPDFを再構成するために使用（413エラー対策） -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
     
   <style>
     /* カラースキーム・デザイントークン定義（CSS変数） */
@@ -2655,12 +2666,125 @@
       return ['.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp', '.gif', '.bmp'].some(ext => name.endsWith(ext));
     }
 
+    // =================================================================
+    // PDFの送信前圧縮処理（413エラー対策）
+    // -----------------------------------------------------------------------
+    // 地図・現場資料など、スキャンしたPDFは数MB〜になることがあり、そのままBase64化すると
+    // Vercel側のリクエストサイズ上限を超えて413エラーになることがある。
+    // 3MBを超えるPDFのみ、「PDF→各ページを画像化→JPEG圧縮→PDFとして再構成」という方法で
+    // 圧縮する。PDF内部の文字情報・検索可能テキストは失われるが、書類が見た目として
+    // 読めることを優先する（対象は主にスキャン書類・地図等の紙資料を想定）。
+    //
+    // 【方針決定の注記（他AIとの相談内容をベースに、以下の点を最適化して実装）】
+    // ・元の設計案では圧縮の各段階（dpi/画質の組み合わせ）ごとにPDF.jsで毎回ページを
+    //   再レンダリングする想定だったが、PDF.jsによる描画は比較的重い処理のため、
+    //   最初の（最も高画質な）段階でのみ実際にPDFページを描画してcanvasとして保持し、
+    //   2段階目以降はそのcanvasを縮小・再エンコードするだけにすることで、
+    //   同じ圧縮結果を得ながら処理時間を大幅に短縮している。
+    // =================================================================
+    const PDF_COMPRESSION_THRESHOLD = 3 * 1024 * 1024;   // 3MB以下のPDFは圧縮しない
+    const PDF_TARGET_MAX_BYTES = 2.8 * 1024 * 1024;      // 圧縮の目標上限（Vercel側の上限に余裕を持たせた値）
+    const PDF_HARD_CEILING_BYTES = 4 * 1024 * 1024;      // 全段階を試してもこれを超える場合は圧縮失敗として扱う
+    const PDF_RENDER_DPI = 180;                          // 最初に実際にPDF.jsで描画する解像度（最高画質の元データ）
+    // 各段階のdpi・JPEG品質。上から順に試し、目標サイズ以下になった時点で採用する。
+    const PDF_COMPRESSION_STAGES = [
+      { dpi: 180, quality: 0.70 },
+      { dpi: 160, quality: 0.65 },
+      { dpi: 140, quality: 0.60 },
+      { dpi: 120, quality: 0.50 },
+      { dpi: 100, quality: 0.40 },
+    ];
+
+    // ファイルがPDFかどうかを判定する（画像同様、MIMEタイプが取れない場合は拡張子で判定）
+    function isPdfFile(file) {
+      const type = (file.type || '').toLowerCase();
+      if (type === 'application/pdf') return true;
+      if (type) return false;
+      return (file.name || '').toLowerCase().endsWith('.pdf');
+    }
+
+    // PDFを「ページ画像化→JPEG圧縮→PDF再構成」で圧縮する。
+    // 目標サイズ以下になった時点のBlobを返す。全段階を試しても目標に届かない場合は、
+    // 最後まで試した中で最小のものを返す（ただしPDF_HARD_CEILING_BYTESを超える場合は
+    // 圧縮失敗として例外を投げる＝413がほぼ確実なサイズのまま送信することを避ける）。
+    async function compressPdfFile(file) {
+      if (typeof pdfjsLib === "undefined" || typeof window.jspdf === "undefined") {
+        throw new Error("PDF圧縮に必要なライブラリの読み込みに失敗しています");
+      }
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const numPages = pdfDoc.numPages;
+
+      // 最初の段階（最も高画質）の解像度で1回だけ実際にレンダリングし、
+      // 各ページのcanvasとページサイズ（pt単位、jsPDFでの再構成に使用）を保持しておく。
+      const baseScale = PDF_RENDER_DPI / 72;
+      const pageCanvases = [];
+      const pagePointSizes = [];
+
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const viewport1x = page.getViewport({ scale: 1 }); // scale=1でのサイズ＝PDFのポイント寸法
+        pagePointSizes.push({ width: viewport1x.width, height: viewport1x.height });
+
+        const viewport = page.getViewport({ scale: baseScale });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(viewport.width));
+        canvas.height = Math.max(1, Math.round(viewport.height));
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        pageCanvases.push(canvas);
+      }
+
+      const { jsPDF } = window.jspdf;
+      let bestBlob = null;
+
+      for (let stageIdx = 0; stageIdx < PDF_COMPRESSION_STAGES.length; stageIdx++) {
+        const stage = PDF_COMPRESSION_STAGES[stageIdx];
+        const scaleRatio = Math.min(1, stage.dpi / PDF_RENDER_DPI); // 元のレンダリング解像度に対する縮小比率
+        let doc = null;
+
+        for (let i = 0; i < numPages; i++) {
+          const srcCanvas = pageCanvases[i];
+          let targetCanvas = srcCanvas;
+          if (scaleRatio < 1) {
+            targetCanvas = document.createElement('canvas');
+            targetCanvas.width = Math.max(1, Math.round(srcCanvas.width * scaleRatio));
+            targetCanvas.height = Math.max(1, Math.round(srcCanvas.height * scaleRatio));
+            targetCanvas.getContext('2d').drawImage(srcCanvas, 0, 0, targetCanvas.width, targetCanvas.height);
+          }
+          const jpegDataUrl = targetCanvas.toDataURL('image/jpeg', stage.quality);
+          const { width: wPt, height: hPt } = pagePointSizes[i];
+
+          if (i === 0) {
+            doc = new jsPDF({ unit: 'pt', format: [wPt, hPt], compress: true });
+          } else {
+            doc.addPage([wPt, hPt]);
+          }
+          doc.addImage(jpegDataUrl, 'JPEG', 0, 0, wPt, hPt);
+        }
+
+        const blob = doc.output('blob');
+        console.log(`📄 PDF圧縮 試行${stageIdx + 1}/${PDF_COMPRESSION_STAGES.length}（${stage.dpi}dpi, 画質${stage.quality}）: ${(blob.size/1024/1024).toFixed(2)}MB`);
+        bestBlob = blob;
+
+        if (blob.size <= PDF_TARGET_MAX_BYTES) {
+          return blob;
+        }
+      }
+
+      if (bestBlob && bestBlob.size <= PDF_HARD_CEILING_BYTES) {
+        return bestBlob; // 目標には届かなかったが、送信して問題ない範囲には収まっている
+      }
+      throw new Error(`PDFを${(PDF_HARD_CEILING_BYTES/1024/1024).toFixed(1)}MB以下まで圧縮できませんでした`);
+    }
+
     function fileToBase64(fileObj) {
       return new Promise(async (resolve, reject) => {
         try {
           const originalFile = fileObj.file;
           let sourceBlob = originalFile;
-          let outputType = originalFile.type;
+          let outputType = originalFile.type || (isPdfFile(originalFile) ? 'application/pdf' : originalFile.type);
           let outputName = originalFile.name;
 
           // 画像ファイルのみ、送信前に縮小・再圧縮する。
@@ -2680,8 +2804,29 @@
               outputType = originalFile.type;
               outputName = originalFile.name;
             }
+          } else if (isPdfFile(originalFile) && originalFile.size > PDF_COMPRESSION_THRESHOLD) {
+            // 3MBを超えるPDFのみ、送信前に圧縮する。ファイル名・拡張子は変更しない。
+            const loaderTextEl = document.getElementById("loaderText");
+            const prevLoaderText = loaderTextEl ? loaderTextEl.textContent : null;
+            try {
+              if (loaderTextEl) loaderTextEl.textContent = `PDFを圧縮しています…（${originalFile.name}）`;
+              const compressedBlob = await compressPdfFile(originalFile);
+              sourceBlob = compressedBlob;
+              outputType = 'application/pdf';
+              console.log(`📄 PDF圧縮完了: ${originalFile.name} ${(originalFile.size/1024/1024).toFixed(2)}MB → ${(compressedBlob.size/1024/1024).toFixed(2)}MB`);
+            } catch (pdfErr) {
+              // 圧縮に失敗した場合、大きいPDFをそのまま送ると413エラーになる可能性が高いため、
+              // 安易に元のまま送信せず、このファイルのアップロードをスキップする。
+              console.error(`❌ PDF圧縮に失敗したため、このファイルの送信をスキップします: ${originalFile.name}`, pdfErr);
+              resolve({ skipped: true, name: originalFile.name, reason: (pdfErr && pdfErr.message) || String(pdfErr) });
+              return;
+            } finally {
+              if (loaderTextEl && prevLoaderText !== null) loaderTextEl.textContent = prevLoaderText;
+            }
+          } else if (isPdfFile(originalFile)) {
+            console.log(`📄 PDF（${(originalFile.size/1024).toFixed(0)}KB）は3MB以下のため圧縮せずそのまま送信: ${originalFile.name}`);
           } else {
-            console.log(`📄 画像以外のファイルのため圧縮をスキップ: ${originalFile.name} (${(originalFile.size/1024).toFixed(0)}KB, type="${originalFile.type}")`);
+            console.log(`📄 画像・PDF以外のファイルのため圧縮をスキップ: ${originalFile.name} (${(originalFile.size/1024).toFixed(0)}KB, type="${originalFile.type}")`);
           }
 
           const reader = new FileReader();
@@ -2701,6 +2846,25 @@
           reject(err);
         }
       });
+    }
+
+    // 圧縮に失敗して送信をスキップしたファイル（skipped:true）を取り除きつつ、
+    // ユーザーにどのファイルが送れなかったかを分かりやすく知らせる共通処理。
+    async function resolveFilesForUpload(files) {
+      if (!files || files.length === 0) return [];
+      const results = await Promise.all(files.map(fileToBase64));
+      const skipped = results.filter(r => r && r.skipped);
+      const valid = results.filter(r => r && !r.skipped);
+      if (skipped.length > 0 && typeof Swal !== "undefined") {
+        const names = skipped.map(s => s.name).join('、');
+        await Swal.fire({
+          icon: 'warning',
+          title: '一部のファイルを送信できませんでした',
+          html: `次のファイルは圧縮に失敗したため、アップロードをスキップしました。<br><strong>${names}</strong><br><br>お手数ですが、ファイルサイズを小さくしてから再度お試しください。`,
+          confirmButtonText: '了解'
+        });
+      }
+      return valid;
     }
   
     // =================================================================
@@ -2963,7 +3127,7 @@
       if (files.length > 0) {
         loader.style.display = "flex";
         document.getElementById("loaderText").textContent = "ファイルを準備中...";
-        payload.files = await Promise.all(files.map(fileToBase64));
+        payload.files = await resolveFilesForUpload(files);
       } else {
         payload.files = [];
       }
@@ -3151,7 +3315,7 @@
       const files = selectedFilesMap[rNum] || [];
       if (files.length > 0) {
         document.getElementById("loaderText").textContent = "ファイルを準備中...";
-        fData.files = await Promise.all(files.map(fileToBase64));
+        fData.files = await resolveFilesForUpload(files);
       } else {
         fData.files = [];
       }
