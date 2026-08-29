@@ -23,17 +23,6 @@
   
   <!-- SweetAlert2：モーダルダイアログ・アラート用ライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-  <!-- PDF.js：PDFの送信前圧縮機能で、PDFの各ページをCanvasに描画するために使用（413エラー対策） -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script>
-    if (typeof pdfjsLib !== "undefined") {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-    }
-  </script>
-
-  <!-- jsPDF：圧縮した画像から新しいPDFを再構成するために使用（413エラー対策） -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
     
   <style>
     /* カラースキーム・デザイントークン定義（CSS変数） */
@@ -2667,166 +2656,89 @@
     }
 
     // =================================================================
-    // PDFの送信前圧縮処理（413エラー対策）
+    // 🚀 Resumable Upload方式によるファイルアップロード（413エラー根本対策）
     // -----------------------------------------------------------------------
-    // 地図・現場資料など、スキャンしたPDFは数MB〜になることがあり、そのままBase64化すると
-    // Vercel側のリクエストサイズ上限を超えて413エラーになることがある。
-    // 3MBを超えるPDFのみ、「PDF→各ページを画像化→JPEG圧縮→PDFとして再構成」という方法で
-    // 圧縮する。PDF内部の文字情報・検索可能テキストは失われるが、書類が見た目として
-    // 読めることを優先する（対象は主にスキャン書類・地図等の紙資料を想定）。
+    // 【方針転換の経緯】
+    // 以前はPDF.js/jsPDFでPDFを画像化・再圧縮してからBase64送信していたが、
+    // 文字情報の消失・検索不能・画質劣化といった副作用が大きかったため、この方式は廃止した。
+    // 代わりに、画像以外のファイル（PDF等）はファイル本体を一切加工・圧縮せず、
+    // ブラウザから直接Google Driveへアップロードする（Vercel/GASの
+    // リクエストサイズ上限を、そもそもファイル本体が通過しないようにする）。
     //
-    // 【方針決定の注記（他AIとの相談内容をベースに、以下の点を最適化して実装）】
-    // ・元の設計案では圧縮の各段階（dpi/画質の組み合わせ）ごとにPDF.jsで毎回ページを
-    //   再レンダリングする想定だったが、PDF.jsによる描画は比較的重い処理のため、
-    //   最初の（最も高画質な）段階でのみ実際にPDFページを描画してcanvasとして保持し、
-    //   2段階目以降はそのcanvasを縮小・再エンコードするだけにすることで、
-    //   同じ圧縮結果を得ながら処理時間を大幅に短縮している。
+    // 通信の流れ：
+    // ① [ブラウザ→GAS] createResumableUploadSession でアップロード用の一時URLを発行してもらう
+    // ② [ブラウザ→Google Drive] 取得したURLへ、ファイル本体を直接PUT送信する
+    // ③ [ブラウザ→GAS] finalizeResumableUpload で完了を通知し、正式なファイル名へリネームしてもらう
+    //
+    // 画像（写真）は従来通り、送信前圧縮＋Base64＋uploadboxの方式を維持する
+    // （写真は圧縮してもほぼ実用上問題なく、Drive容量の節約にもなるため）。
     // =================================================================
-    const PDF_COMPRESSION_THRESHOLD = 3 * 1024 * 1024;   // 3MB以下のPDFは圧縮しない
-    const PDF_TARGET_MAX_BYTES = 2.8 * 1024 * 1024;      // 圧縮の目標上限（Vercel側の上限に余裕を持たせた値）
-    const PDF_HARD_CEILING_BYTES = 4 * 1024 * 1024;      // 全段階を試してもこれを超える場合は圧縮失敗として扱う
-    const PDF_RENDER_DPI = 180;                          // 最初に実際にPDF.jsで描画する解像度（最高画質の元データ）
-    // 各段階のdpi・JPEG品質。上から順に試し、目標サイズ以下になった時点で採用する。
-    const PDF_COMPRESSION_STAGES = [
-      { dpi: 180, quality: 0.70 },
-      { dpi: 160, quality: 0.65 },
-      { dpi: 140, quality: 0.60 },
-      { dpi: 120, quality: 0.50 },
-      { dpi: 100, quality: 0.40 },
-    ];
+    async function uploadFileViaResumableUpload(rowNumber, fileObj) {
+      const file = fileObj.file;
+      const mimeType = file.type || 'application/octet-stream';
 
-    // ファイルがPDFかどうかを判定する（画像同様、MIMEタイプが取れない場合は拡張子で判定）
-    function isPdfFile(file) {
-      const type = (file.type || '').toLowerCase();
-      if (type === 'application/pdf') return true;
-      if (type) return false;
-      return (file.name || '').toLowerCase().endsWith('.pdf');
+      // ① GASにアップロード用の一時URLを発行してもらう
+      const session = await apiCall("createResumableUploadSession", {
+        rowNumber: rowNumber,
+        fileName: file.name,
+        mimeType: mimeType
+      });
+      const uploadUrl = session && session.uploadUrl;
+      if (!uploadUrl) {
+        throw new Error("アップロード用のURLを取得できませんでした。");
+      }
+
+      // ② 取得したURLへ、ファイル本体を直接PUT送信する（Vercel/GASを経由しないため、
+      //    413エラーの原因となるリクエストサイズ制限を受けない）
+      const putResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": mimeType },
+        body: file
+      });
+      if (!putResponse.ok) {
+        throw new Error(`Google Driveへの直接アップロードに失敗しました（HTTP ${putResponse.status}）`);
+      }
+      const driveFile = await putResponse.json();
+      const fileId = driveFile && driveFile.id;
+      if (!fileId) {
+        throw new Error("アップロードは完了しましたが、ファイルIDを取得できませんでした。");
+      }
+
+      // ③ アップロード完了をGASへ通知し、正式なファイル名にリネームしてもらう
+      await apiCall("finalizeResumableUpload", {
+        rowNumber: rowNumber,
+        fileId: fileId,
+        fileType: fileObj.fileType,
+        fileName: file.name
+      });
+
+      console.log(`📤 Resumable Upload完了: ${file.name} (${(file.size/1024/1024).toFixed(2)}MB)`);
     }
 
-    // PDFを「ページ画像化→JPEG圧縮→PDF再構成」で圧縮する。
-    // 目標サイズ以下になった時点のBlobを返す。全段階を試しても目標に届かない場合は、
-    // 最後まで試した中で最小のものを返す（ただしPDF_HARD_CEILING_BYTESを超える場合は
-    // 圧縮失敗として例外を投げる＝413がほぼ確実なサイズのまま送信することを避ける）。
-    async function compressPdfFile(file) {
-      if (typeof pdfjsLib === "undefined" || typeof window.jspdf === "undefined") {
-        throw new Error("PDF圧縮に必要なライブラリの読み込みに失敗しています");
-      }
-
-      const arrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const numPages = pdfDoc.numPages;
-
-      // 最初の段階（最も高画質）の解像度で1回だけ実際にレンダリングし、
-      // 各ページのcanvasとページサイズ（pt単位、jsPDFでの再構成に使用）を保持しておく。
-      const baseScale = PDF_RENDER_DPI / 72;
-      const pageCanvases = [];
-      const pagePointSizes = [];
-
-      for (let i = 1; i <= numPages; i++) {
-        const page = await pdfDoc.getPage(i);
-        const viewport1x = page.getViewport({ scale: 1 }); // scale=1でのサイズ＝PDFのポイント寸法
-        pagePointSizes.push({ width: viewport1x.width, height: viewport1x.height });
-
-        const viewport = page.getViewport({ scale: baseScale });
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.round(viewport.width));
-        canvas.height = Math.max(1, Math.round(viewport.height));
-        const ctx = canvas.getContext('2d');
-        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-        pageCanvases.push(canvas);
-      }
-
-      const { jsPDF } = window.jspdf;
-      let bestBlob = null;
-
-      for (let stageIdx = 0; stageIdx < PDF_COMPRESSION_STAGES.length; stageIdx++) {
-        const stage = PDF_COMPRESSION_STAGES[stageIdx];
-        const scaleRatio = Math.min(1, stage.dpi / PDF_RENDER_DPI); // 元のレンダリング解像度に対する縮小比率
-        let doc = null;
-
-        for (let i = 0; i < numPages; i++) {
-          const srcCanvas = pageCanvases[i];
-          let targetCanvas = srcCanvas;
-          if (scaleRatio < 1) {
-            targetCanvas = document.createElement('canvas');
-            targetCanvas.width = Math.max(1, Math.round(srcCanvas.width * scaleRatio));
-            targetCanvas.height = Math.max(1, Math.round(srcCanvas.height * scaleRatio));
-            targetCanvas.getContext('2d').drawImage(srcCanvas, 0, 0, targetCanvas.width, targetCanvas.height);
-          }
-          const jpegDataUrl = targetCanvas.toDataURL('image/jpeg', stage.quality);
-          const { width: wPt, height: hPt } = pagePointSizes[i];
-
-          if (i === 0) {
-            doc = new jsPDF({ unit: 'pt', format: [wPt, hPt], compress: true });
-          } else {
-            doc.addPage([wPt, hPt]);
-          }
-          doc.addImage(jpegDataUrl, 'JPEG', 0, 0, wPt, hPt);
-        }
-
-        const blob = doc.output('blob');
-        console.log(`📄 PDF圧縮 試行${stageIdx + 1}/${PDF_COMPRESSION_STAGES.length}（${stage.dpi}dpi, 画質${stage.quality}）: ${(blob.size/1024/1024).toFixed(2)}MB`);
-        bestBlob = blob;
-
-        if (blob.size <= PDF_TARGET_MAX_BYTES) {
-          return blob;
-        }
-      }
-
-      if (bestBlob && bestBlob.size <= PDF_HARD_CEILING_BYTES) {
-        return bestBlob; // 目標には届かなかったが、送信して問題ない範囲には収まっている
-      }
-      throw new Error(`PDFを${(PDF_HARD_CEILING_BYTES/1024/1024).toFixed(1)}MB以下まで圧縮できませんでした`);
-    }
-
+    // 画像ファイルを送信前に圧縮し、Base64データを生成する（写真のみが対象）。
+    // 画像以外のファイル（PDF等）はこの関数を通さず、Resumable Upload方式で
+    // 別途アップロードするため、ここでは画像専用の処理として単純化している。
     function fileToBase64(fileObj) {
       return new Promise(async (resolve, reject) => {
         try {
           const originalFile = fileObj.file;
           let sourceBlob = originalFile;
-          let outputType = originalFile.type || (isPdfFile(originalFile) ? 'application/pdf' : originalFile.type);
+          let outputType = originalFile.type;
           let outputName = originalFile.name;
 
-          // 画像ファイルのみ、送信前に縮小・再圧縮する。
-          // 元々小さい画像や、圧縮に失敗した場合は、元のファイルをそのまま使う（安全側の動作）。
-          if (isImageFile(originalFile)) {
-            try {
-              sourceBlob = await compressImageFile(originalFile);
-              outputType = 'image/jpeg';
-              // 圧縮後はJPEG形式になるため、拡張子もそれに合わせて変更する
-              const dotIdx = outputName.lastIndexOf(".");
-              const baseName = dotIdx !== -1 ? outputName.substring(0, dotIdx) : outputName;
-              outputName = baseName + ".jpg";
-              console.log(`📷 画像圧縮: ${originalFile.name} ${(originalFile.size/1024).toFixed(0)}KB → ${(sourceBlob.size/1024).toFixed(0)}KB`);
-            } catch (compressErr) {
-              console.warn('⚠️ 画像圧縮に失敗したため、元のファイルをそのまま送信します:', compressErr);
-              sourceBlob = originalFile;
-              outputType = originalFile.type;
-              outputName = originalFile.name;
-            }
-          } else if (isPdfFile(originalFile) && originalFile.size > PDF_COMPRESSION_THRESHOLD) {
-            // 3MBを超えるPDFのみ、送信前に圧縮する。ファイル名・拡張子は変更しない。
-            const loaderTextEl = document.getElementById("loaderText");
-            const prevLoaderText = loaderTextEl ? loaderTextEl.textContent : null;
-            try {
-              if (loaderTextEl) loaderTextEl.textContent = `PDFを圧縮しています…（${originalFile.name}）`;
-              const compressedBlob = await compressPdfFile(originalFile);
-              sourceBlob = compressedBlob;
-              outputType = 'application/pdf';
-              console.log(`📄 PDF圧縮完了: ${originalFile.name} ${(originalFile.size/1024/1024).toFixed(2)}MB → ${(compressedBlob.size/1024/1024).toFixed(2)}MB`);
-            } catch (pdfErr) {
-              // 圧縮に失敗した場合、大きいPDFをそのまま送ると413エラーになる可能性が高いため、
-              // 安易に元のまま送信せず、このファイルのアップロードをスキップする。
-              console.error(`❌ PDF圧縮に失敗したため、このファイルの送信をスキップします: ${originalFile.name}`, pdfErr);
-              resolve({ skipped: true, name: originalFile.name, reason: (pdfErr && pdfErr.message) || String(pdfErr) });
-              return;
-            } finally {
-              if (loaderTextEl && prevLoaderText !== null) loaderTextEl.textContent = prevLoaderText;
-            }
-          } else if (isPdfFile(originalFile)) {
-            console.log(`📄 PDF（${(originalFile.size/1024).toFixed(0)}KB）は3MB以下のため圧縮せずそのまま送信: ${originalFile.name}`);
-          } else {
-            console.log(`📄 画像・PDF以外のファイルのため圧縮をスキップ: ${originalFile.name} (${(originalFile.size/1024).toFixed(0)}KB, type="${originalFile.type}")`);
+          try {
+            sourceBlob = await compressImageFile(originalFile);
+            outputType = 'image/jpeg';
+            // 圧縮後はJPEG形式になるため、拡張子もそれに合わせて変更する
+            const dotIdx = outputName.lastIndexOf(".");
+            const baseName = dotIdx !== -1 ? outputName.substring(0, dotIdx) : outputName;
+            outputName = baseName + ".jpg";
+            console.log(`📷 画像圧縮: ${originalFile.name} ${(originalFile.size/1024).toFixed(0)}KB → ${(sourceBlob.size/1024).toFixed(0)}KB`);
+          } catch (compressErr) {
+            console.warn('⚠️ 画像圧縮に失敗したため、元のファイルをそのまま送信します:', compressErr);
+            sourceBlob = originalFile;
+            outputType = originalFile.type;
+            outputName = originalFile.name;
           }
 
           const reader = new FileReader();
@@ -2848,41 +2760,51 @@
       });
     }
 
-    // 圧縮に失敗して送信をスキップしたファイル（skipped:true）を取り除きつつ、
-    // ユーザーにどのファイルが送れなかったかを分かりやすく知らせる共通処理。
-    async function resolveFilesForUpload(files) {
-      if (!files || files.length === 0) return [];
-      const results = await Promise.all(files.map(fileToBase64));
-      const skipped = results.filter(r => r && r.skipped);
-      const valid = results.filter(r => r && !r.skipped);
-      if (skipped.length > 0 && typeof Swal !== "undefined") {
-        const names = skipped.map(s => s.name).join('、');
+    // =================================================================
+    // 添付ファイルのアップロード（413エラー対策：種別ごとに経路を振り分けて送信）
+    // -----------------------------------------------------------------------
+    // ・画像：送信前に圧縮してBase64化し、GASの「uploadbox」アクションで1枚ずつ送信
+    // ・画像以外（PDF等）：ファイル本体を一切加工せず、Resumable Upload方式で
+    //   ブラウザから直接Google Driveへ送信（Vercel/GASのリクエストサイズ上限を
+    //   受けないため、ファイルサイズに関わらず413エラーが起きない）
+    //
+    // rowNumberが確定してから（案件の保存が完了してから）呼び出す必要がある。
+    // =================================================================
+    async function uploadAllAttachedFiles(rowNumber, files) {
+      if (!files || files.length === 0) return;
+
+      const imageFileObjs = files.filter(f => isImageFile(f.file));
+      const otherFileObjs = files.filter(f => !isImageFile(f.file));
+      const skippedNames = [];
+
+      // 画像：圧縮してBase64化してから1枚ずつ送信
+      for (const fileObj of imageFileObjs) {
+        try {
+          const base64File = await fileToBase64(fileObj);
+          await apiCall("uploadbox", { rowNumber: rowNumber, fileType: base64File.fileType, filesData: [base64File] });
+        } catch (err) {
+          console.error(`❌ 画像アップロード失敗: ${fileObj.file.name}`, err);
+          skippedNames.push(fileObj.file.name);
+        }
+      }
+
+      // 画像以外：Resumable Upload方式でDriveへ直接送信
+      for (const fileObj of otherFileObjs) {
+        try {
+          await uploadFileViaResumableUpload(rowNumber, fileObj);
+        } catch (err) {
+          console.error(`❌ ファイルアップロード失敗: ${fileObj.file.name}`, err);
+          skippedNames.push(fileObj.file.name);
+        }
+      }
+
+      if (skippedNames.length > 0 && typeof Swal !== "undefined") {
         await Swal.fire({
           icon: 'warning',
           title: '一部のファイルを送信できませんでした',
-          html: `次のファイルは圧縮に失敗したため、アップロードをスキップしました。<br><strong>${names}</strong><br><br>お手数ですが、ファイルサイズを小さくしてから再度お試しください。`,
+          html: `次のファイルのアップロードに失敗しました。<br><strong>${skippedNames.join('、')}</strong><br><br>お手数ですが、もう一度お試しください。`,
           confirmButtonText: '了解'
         });
-      }
-      return valid;
-    }
-  
-    // =================================================================
-    // 添付ファイルのアップロード（413エラー対策：1枚ずつ個別リクエストで送信）
-    // -----------------------------------------------------------------------
-    // 以前は写真データを他の更新データ（カレンダー同期・マスタ更新等）と同じ
-    // processBackgroundTasksリクエストにまとめて送っていたが、これだと写真の枚数・
-    // サイズによってはVercel側のリクエストサイズ上限（プラットフォーム側のハードリミット
-    // であり、こちらの設定では変更できない）を超えて413エラーになることがあった。
-    // 対策として、写真は他のデータと分離し、GAS側に用意されている「uploadbox」アクション
-    // （ファイルアップロード専用）を使って1枚ずつ個別のリクエストで順番に送信する。
-    // こうすることで、1回のリクエストサイズは常に「写真1枚分」に収まり、
-    // 枚数がいくら増えても413エラーが起きにくくなる。
-    // =================================================================
-    async function uploadFilesOneByOne(rowNumber, files) {
-      if (!files || files.length === 0) return;
-      for (const f of files) {
-        await apiCall("uploadbox", { rowNumber: rowNumber, fileType: f.fileType, filesData: [f] });
       }
     }
 
@@ -3119,18 +3041,12 @@
       }
 
       // -------------------------------------------------------------
-      // 添付ファイルのBase64エンコード準備
+      // 添付ファイルの準備
+      // ※ Resumable Upload方式（PDF等）はrowNumberが確定してから実行する必要があるため、
+      //   ここではBase64化等の事前変換は行わず、選択されたファイルの一覧だけを保持しておく。
       // -------------------------------------------------------------
       const files = selectedFilesMap["NEW_PROJECT"] || [];
       const loader = document.getElementById("initLoader");
-      
-      if (files.length > 0) {
-        loader.style.display = "flex";
-        document.getElementById("loaderText").textContent = "ファイルを準備中...";
-        payload.files = await resolveFilesForUpload(files);
-      } else {
-        payload.files = [];
-      }
 
       loader.style.display = "flex";
       document.getElementById("loaderText").textContent = "新規案件を登録中...";
@@ -3140,7 +3056,7 @@
       // =================================================================
       try {
         const fDataForSheetOnly = Object.assign({}, payload);
-        delete fDataForSheetOnly.files; // 高速な1段目にはファイルの重いbase64データを含めない
+        delete fDataForSheetOnly.files; // 高速な1段目にはファイルの重いデータを含めない
         
         const response = await apiCall("createRecordSheetOnly", { fData: fDataForSheetOnly });
         
@@ -3159,18 +3075,18 @@
 
         // =================================================================
         // 【2段目】バックグラウンド処理（Drive保存/カレンダー同期/マスタ＆ヨミ更新）
-        // 413エラー対策：写真データ(payload.files)は processBackgroundTasks には含めず、
-        // uploadFilesOneByOne() で1枚ずつ別リクエストとして送信する。
+        // 413エラー対策：添付ファイルは processBackgroundTasks には含めず、
+        // uploadAllAttachedFiles() で種別ごとに適切な方式（画像=Base64、PDF等=Resumable Upload）
+        // で個別に送信する。
         // =================================================================
         const newRowNumber = response.rowNumber;
         const flags = { inspectionDateChanged: !!payload["検査日"], isNew: true };
-        const filesToUpload = payload.files || [];
         const payloadWithoutFiles = Object.assign({}, payload);
         delete payloadWithoutFiles.files;
 
         try {
           await apiCall("processBackgroundTasks", { fData: payloadWithoutFiles, rNum: newRowNumber, flags: flags });
-          await uploadFilesOneByOne(newRowNumber, filesToUpload);
+          await uploadAllAttachedFiles(newRowNumber, files);
 
           // バックグラウンドでマスタデータを再取得・更新
           apiCall("loadAppDataMaster").then(data => {
@@ -3311,14 +3227,11 @@
       fData["loginUser"] = localStorage.getItem('app_login_userName') || '';
       fData["更新日時"] = getNowDateTimeString();
       
-      // ファイル変換処理
+      // 添付ファイル
+      // ※ Resumable Upload方式（PDF等）の対象があるため、ここでは事前変換は行わず、
+      //   選択されたファイルの一覧をそのまま保持しておく。
       const files = selectedFilesMap[rNum] || [];
-      if (files.length > 0) {
-        document.getElementById("loaderText").textContent = "ファイルを準備中...";
-        fData.files = await resolveFilesForUpload(files);
-      } else {
-        fData.files = [];
-      }
+      fData.files = []; // 1段目・2段目のfDataには重いファイルデータを含めない（後段で種別ごとに個別送信する）
       
       // =================================================================
       // 【1段目】シート書き込み処理
@@ -3326,7 +3239,7 @@
       try {
         document.getElementById("loaderText").textContent = "データを更新中";
         const fDataForSheetOnly = Object.assign({}, fData);
-        delete fDataForSheetOnly.files; // 高速な1段目にはファイルの重いbase64データを含めない
+        delete fDataForSheetOnly.files;
         const response = await apiCall("updateRecordSheetOnly", { fData: fDataForSheetOnly, rNum: rowNumber });
         
         // 1. ローダーを消して画面を解放
@@ -3344,17 +3257,17 @@
     
         // =================================================================
         // 【2段目】重い処理を実行し、完了したらリロードせず一覧をリアルタイムに最新化する
-        // 413エラー対策：写真データ(fData.files)は processBackgroundTasks には含めず、
-        // uploadFilesOneByOne() で1枚ずつ別リクエストとして送信する。
+        // 413エラー対策：添付ファイルは processBackgroundTasks には含めず、
+        // uploadAllAttachedFiles() で種別ごとに適切な方式（画像=Base64、PDF等=Resumable Upload）
+        // で個別に送信する。
         // =================================================================
         const flags = (response && response.flags) ? response.flags : {};
-        const filesToUpload = fData.files || [];
         const fDataForBackgroundTasks = Object.assign({}, fData);
         delete fDataForBackgroundTasks.files;
         
         try {
           await apiCall("processBackgroundTasks", { fData: fDataForBackgroundTasks, rNum: rowNumber, flags: flags });
-          await uploadFilesOneByOne(rowNumber, filesToUpload);
+          await uploadAllAttachedFiles(rowNumber, files);
           // すべての処理完了 → 一覧を自動的に最新化
           await refreshListAfterAllProcessing();
         } catch (bgErr) {
