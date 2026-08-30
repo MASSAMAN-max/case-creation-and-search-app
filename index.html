@@ -2656,67 +2656,91 @@
     }
 
     // =================================================================
-    // 🚀 Resumable Upload方式によるファイルアップロード（413エラー根本対策）
+    // 📦 チャンク分割アップロード方式によるファイルアップロード（413エラー根本対策）
     // -----------------------------------------------------------------------
     // 【方針転換の経緯】
-    // 以前はPDF.js/jsPDFでPDFを画像化・再圧縮してからBase64送信していたが、
-    // 文字情報の消失・検索不能・画質劣化といった副作用が大きかったため、この方式は廃止した。
-    // 代わりに、画像以外のファイル（PDF等）はファイル本体を一切加工・圧縮せず、
-    // ブラウザから直接Google Driveへアップロードする（Vercel/GASの
-    // リクエストサイズ上限を、そもそもファイル本体が通過しないようにする）。
-    //
-    // 通信の流れ：
-    // ① [ブラウザ→GAS] createResumableUploadSession でアップロード用の一時URLを発行してもらう
-    // ② [ブラウザ→Google Drive] 取得したURLへ、ファイル本体を直接PUT送信する
-    // ③ [ブラウザ→GAS] finalizeResumableUpload で完了を通知し、正式なファイル名へリネームしてもらう
-    //
-    // 画像（写真）は従来通り、送信前圧縮＋Base64＋uploadboxの方式を維持する
-    // （写真は圧縮してもほぼ実用上問題なく、Drive容量の節約にもなるため）。
+    // 当初はPDF.js/jsPDFによる圧縮方式（文字情報が失われる副作用あり）→
+    // Google Drive APIへの直接アップロード（CORS/404エラーで実機動作せず）と
+    // 試したが、いずれも問題があり不採用とした。
+    // 「GASを直接呼び出す構成には戻さない」という既存方針を踏まえ、
+    // Vercelを経由する構成を維持しつつ、ファイルを約1.2MBずつのチャンクに分割して
+    // 複数回のリクエストに分けて送信する方式を採用する（413エラー対策）。
+    // 画像以外のファイル（PDF等）が対象。画像（写真）は従来通り、
+    // 送信前圧縮＋Base64＋uploadboxの方式を維持する。
     // =================================================================
-    async function uploadFileViaResumableUpload(rowNumber, fileObj) {
+    const UPLOAD_CHUNK_SIZE = 1.2 * 1024 * 1024; // 1チャンクあたりの元データサイズ（Base64化前）
+
+    // FileをArrayBufferとして読み込み、指定サイズごとにBase64文字列の配列へ分割する
+    function splitFileIntoBase64Chunks(file, chunkSize) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const bytes = new Uint8Array(reader.result);
+            const chunks = [];
+            for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+              const slice = bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length));
+              // バイナリ文字列化してからbtoaでBase64化する（大きい配列でもスタック超過しないよう分割して結合）
+              let binary = '';
+              const stepSize = 0x8000;
+              for (let i = 0; i < slice.length; i += stepSize) {
+                binary += String.fromCharCode.apply(null, slice.subarray(i, i + stepSize));
+              }
+              chunks.push(btoa(binary));
+            }
+            resolve(chunks.length > 0 ? chunks : ['']); // 0バイトファイルでも最低1チャンクは送る
+          } catch (err) {
+            reject(err);
+          }
+        };
+        reader.onerror = (err) => reject(err);
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    async function uploadFileViaChunkedUpload(rowNumber, fileObj) {
       const file = fileObj.file;
       const mimeType = file.type || 'application/octet-stream';
 
-      // ① GASにアップロード用の一時URLを発行してもらう
-      const session = await apiCall("createResumableUploadSession", {
+      // ① アップロードセッションを開始する
+      const session = await apiCall("initChunkedUpload", {
         rowNumber: rowNumber,
         fileName: file.name,
         mimeType: mimeType
       });
-      const uploadUrl = session && session.uploadUrl;
-      if (!uploadUrl) {
-        throw new Error("アップロード用のURLを取得できませんでした。");
+      const uploadId = session && session.uploadId;
+      if (!uploadId) {
+        throw new Error("アップロードセッションを開始できませんでした。");
       }
 
-      // ② 取得したURLへ、ファイル本体を直接PUT送信する（Vercel/GASを経由しないため、
-      //    413エラーの原因となるリクエストサイズ制限を受けない）
-      const putResponse = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": mimeType },
-        body: file
-      });
-      if (!putResponse.ok) {
-        throw new Error(`Google Driveへの直接アップロードに失敗しました（HTTP ${putResponse.status}）`);
-      }
-      const driveFile = await putResponse.json();
-      const fileId = driveFile && driveFile.id;
-      if (!fileId) {
-        throw new Error("アップロードは完了しましたが、ファイルIDを取得できませんでした。");
+      // ② ファイルをチャンクに分割し、1つずつ順番にVercel経由で送信する
+      //    （並列に送ると合計の同時通信量が大きくなり得るため、あえて直列で送る）
+      const chunks = await splitFileIntoBase64Chunks(file, UPLOAD_CHUNK_SIZE);
+      for (let i = 0; i < chunks.length; i++) {
+        await apiCall("uploadChunk", {
+          rowNumber: rowNumber,
+          uploadId: uploadId,
+          chunkIndex: i,
+          base64Chunk: chunks[i]
+        });
+        console.log(`📦 チャンク送信 ${i + 1}/${chunks.length}: ${file.name}`);
       }
 
-      // ③ アップロード完了をGASへ通知し、正式なファイル名にリネームしてもらう
-      await apiCall("finalizeResumableUpload", {
+      // ③ 全チャンク送信完了を通知し、GAS側で結合・正式保存してもらう
+      await apiCall("finalizeChunkedUpload", {
         rowNumber: rowNumber,
-        fileId: fileId,
+        uploadId: uploadId,
+        totalChunks: chunks.length,
+        fileName: file.name,
         fileType: fileObj.fileType,
-        fileName: file.name
+        mimeType: mimeType
       });
 
-      console.log(`📤 Resumable Upload完了: ${file.name} (${(file.size/1024/1024).toFixed(2)}MB)`);
+      console.log(`📤 チャンク分割アップロード完了: ${file.name} (${(file.size/1024/1024).toFixed(2)}MB, ${chunks.length}チャンク)`);
     }
 
     // 画像ファイルを送信前に圧縮し、Base64データを生成する（写真のみが対象）。
-    // 画像以外のファイル（PDF等）はこの関数を通さず、Resumable Upload方式で
+    // 画像以外のファイル（PDF等）はこの関数を通さず、チャンク分割方式で
     // 別途アップロードするため、ここでは画像専用の処理として単純化している。
     function fileToBase64(fileObj) {
       return new Promise(async (resolve, reject) => {
@@ -2764,7 +2788,7 @@
     // 添付ファイルのアップロード（413エラー対策：種別ごとに経路を振り分けて送信）
     // -----------------------------------------------------------------------
     // ・画像：送信前に圧縮してBase64化し、GASの「uploadbox」アクションで1枚ずつ送信
-    // ・画像以外（PDF等）：ファイル本体を一切加工せず、Resumable Upload方式で
+    // ・画像以外（PDF等）：ファイル本体を一切加工せず、チャンク分割方式で
     //   ブラウザから直接Google Driveへ送信（Vercel/GASのリクエストサイズ上限を
     //   受けないため、ファイルサイズに関わらず413エラーが起きない）
     //
@@ -2788,10 +2812,10 @@
         }
       }
 
-      // 画像以外：Resumable Upload方式でDriveへ直接送信
+      // 画像以外：チャンク分割方式でVercel経由で送信
       for (const fileObj of otherFileObjs) {
         try {
-          await uploadFileViaResumableUpload(rowNumber, fileObj);
+          await uploadFileViaChunkedUpload(rowNumber, fileObj);
         } catch (err) {
           console.error(`❌ ファイルアップロード失敗: ${fileObj.file.name}`, err);
           skippedNames.push(fileObj.file.name);
@@ -3042,7 +3066,7 @@
 
       // -------------------------------------------------------------
       // 添付ファイルの準備
-      // ※ Resumable Upload方式（PDF等）はrowNumberが確定してから実行する必要があるため、
+      // ※ チャンク分割方式（PDF等）はrowNumberが確定してから実行する必要があるため、
       //   ここではBase64化等の事前変換は行わず、選択されたファイルの一覧だけを保持しておく。
       // -------------------------------------------------------------
       const files = selectedFilesMap["NEW_PROJECT"] || [];
@@ -3076,7 +3100,7 @@
         // =================================================================
         // 【2段目】バックグラウンド処理（Drive保存/カレンダー同期/マスタ＆ヨミ更新）
         // 413エラー対策：添付ファイルは processBackgroundTasks には含めず、
-        // uploadAllAttachedFiles() で種別ごとに適切な方式（画像=Base64、PDF等=Resumable Upload）
+        // uploadAllAttachedFiles() で種別ごとに適切な方式（画像=Base64、PDF等=チャンク分割方式）
         // で個別に送信する。
         // =================================================================
         const newRowNumber = response.rowNumber;
@@ -3228,7 +3252,7 @@
       fData["更新日時"] = getNowDateTimeString();
       
       // 添付ファイル
-      // ※ Resumable Upload方式（PDF等）の対象があるため、ここでは事前変換は行わず、
+      // ※ チャンク分割方式（PDF等）の対象があるため、ここでは事前変換は行わず、
       //   選択されたファイルの一覧をそのまま保持しておく。
       const files = selectedFilesMap[rNum] || [];
       fData.files = []; // 1段目・2段目のfDataには重いファイルデータを含めない（後段で種別ごとに個別送信する）
@@ -3258,7 +3282,7 @@
         // =================================================================
         // 【2段目】重い処理を実行し、完了したらリロードせず一覧をリアルタイムに最新化する
         // 413エラー対策：添付ファイルは processBackgroundTasks には含めず、
-        // uploadAllAttachedFiles() で種別ごとに適切な方式（画像=Base64、PDF等=Resumable Upload）
+        // uploadAllAttachedFiles() で種別ごとに適切な方式（画像=Base64、PDF等=チャンク分割方式）
         // で個別に送信する。
         // =================================================================
         const flags = (response && response.flags) ? response.flags : {};
