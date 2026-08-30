@@ -1918,6 +1918,23 @@
     // =================================================================
     // 検索結果リスト表示
     // =================================================================
+    // 受注媒体ごとのデータ元サイトURLパターン（Webボタン用）。
+    // ※ GAS側 案件管理GAS.txt の MEDIA_LINK_MAP / buildDataSourceUrl と同一内容にしている。
+    //   カレンダーの説明欄に載せているリンクと同じ行き先になるよう、
+    //   どちらか一方だけ変更した場合はもう一方も必ず合わせて更新すること。
+    const MEDIA_LINK_MAP_FRONT = {
+      "ANDPAD": { prefix: "https://andpad.jp/my/orders/" },
+      "ダンドリワーク": { prefix: "https://www.dandoli.jp/oscarjj/sites/" },
+      "現場Plus": { prefix: "https://apg.kensetsu-cloud.jp/main/dyapp/a/AX4DD823/assoc/registersite/jobitemdetail/j/" },
+      "メール": { prefix: "https://mail.google.com/mail/u/0/#all/" }
+    };
+    function buildDataSourceUrlFront(media, systemId) {
+      if (!media || !systemId) return null;
+      const cfg = MEDIA_LINK_MAP_FRONT[String(media).trim()];
+      if (!cfg) return null;
+      return `${cfg.prefix}${String(systemId).trim()}`;
+    }
+
     // 検索結果のページング設定（50件ずつ表示）
     const RESULTS_PAGE_SIZE = 50;
     let currentSearchResults = [];
@@ -1987,7 +2004,7 @@
           <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" onclick="event.stopPropagation();"
               style="flex: 1; justify-content: center; padding: 12px 18px; gap: 6px; margin-top: 0; margin-right: 6px;">
             <span class="material-symbols-outlined" style="font-size:20px; color:var(--primary)">cloud_done</span>
-            <span style="font-weight:bold;">資料参照</span>
+            <span style="font-weight:bold;">資 料</span>
           </a>`;
         } else {
           driveLinkHtml = `
@@ -2008,13 +2025,25 @@
             style="background: linear-gradient(180deg, rgba(34,197,94,0.05) 0%, rgba(22,163,74,0.05) 100%); border-color: rgba(34,197,94,0.3);
             display: inline-flex; align-items: center; flex: 1; justify-content: center; padding: 12px 18px; gap: 6px; margin-top: 0; margin-right: 6px;">
           <span class="material-symbols-outlined" style="font-size:20px; color:#22c55e">share</span>
-          <span style="font-weight:bold; color:#16a34a;">案件共有</span>
+          <span style="font-weight:bold; color:#16a34a;">共 有</span>
+        </a>` : "";
+
+        // Webボタン（データ元サイトリンク）：カレンダーの説明欄に載せているものと同じURLを組み立てる。
+        // GAS側 buildDataSourceUrl() と同一のロジック（受注媒体ごとのURLパターン＋システムID）をフロントでも再現する。
+        const dataSourceUrl = buildDataSourceUrlFront(record.受注媒体, record.システムID);
+        const webButtonHtml = dataSourceUrl ? `
+        <a href="${dataSourceUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" onclick="event.stopPropagation();"
+            style="background: linear-gradient(180deg, rgba(59,130,246,0.05) 0%, rgba(37,99,235,0.05) 100%); border-color: rgba(59,130,246,0.3);
+            display: inline-flex; align-items: center; flex: 1; justify-content: center; padding: 12px 18px; gap: 6px; margin-top: 0; margin-right: 6px;">
+          <span class="material-symbols-outlined" style="font-size:20px; color:#3b82f6">public</span>
+          <span style="font-weight:bold; color:#2563eb;">Web</span>
         </a>` : "";
         
         const actionButtonsHtml = `
         <div style="display: flex; gap: 8px; align-items: center; margin-top: 12px; width: 100%; box-sizing: border-box;">
           ${driveLinkHtml}
           ${shareButtonHtml}
+          ${webButtonHtml}
         </div>`;
         
         let workScheduleHtml = '<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">';
@@ -2044,6 +2073,20 @@
               </div>`;
           }
         });
+        // 検査日の表示：工事日と紛れないよう、配色（オレンジ系）とアイコンを変えて一目で区別できるようにする
+        const inspRaw = record['検査日'];
+        if (inspRaw) {
+          hasAnyWork = true;
+          const inspDatePart = String(inspRaw).split('T')[0];
+          const inspTimePart = String(inspRaw).includes('T') ? String(inspRaw).split('T')[1] : '';
+          const fmtInsp = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d)) ? d.replace(/-/g, '/') : "";
+          let inspLabel = `${fmtInsp(inspDatePart)}${getWeekday(inspDatePart)}`;
+          if (inspTimePart) inspLabel += ` ${inspTimePart.substring(0, 5)}`;
+          workScheduleHtml += `
+            <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:14px; align-items:center; background:#fff7ed; padding:6px 12px; border-radius:6px; width:fit-content; border:1px solid #fed7aa;">
+              <span style="display:flex; align-items:center; gap:4px; color:#c2410c; font-weight:bold;"><span class="material-symbols-outlined" style="font-size:16px;">fact_check</span> 検査日: ${inspLabel}</span>
+            </div>`;
+        }
         if(!hasAnyWork) workScheduleHtml += `<div style="font-size:14px; color:#94a3b8;">📅 工事予定なし</div>`;
         workScheduleHtml += '</div>';
   
@@ -2063,6 +2106,7 @@
               ${badgeHtml}
               ${driveLinkHtml}
               ${shareButtonHtml}
+              ${webButtonHtml}
             </div>
             <span class="material-symbols-outlined expand-icon" style="transition: transform 0.2s; color:#94a3b8; font-size:30px;">expand_more</span>
           </div>
@@ -3110,16 +3154,29 @@
 
         try {
           await apiCall("processBackgroundTasks", { fData: payloadWithoutFiles, rNum: newRowNumber, flags: flags });
-          await uploadAllAttachedFiles(newRowNumber, files);
+
+          // ここまで（カレンダー登録・マスタ更新）が完了した時点で完了通知に切り替える。
+          // 添付ファイルのアップロードはこの後も裏側で継続し、完了を待たずに一覧を更新する。
+          if (typeof showToast === "function") {
+            showToast("最新の情報を一覧に反映しました。");
+          }
 
           // バックグラウンドでマスタデータを再取得・更新
           apiCall("loadAppDataMaster").then(data => {
             if (data && typeof appConfig !== "undefined") appConfig = data;
           }).catch(console.error);
 
-          // すべての処理完了 → リロードせず一覧をリアルタイムに最新化
+          // カレンダー登録まで完了した時点で、リロードせず一覧をリアルタイムに最新化
           if (typeof refreshListAfterAllProcessing === "function") {
             await refreshListAfterAllProcessing();
+          }
+
+          // 添付ファイルのアップロードは完了を待たず裏側で継続する（awaitしない）。
+          // 失敗した場合もファイル部分のエラーとして案内し、案件登録自体の完了通知は妨げない。
+          if (files && files.length > 0) {
+            uploadAllAttachedFiles(newRowNumber, files).catch(fileErr => {
+              console.error("❌ 添付ファイルのアップロードでエラーが発生しました:", fileErr);
+            });
           }
 
         } catch (bgErr) {
@@ -3131,7 +3188,7 @@
             Swal.fire({
               icon: 'error',
               title: '背景処理でエラーが発生しました',
-              html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期や添付ファイル保存でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
+              html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
               confirmButtonText: '了解'
             });
           }
@@ -3291,9 +3348,15 @@
         
         try {
           await apiCall("processBackgroundTasks", { fData: fDataForBackgroundTasks, rNum: rowNumber, flags: flags });
-          await uploadAllAttachedFiles(rowNumber, files);
-          // すべての処理完了 → 一覧を自動的に最新化
+          // すべての処理完了 → 一覧を自動的に最新化（ここでトースト表示も更新される）
           await refreshListAfterAllProcessing();
+
+          // 添付ファイルのアップロードは完了を待たず裏側で継続する（awaitしない）。
+          if (files && files.length > 0) {
+            uploadAllAttachedFiles(rowNumber, files).catch(fileErr => {
+              console.error("❌ 添付ファイルのアップロードでエラーが発生しました:", fileErr);
+            });
+          }
         } catch (bgErr) {
           console.error("❌ バックグラウンド処理エラー:", bgErr);
           // 持続表示中の「処理中...」トーストをここで消す（エラー内容はSwalダイアログで案内する）
@@ -3302,7 +3365,7 @@
           Swal.fire({
             icon: 'error',
             title: '背景処理でエラーが発生しました',
-            html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期や添付ファイル保存でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
+            html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
             confirmButtonText: '了解'
           });
         }
