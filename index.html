@@ -257,21 +257,23 @@
       border-left: 1px solid #cbd5e1;
     }
     
-    /* フォルダリンク：Google Drive等への外部リンクボタン */
+    /* フォルダリンク：Google Drive等への外部リンクボタン
+       ※ ボタンが4つ（資料・共有・Web・MAP）に増えたため、デザインの方向性は維持しつつ
+          padding・gap・font-sizeを少し詰めている。 */
     .drive-folder-link {
       display: inline-flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
       margin-top: 10px;
-      padding: 12px 20px;
+      padding: 10px 14px;
       background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(240,247,255,0.92) 100%);
       border: 1px solid rgba(147,197,253,0.55);
-      border-radius: 18px;
+      border-radius: 16px;
       text-decoration: none;
       /*color: #2563eb;*/
       color: #0d47a1;
       font-weight: 700;
-      font-size: 15px;
+      font-size: 13px;
       box-shadow: 0 4px 12px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
       backdrop-filter: blur(8px);
       transition: all 0.2s ease;
@@ -286,6 +288,57 @@
       border-color: rgba(59,130,246,0.7);
     }
 
+    /* アクションボタン共通の配置（資料・共有・Web・MAPの4つで共通利用） */
+    .action-btn {
+      flex: 1;
+      justify-content: center;
+      margin-top: 0;
+      margin-right: 6px;
+    }
+
+    /* 配色バリエーション：資料＝薄黄、共有＝薄緑、Web＝薄青、MAP＝薄赤
+       （ベースの .drive-folder-link のグラデーション・シャドウの雰囲気を保ったまま色相だけ変える） */
+    .action-btn-yellow {
+      background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(254,249,195,0.92) 100%);
+      border-color: rgba(250,204,21,0.55);
+      box-shadow: 0 4px 12px rgba(202,138,4,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+    .action-btn-yellow:hover {
+      background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(254,240,138,0.98) 100%);
+      box-shadow: 0 8px 20px rgba(202,138,4,0.12);
+      border-color: rgba(234,179,8,0.7);
+    }
+    .action-btn-green {
+      background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(220,252,231,0.92) 100%);
+      border-color: rgba(34,197,94,0.55);
+      box-shadow: 0 4px 12px rgba(22,163,74,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+    .action-btn-green:hover {
+      background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(187,247,208,0.98) 100%);
+      box-shadow: 0 8px 20px rgba(22,163,74,0.12);
+      border-color: rgba(34,197,94,0.7);
+    }
+    .action-btn-blue {
+      background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(219,234,254,0.92) 100%);
+      border-color: rgba(96,165,250,0.55);
+      box-shadow: 0 4px 12px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+    .action-btn-blue:hover {
+      background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(191,219,254,0.98) 100%);
+      box-shadow: 0 8px 20px rgba(37,99,235,0.12);
+      border-color: rgba(59,130,246,0.7);
+    }
+    .action-btn-red {
+      background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(254,226,226,0.92) 100%);
+      border-color: rgba(248,113,113,0.55);
+      box-shadow: 0 4px 12px rgba(220,38,38,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+    .action-btn-red:hover {
+      background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(254,202,202,0.98) 100%);
+      box-shadow: 0 8px 20px rgba(220,38,38,0.12);
+      border-color: rgba(239,68,68,0.7);
+    }
+
     /* フォルダ開くアイコン：ホバーでアップアニメーション */
     .drive-open-icon { cursor: pointer; transition: transform 0.2s ease, color 0.2s ease; }
     .drive-open-icon:hover { transform: translateY(-6px); color: var(--primary); }
@@ -294,12 +347,12 @@
     .drive-folder-link-disabled {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       margin-top: 10px;
-      padding: 12px 18px;
+      padding: 10px 14px;
       background: #f8fafc;
       border: 1px dashed #cbd5e1;
-      border-radius: 18px;
+      border-radius: 16px;
       color: #94a3b8;
       font-size: 10px;
       font-weight: 600;
@@ -1935,6 +1988,19 @@
       return `${cfg.prefix}${String(systemId).trim()}`;
     }
 
+    // MAPボタン用：GAS側 buildEventDescription() 内のMAPリンク生成ロジックと同一内容にしている
+    // （緯度経度があればそれを優先、無ければ住所でGoogleマップ検索する）。
+    // カレンダー説明欄のMAPリンクと同じ行き先になるよう、どちらか一方だけ変更した場合は
+    // もう一方も必ず合わせて更新すること。
+    function buildMapUrlFront(latLng, address) {
+      if (latLng) {
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(String(latLng).trim())}`;
+      } else if (address) {
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(String(address).trim())}`;
+      }
+      return null;
+    }
+
     // 検索結果のページング設定（50件ずつ表示）
     const RESULTS_PAGE_SIZE = 50;
     let currentSearchResults = [];
@@ -1997,19 +2063,19 @@
         badgeHtml += '</div>';
         
         // ドライブフォルダリンクの組み立て
+        // ※ ボタンが4つ（資料・共有・Web・MAP）に増えたため、共通クラス .action-btn で
+        //   padding・font-sizeを少し詰めたデザインに統一している（デザインの方向性は維持）。
         let driveLinkHtml = '';
         const folderUrl = String(record.添付資料 || "").trim();
         if (folderUrl) {
           driveLinkHtml = `
-          <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" onclick="event.stopPropagation();"
-              style="flex: 1; justify-content: center; padding: 12px 18px; gap: 6px; margin-top: 0; margin-right: 6px;">
-            <span class="material-symbols-outlined" style="font-size:20px; color:var(--primary)">cloud_done</span>
-            <span style="font-weight:bold;">資 料</span>
+          <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-yellow" onclick="event.stopPropagation();">
+            <span class="material-symbols-outlined" style="font-size:18px; color:#ca8a04">cloud_done</span>
+            <span style="font-weight:bold; color:#a16207;">資 料</span>
           </a>`;
         } else {
           driveLinkHtml = `
-          <div class="drive-folder-link-disabled" style="flex: 1; justify-content: center; padding: 12px 18px; gap: 6px; margin-top: 0; margin-right: 6px;">
-            <span class="material-symbols-outlined cloud-icon">folder_off</span>
+          <div class="drive-folder-link-disabled action-btn">            <span class="material-symbols-outlined cloud-icon" style="font-size:18px !important; width:18px; height:18px;">folder_off</span>
             <span>資料無し</span>
           </div>`;
         }
@@ -2021,10 +2087,8 @@
           ? `https://project-sharing-git-main-massaman-maxs-projects.vercel.app/api/share?token=${encodeURIComponent(shareToken)}`
           : "";
         const shareButtonHtml = shareToken ? `
-        <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" onclick="event.stopPropagation();"
-            style="background: linear-gradient(180deg, rgba(34,197,94,0.05) 0%, rgba(22,163,74,0.05) 100%); border-color: rgba(34,197,94,0.3);
-            display: inline-flex; align-items: center; flex: 1; justify-content: center; padding: 12px 18px; gap: 6px; margin-top: 0; margin-right: 6px;">
-          <span class="material-symbols-outlined" style="font-size:20px; color:#22c55e">share</span>
+        <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-green" onclick="event.stopPropagation();">
+          <span class="material-symbols-outlined" style="font-size:18px; color:#22c55e">share</span>
           <span style="font-weight:bold; color:#16a34a;">共 有</span>
         </a>` : "";
 
@@ -2032,18 +2096,25 @@
         // GAS側 buildDataSourceUrl() と同一のロジック（受注媒体ごとのURLパターン＋システムID）をフロントでも再現する。
         const dataSourceUrl = buildDataSourceUrlFront(record.受注媒体, record.システムID);
         const webButtonHtml = dataSourceUrl ? `
-        <a href="${dataSourceUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link" onclick="event.stopPropagation();"
-            style="background: linear-gradient(180deg, rgba(59,130,246,0.05) 0%, rgba(37,99,235,0.05) 100%); border-color: rgba(59,130,246,0.3);
-            display: inline-flex; align-items: center; flex: 1; justify-content: center; padding: 12px 18px; gap: 6px; margin-top: 0; margin-right: 6px;">
-          <span class="material-symbols-outlined" style="font-size:20px; color:#3b82f6">public</span>
+        <a href="${dataSourceUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-blue" onclick="event.stopPropagation();">
+          <span class="material-symbols-outlined" style="font-size:18px; color:#3b82f6">public</span>
           <span style="font-weight:bold; color:#2563eb;">Web</span>
+        </a>` : "";
+
+        // MAPボタン：カレンダーの説明欄に載せているMAPリンクと同じ行き先（緯度経度優先、無ければ住所）。
+        const mapUrl = buildMapUrlFront(record.緯度経度, record.住所);
+        const mapButtonHtml = mapUrl ? `
+        <a href="${mapUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-red" onclick="event.stopPropagation();">
+          <span class="material-symbols-outlined" style="font-size:18px; color:#ef4444">location_on</span>
+          <span style="font-weight:bold; color:#dc2626;">MAP</span>
         </a>` : "";
         
         const actionButtonsHtml = `
-        <div style="display: flex; gap: 8px; align-items: center; margin-top: 12px; width: 100%; box-sizing: border-box;">
+        <div style="display: flex; gap: 6px; align-items: center; margin-top: 12px; width: 100%; box-sizing: border-box;">
           ${driveLinkHtml}
           ${shareButtonHtml}
           ${webButtonHtml}
+          ${mapButtonHtml}
         </div>`;
         
         let workScheduleHtml = '<div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">';
@@ -2107,6 +2178,7 @@
               ${driveLinkHtml}
               ${shareButtonHtml}
               ${webButtonHtml}
+              ${mapButtonHtml}
             </div>
             <span class="material-symbols-outlined expand-icon" style="transition: transform 0.2s; color:#94a3b8; font-size:30px;">expand_more</span>
           </div>
