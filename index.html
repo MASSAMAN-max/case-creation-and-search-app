@@ -2070,7 +2070,7 @@
         if (folderUrl) {
           driveLinkHtml = `
           <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-yellow" onclick="event.stopPropagation();">
-            <span class="material-symbols-outlined" style="font-size:18px; color:#ca8a04">cloud_done</span>
+            <span class="material-symbols-outlined" style="font-size:18px; color:#ca8a04">description</span>
             <span style="font-weight:bold; color:#a16207;">資 料</span>
           </a>`;
         } else {
@@ -2170,6 +2170,7 @@
               <div class="row-meta">
                 <span class="badge-no">No.${record.No}</span>
                 <span style="font-size:14px; color:var(--text-sub); font-weight:bold;">${record.発注元}</span>
+                <span style="font-size:14px; color:#475569; font-weight:bold;">👤 ${record.担当者 || '－'}</span>
                 <span style="font-size:14px; color:#64748b; margin-left:auto; font-weight:bold; padding-right:10px;">受注媒体: ${record.受注媒体 || '－'}</span>
               </div>
               <div class="anken-title">${record.案件名}</div>
