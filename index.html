@@ -258,27 +258,29 @@
     }
     
     /* フォルダリンク：Google Drive等への外部リンクボタン
-       ※ ボタンが4つ（資料・共有・Web・MAP）に増えたため、デザインの方向性は維持しつつ
-          padding・gap・font-sizeを少し詰めている。 */
+       ※ ボタンが5つ（資料・共有・Web・メール・MAP）に増えたため、デザインの方向性は維持しつつ
+          padding・gap・font-sizeをさらに詰めている。アイコンと文字の間の余白（gap）も無くしている。 */
     .drive-folder-link {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 0;
       margin-top: 10px;
-      padding: 10px 14px;
+      padding: 8px 10px;
       background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(240,247,255,0.92) 100%);
       border: 1px solid rgba(147,197,253,0.55);
-      border-radius: 16px;
+      border-radius: 14px;
       text-decoration: none;
       /*color: #2563eb;*/
       color: #0d47a1;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 12px;
       box-shadow: 0 4px 12px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
       backdrop-filter: blur(8px);
       transition: all 0.2s ease;
       overflow: hidden;
     }
+    /* アイコン(material-symbols-outlined)と文字ラベルの間隔を詰める */
+    .drive-folder-link .material-symbols-outlined { margin-right: 3px; }
 
     /* フォルダリンクホバー状態：アップアニメーション・シャドウ強調 */
     .drive-folder-link:hover {
@@ -288,15 +290,15 @@
       border-color: rgba(59,130,246,0.7);
     }
 
-    /* アクションボタン共通の配置（資料・共有・Web・MAPの4つで共通利用） */
+    /* アクションボタン共通の配置（資料・共有・Web・メール・MAPの5つで共通利用） */
     .action-btn {
       flex: 1;
       justify-content: center;
       margin-top: 0;
-      margin-right: 6px;
+      margin-right: 4px;
     }
 
-    /* 配色バリエーション：資料＝薄黄、共有＝薄緑、Web＝薄青、MAP＝薄赤
+    /* 配色バリエーション：資料＝薄黄、共有＝薄緑、Web＝薄青、メール＝薄紫、MAP＝薄赤
        （ベースの .drive-folder-link のグラデーション・シャドウの雰囲気を保ったまま色相だけ変える） */
     .action-btn-yellow {
       background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(254,249,195,0.92) 100%);
@@ -327,6 +329,16 @@
       background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(191,219,254,0.98) 100%);
       box-shadow: 0 8px 20px rgba(37,99,235,0.12);
       border-color: rgba(59,130,246,0.7);
+    }
+    .action-btn-purple {
+      background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(243,232,255,0.92) 100%);
+      border-color: rgba(192,132,252,0.55);
+      box-shadow: 0 4px 12px rgba(147,51,234,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+    .action-btn-purple:hover {
+      background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(233,213,255,0.98) 100%);
+      box-shadow: 0 8px 20px rgba(147,51,234,0.12);
+      border-color: rgba(168,85,247,0.7);
     }
     .action-btn-red {
       background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(254,226,226,0.92) 100%);
@@ -808,6 +820,23 @@
             </div>
           </div>
 
+          <!-- 施主名入力欄（よみは任意入力。未入力なら保存時に自動生成される） -->
+          <div class="form-row-2col">
+            <div class="form-group">
+              <label><span class="material-symbols-outlined">badge</span> 施主名</label>
+              <div class="voice-input-wrapper">
+                <input type="text" id="client_name" name="施主名" placeholder="例：山田太郎">
+                <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+                  <span class="material-symbols-outlined">mic</span>
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label><span class="material-symbols-outlined">badge</span> 施主名よみ（任意）</label>
+              <input type="text" id="client_name_yomi" name="施主名よみ" placeholder="未入力の場合は自動生成されます">
+            </div>
+          </div>
+
           <!-- セクション2：工事予定・担当割当（動的追加可能） -->
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
             <h3 style="margin: 0 0 12px 0; font-size: 18px; color: #475569; display: flex; align-items: center; gap: 6px;">
@@ -910,8 +939,8 @@
                 <input type="text" id="system_id" name="システムID" placeholder="システムID" style="width: 100%;">
               </div>
               <div class="form-group" style="margin:0;">
-                <label>物件ID</label>
-                <input type="text" id="property_id" name="物件ID" placeholder="物件ID" style="width: 100%;">
+                <label>メールID</label>
+                <input type="text" id="property_id" name="メールID" placeholder="メールID" style="width: 100%;">
               </div>
               <div class="form-group" style="margin:0;">
                 <label>着工日</label>
@@ -1972,18 +2001,29 @@
     // 検索結果リスト表示
     // =================================================================
     // 受注媒体ごとのデータ元サイトURLパターン（Webボタン用）。
-    // ※ GAS側 案件管理GAS.txt の MEDIA_LINK_MAP / buildDataSourceUrl と同一内容にしている。
+    // ※ GAS側 07_カレンダー連携.gs の MEDIA_LINK_MAP / buildDataSourceUrl と同一内容にしている。
     //   カレンダーの説明欄に載せているリンクと同じ行き先になるよう、
     //   どちらか一方だけ変更した場合はもう一方も必ず合わせて更新すること。
     const MEDIA_LINK_MAP_FRONT = {
       "ANDPAD": { prefix: "https://andpad.jp/my/orders/" },
       "ダンドリワーク": { prefix: "https://www.dandoli.jp/oscarjj/sites/" },
-      "現場Plus": { prefix: "https://apg.kensetsu-cloud.jp/main/dyapp/a/AX4DD823/assoc/registersite/jobitemdetail/j/" },
-      "メール": { prefix: "https://mail.google.com/mail/u/0/#all/" }
+      "現場Plus": { prefix: "https://apg.kensetsu-cloud.jp/main/dyapp/a/AX4DD823/assoc/registersite/jobitemdetail/j/" }
     };
     function buildDataSourceUrlFront(media, systemId) {
       if (!media || !systemId) return null;
       const cfg = MEDIA_LINK_MAP_FRONT[String(media).trim()];
+      if (!cfg) return null;
+      return `${cfg.prefix}${String(systemId).trim()}`;
+    }
+
+    // 受注媒体が「メール」の場合の、データ元メールへのリンクパターン（メールボタン用）。
+    // ※ GAS側 07_カレンダー連携.gs の MEDIA_MAIL_LINK_MAP / buildDataSourceMailUrl と同一内容。
+    const MEDIA_MAIL_LINK_MAP_FRONT = {
+      "メール": { prefix: "https://mail.google.com/mail/u/0/#all/" }
+    };
+    function buildDataSourceMailUrlFront(media, systemId) {
+      if (!media || !systemId) return null;
+      const cfg = MEDIA_MAIL_LINK_MAP_FRONT[String(media).trim()];
       if (!cfg) return null;
       return `${cfg.prefix}${String(systemId).trim()}`;
     }
@@ -2063,20 +2103,19 @@
         badgeHtml += '</div>';
         
         // ドライブフォルダリンクの組み立て
-        // ※ ボタンが4つ（資料・共有・Web・MAP）に増えたため、共通クラス .action-btn で
-        //   padding・font-sizeを少し詰めたデザインに統一している（デザインの方向性は維持）。
+        // ※ ボタンが5つ（資料・共有・Web・メール・MAP）に増えたため、共通クラス .action-btn で
+        //   padding・font-sizeをさらに詰めたデザインに統一している（デザインの方向性は維持）。
         let driveLinkHtml = '';
         const folderUrl = String(record.添付資料 || "").trim();
         if (folderUrl) {
           driveLinkHtml = `
           <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-yellow" onclick="event.stopPropagation();">
-            <span class="material-symbols-outlined" style="font-size:18px; color:#ca8a04">description</span>
-            <span style="font-weight:bold; color:#a16207;">資 料</span>
+            <span class="material-symbols-outlined" style="font-size:18px; color:#ca8a04">folder_open</span><span style="font-weight:bold; color:#a16207;">資 料</span>
           </a>`;
         } else {
           driveLinkHtml = `
-          <div class="drive-folder-link-disabled action-btn">            <span class="material-symbols-outlined cloud-icon" style="font-size:18px !important; width:18px; height:18px;">folder_off</span>
-            <span>資料無し</span>
+          <div class="drive-folder-link-disabled action-btn">
+            <span class="material-symbols-outlined cloud-icon" style="font-size:18px !important; width:18px; height:18px;">folder_off</span><span>資料無し</span>
           </div>`;
         }
         // 案件共有ボタン
@@ -2088,8 +2127,7 @@
           : "";
         const shareButtonHtml = shareToken ? `
         <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-green" onclick="event.stopPropagation();">
-          <span class="material-symbols-outlined" style="font-size:18px; color:#22c55e">share</span>
-          <span style="font-weight:bold; color:#16a34a;">共 有</span>
+          <span class="material-symbols-outlined" style="font-size:18px; color:#22c55e">share</span><span style="font-weight:bold; color:#16a34a;">共 有</span>
         </a>` : "";
 
         // Webボタン（データ元サイトリンク）：カレンダーの説明欄に載せているものと同じURLを組み立てる。
@@ -2097,16 +2135,22 @@
         const dataSourceUrl = buildDataSourceUrlFront(record.受注媒体, record.システムID);
         const webButtonHtml = dataSourceUrl ? `
         <a href="${dataSourceUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-blue" onclick="event.stopPropagation();">
-          <span class="material-symbols-outlined" style="font-size:18px; color:#3b82f6">public</span>
-          <span style="font-weight:bold; color:#2563eb;">Web</span>
+          <span class="material-symbols-outlined" style="font-size:18px; color:#3b82f6">public</span><span style="font-weight:bold; color:#2563eb;">Web</span>
+        </a>` : "";
+
+        // メールボタン（データ元メール）：受注媒体が「メール」の場合のみ表示。
+        // GAS側 buildDataSourceMailUrl() と同一のロジックをフロントでも再現する。
+        const dataSourceMailUrl = buildDataSourceMailUrlFront(record.受注媒体, record.システムID);
+        const mailButtonHtml = dataSourceMailUrl ? `
+        <a href="${dataSourceMailUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-purple" onclick="event.stopPropagation();">
+          <span class="material-symbols-outlined" style="font-size:18px; color:#a855f7">mail</span><span style="font-weight:bold; color:#9333ea;">メール</span>
         </a>` : "";
 
         // MAPボタン：カレンダーの説明欄に載せているMAPリンクと同じ行き先（緯度経度優先、無ければ住所）。
         const mapUrl = buildMapUrlFront(record.緯度経度, record.住所);
         const mapButtonHtml = mapUrl ? `
         <a href="${mapUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-red" onclick="event.stopPropagation();">
-          <span class="material-symbols-outlined" style="font-size:18px; color:#ef4444">location_on</span>
-          <span style="font-weight:bold; color:#dc2626;">MAP</span>
+          <span class="material-symbols-outlined" style="font-size:18px; color:#ef4444">location_on</span><span style="font-weight:bold; color:#dc2626;">MAP</span>
         </a>` : "";
         
         const actionButtonsHtml = `
@@ -2114,6 +2158,7 @@
           ${driveLinkHtml}
           ${shareButtonHtml}
           ${webButtonHtml}
+          ${mailButtonHtml}
           ${mapButtonHtml}
         </div>`;
         
@@ -2179,6 +2224,7 @@
               ${driveLinkHtml}
               ${shareButtonHtml}
               ${webButtonHtml}
+              ${mailButtonHtml}
               ${mapButtonHtml}
             </div>
             <span class="material-symbols-outlined expand-icon" style="transition: transform 0.2s; color:#94a3b8; font-size:30px;">expand_more</span>
@@ -2202,6 +2248,11 @@
                   <label>緯度経度</label>
                   <input type="text" id="緯度経度_${record.No}" value="${record.緯度経度 || ''}" style="width: 100%;">
                 </div>
+              </div>
+              
+              <div class="data-row-input">
+                <label>施主名</label>
+                <input type="text" id="施主名_${record.No}" value="${record.施主名 || ''}" data-original-yomi="${escapeAttr(record.施主名よみ || '')}">
               </div>
               
               <div class="data-row-input"><label>所在地（住所）</label>
@@ -2264,7 +2315,7 @@
               <div class="inner-accordion-details" style="display:none; padding:16px; background:#f8fafc; border-top:1px solid #cbd5e1;">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                   <div class="data-row-input"><label>システムID</label><input type="text" id="システムID_${record.No}" value="${record.システムID || ''}"></div>
-                  <div class="data-row-input"><label>物件ID</label><input type="text" id="物件ID_${record.No}" value="${record.物件ID || ''}"></div>
+                  <div class="data-row-input"><label>メールID</label><input type="text" id="物件ID_${record.No}" value="${record.メールID || ''}"></div>
                 </div>    
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
                   <div class="data-row-input"><label>着工日</label><input type="date" id="着工日_${record.No}" value="${parseDate(record.着工日)}"></div>
@@ -3303,11 +3354,19 @@
         緯度経度: document.getElementById(`緯度経度_${rNum}`).value.replace(/\s+/g, ""),
         備考: document.getElementById(`備考_${rNum}`).value,
         システムID: document.getElementById(`システムID_${rNum}`).value,
-        物件ID: document.getElementById(`物件ID_${rNum}`).value,
+        メールID: document.getElementById(`物件ID_${rNum}`).value,
         着工日: document.getElementById(`着工日_${rNum}`).value,
         完成日: document.getElementById(`完成日_${rNum}`).value,
         引渡日: document.getElementById(`引渡日_${rNum}`).value
       };
+
+      // 施主名：変更されている場合のみ送信する。
+      // 施主名が変わった場合、GAS側で「施主名よみ」を自動生成するため、
+      // ここでは施主名だけを送る（よみは元々表示していない＝ユーザーが直接編集する項目ではないため）。
+      const clientNameEl = document.getElementById(`施主名_${rNum}`);
+      if (clientNameEl) {
+        fData["施主名"] = clientNameEl.value;
+      }
       
       const projectTypeSel = document.getElementById(`addProjectTypeSelect_${rNum}`);
       if (projectTypeSel && projectTypeSel.value === "(新規案件種別)") {
@@ -3591,8 +3650,10 @@
         // フィールドマッピング定義
         const fieldMapping = {
           'システムID': 'system_id',
-          '物件ID': 'property_id',
+          'メールID': 'property_id',
+          '物件ID': 'property_id', // 外部連携側が旧キー名「物件ID」で送ってくる場合にも対応
           '案件名': 'project_name',
+          '施主名': 'client_name',
           '住所': 'address',
           '専有面積・延床面積': 'room_area',
           'キーBOX': 'key_box',
