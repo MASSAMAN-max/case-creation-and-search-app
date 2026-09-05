@@ -1371,6 +1371,40 @@
         throw err;
       }
     }
+
+    // =================================================================
+    // 🔌 GAS通信の集約レイヤー（Api）
+    // -----------------------------------------------------------------------
+    // これまでは各所で apiCall("アクション名", {...}) を直接呼び出しており、
+    // アクション名の文字列や送信パラメータの形をコード中に何度も手書きしていた
+    // （例："loadAllRecords" というスペルミスをしても実行時までエラーに気づけない、
+    //  同じAPIへの呼び出し方が呼び出し箇所ごとに微妙に違う、GAS側の仕様が変わった際に
+    //  修正箇所を探すのが大変、等）。
+    // このApiオブジェクトは、GASの各アクション（doPost内のswitch文の各case）に対応する
+    // 名前付きメソッドをまとめたものであり、実際の通信はこれまで通りapiCall()が担う
+    // （＝GAS側・Vercel側の実装や通信方式は一切変更していない、呼び出し方を整理しただけ）。
+    // 今後、新しいGASアクションを追加する場合はここにメソッドを1つ足すだけでよい。
+    // =================================================================
+    const Api = {
+      // ---- 認証・マスタ ----
+      loadAppDataMaster: () => apiCall("loadAppDataMaster"),
+      logout: (token) => apiCall("logout", { token }),
+
+      // ---- 案件データ 読み込み ----
+      loadAllRecords: () => apiCall("loadAllRecords"),
+
+      // ---- 案件データ 登録・更新 ----
+      createRecordSheetOnly: (fData) => apiCall("createRecordSheetOnly", { fData }),
+      updateRecordSheetOnly: (fData, rNum) => apiCall("updateRecordSheetOnly", { fData, rNum }),
+      processBackgroundTasks: (fData, rNum, flags) => apiCall("processBackgroundTasks", { fData, rNum, flags }),
+
+      // ---- 添付ファイル（チャンク分割アップロード） ----
+      uploadbox: (rowNumber, fileType, filesData) => apiCall("uploadbox", { rowNumber, fileType, filesData }),
+      initChunkedUpload: (rowNumber, fileName, mimeType) => apiCall("initChunkedUpload", { rowNumber, fileName, mimeType }),
+      uploadChunk: (rowNumber, uploadId, chunkIndex, base64Chunk) => apiCall("uploadChunk", { rowNumber, uploadId, chunkIndex, base64Chunk }),
+      finalizeChunkedUpload: (rowNumber, uploadId, totalChunks, fileName, fileType, mimeType) =>
+        apiCall("finalizeChunkedUpload", { rowNumber, uploadId, totalChunks, fileName, fileType, mimeType }),
+    };
   
     document.addEventListener("DOMContentLoaded", async () => {
       initializeInspectionTimeSelects();
@@ -1492,7 +1526,7 @@
       document.getElementById("loaderText").textContent = "ログイン認証中...";
       try {
         // ① まずログイン認証を兼ねるマスタデータ取得のみを待つ。ここが通ればログイン成功。
-        const data = await apiCall("loadAppDataMaster");
+        const data = await Api.loadAppDataMaster();
         appConfig = data;
         if (data.loginUser) {
           document.getElementById("userDisplayLabel").textContent = `ログインユーザー: ${data.loginUser}`;
@@ -1556,7 +1590,7 @@
       if (countDiv && !countDiv.innerHTML) {
         countDiv.innerHTML = '<span style="color:#94a3b8;">案件データを読み込み中...</span>';
       }
-      recordsLoadingPromise = apiCall("loadAllRecords")
+      recordsLoadingPromise = Api.loadAllRecords()
         .then(records => {
           allRecordsCache = records;
           recordsLoadingPromise = null;
@@ -2143,7 +2177,7 @@
         const dataSourceMailUrl = buildDataSourceMailUrlFront(record.受注媒体, record.システムID);
         const mailButtonHtml = dataSourceMailUrl ? `
         <a href="${dataSourceMailUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-purple" onclick="event.stopPropagation();">
-          <span class="material-symbols-outlined" style="font-size:18px; color:#a855f7">mail</span><span style="font-weight:bold; color:#9333ea;">メール</span>
+          <span class="material-symbols-outlined" style="font-size:18px; color:#a855f7">mail</span><span style="font-weight:bold; color:#9333ea;">mail</span>
         </a>` : "";
 
         // MAPボタン：カレンダーの説明欄に載せているMAPリンクと同じ行き先（緯度経度優先、無ければ住所）。
@@ -2871,11 +2905,7 @@
       const mimeType = file.type || 'application/octet-stream';
 
       // ① アップロードセッションを開始する
-      const session = await apiCall("initChunkedUpload", {
-        rowNumber: rowNumber,
-        fileName: file.name,
-        mimeType: mimeType
-      });
+      const session = await Api.initChunkedUpload(rowNumber, file.name, mimeType);
       const uploadId = session && session.uploadId;
       if (!uploadId) {
         throw new Error("アップロードセッションを開始できませんでした。");
@@ -2885,24 +2915,12 @@
       //    （並列に送ると合計の同時通信量が大きくなり得るため、あえて直列で送る）
       const chunks = await splitFileIntoBase64Chunks(file, UPLOAD_CHUNK_SIZE);
       for (let i = 0; i < chunks.length; i++) {
-        await apiCall("uploadChunk", {
-          rowNumber: rowNumber,
-          uploadId: uploadId,
-          chunkIndex: i,
-          base64Chunk: chunks[i]
-        });
+        await Api.uploadChunk(rowNumber, uploadId, i, chunks[i]);
         console.log(`📦 チャンク送信 ${i + 1}/${chunks.length}: ${file.name}`);
       }
 
       // ③ 全チャンク送信完了を通知し、GAS側で結合・正式保存してもらう
-      await apiCall("finalizeChunkedUpload", {
-        rowNumber: rowNumber,
-        uploadId: uploadId,
-        totalChunks: chunks.length,
-        fileName: file.name,
-        fileType: fileObj.fileType,
-        mimeType: mimeType
-      });
+      await Api.finalizeChunkedUpload(rowNumber, uploadId, chunks.length, file.name, fileObj.fileType, mimeType);
 
       console.log(`📤 チャンク分割アップロード完了: ${file.name} (${(file.size/1024/1024).toFixed(2)}MB, ${chunks.length}チャンク)`);
     }
@@ -2973,7 +2991,7 @@
       for (const fileObj of imageFileObjs) {
         try {
           const base64File = await fileToBase64(fileObj);
-          await apiCall("uploadbox", { rowNumber: rowNumber, fileType: base64File.fileType, filesData: [base64File] });
+          await Api.uploadbox(rowNumber, base64File.fileType, [base64File]);
         } catch (err) {
           console.error(`❌ 画像アップロード失敗: ${fileObj.file.name}`, err);
           skippedNames.push(fileObj.file.name);
@@ -3250,7 +3268,7 @@
         const fDataForSheetOnly = Object.assign({}, payload);
         delete fDataForSheetOnly.files; // 高速な1段目にはファイルの重いデータを含めない
         
-        const response = await apiCall("createRecordSheetOnly", { fData: fDataForSheetOnly });
+        const response = await Api.createRecordSheetOnly(fDataForSheetOnly);
         
         // 1. ローダー解除＆新規モーダルを閉じる
         loader.style.display = "none";
@@ -3277,7 +3295,7 @@
         delete payloadWithoutFiles.files;
 
         try {
-          await apiCall("processBackgroundTasks", { fData: payloadWithoutFiles, rNum: newRowNumber, flags: flags });
+          await Api.processBackgroundTasks(payloadWithoutFiles, newRowNumber, flags);
 
           // ここまで（カレンダー登録・マスタ更新）が完了した時点で完了通知に切り替える。
           // 添付ファイルのアップロードはこの後も裏側で継続し、完了を待たずに一覧を更新する。
@@ -3286,7 +3304,7 @@
           }
 
           // バックグラウンドでマスタデータを再取得・更新
-          apiCall("loadAppDataMaster").then(data => {
+          Api.loadAppDataMaster().then(data => {
             if (data && typeof appConfig !== "undefined") appConfig = data;
           }).catch(console.error);
 
@@ -3453,7 +3471,7 @@
         document.getElementById("loaderText").textContent = "データを更新中";
         const fDataForSheetOnly = Object.assign({}, fData);
         delete fDataForSheetOnly.files;
-        const response = await apiCall("updateRecordSheetOnly", { fData: fDataForSheetOnly, rNum: rowNumber });
+        const response = await Api.updateRecordSheetOnly(fDataForSheetOnly, rowNumber);
         
         // 1. ローダーを消して画面を解放
         loader.style.display = "none";
@@ -3479,7 +3497,7 @@
         delete fDataForBackgroundTasks.files;
         
         try {
-          await apiCall("processBackgroundTasks", { fData: fDataForBackgroundTasks, rNum: rowNumber, flags: flags });
+          await Api.processBackgroundTasks(fDataForBackgroundTasks, rowNumber, flags);
           // すべての処理完了 → 一覧を自動的に最新化（ここでトースト表示も更新される）
           await refreshListAfterAllProcessing();
 
@@ -3584,7 +3602,7 @@
     // 現在の検索条件を保ったまま一覧をリアルタイムに最新化する。完了したらトースト通知で知らせる。
     async function refreshListAfterAllProcessing() {
       try {
-        allRecordsCache = await apiCall("loadAllRecords");
+        allRecordsCache = await Api.loadAllRecords();
         // 現在の絞り込み条件を維持したまま再描画（search()はDOM上の現在のフィルタ値を読んで再描画する）
         // 保存後の自動更新であり、ユーザーが自ら検索した訳ではないため画面はスクロールさせない
         search(false);
@@ -3624,7 +3642,7 @@
         const tokenToRevoke = localStorage.getItem('app_login_token');
         if (tokenToRevoke) {
           try {
-            await apiCall("logout", { token: tokenToRevoke });
+            await Api.logout(tokenToRevoke);
           } catch (revokeErr) {
             // 失効APIが失敗しても、ローカルの情報は必ず消してログアウト自体は完了させる
             console.error("❌ サーバー側トークンの失効に失敗しました:", revokeErr);
