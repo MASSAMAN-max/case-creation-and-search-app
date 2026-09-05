@@ -1406,7 +1406,36 @@
         apiCall("finalizeChunkedUpload", { rowNumber, uploadId, totalChunks, fileName, fileType, mimeType }),
     };
   
+    // -------------------------------------------------------------
+    // 【環境設定値の取得】
+    // 案件共有アプリ（Vercel）のドメイン等、環境依存の値を保持するグローバル変数。
+    // 以前はこの値を各所にハードコードしていたが、ドメイン変更時の修正漏れ事故が
+    // 起きたため、/api/config（Vercelの環境変数を返すだけの軽量API）から
+    // ページ読み込み時に一度だけ取得する方式に統一した。
+    // 取得前（fetchAppEnvConfig完了前）は null のままなので、参照する側
+    // （buildShareUrl等）は必ずnullチェックを行うこと。
+    // 【命名について】既存の appConfig（マスタデータ：発注元一覧・担当者一覧等）
+    // と役割が異なるため、混同を避けるために appEnvConfig という別名にしている。
+    // -------------------------------------------------------------
+    let appEnvConfig = null;
+
+    async function fetchAppEnvConfig() {
+      try {
+        const response = await fetch("/api/config");
+        const data = await response.json();
+        if (!response.ok || data.error) {
+          throw new Error(data.error || "設定値の取得に失敗しました");
+        }
+        appEnvConfig = data;
+      } catch (err) {
+        console.error("❌ /api/config の取得に失敗しました:", err);
+        // 失敗してもアプリ自体は継続させる（共有ボタンだけが使えなくなる程度に留める）
+        appEnvConfig = null;
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", async () => {
+      await fetchAppEnvConfig();
       initializeInspectionTimeSelects();
       const savedToken = localStorage.getItem('app_login_token');
       if (savedToken) {
@@ -2155,11 +2184,13 @@
         // 案件共有ボタン
         // ※ URLにはNo（連番）ではなく、他案件を推測されないようハッシュ化された共有トークンを使う。
         //   共有ページはVercelの /api/share（OGP対応の中継ページ）経由で開く。
+        //   ドメインはハードコードせず、/api/config から取得した appEnvConfig.shareAppDomain を使う
+        //   （以前ハードコードしていたことで、プレビュードメインのまま放置される事故が起きたため）。
         const shareToken = record.共有トークン || "";
-        const shareUrl = shareToken
-          ? `https://project-sharing-git-main-massaman-maxs-projects.vercel.app/api/share?token=${encodeURIComponent(shareToken)}`
+        const shareUrl = (shareToken && appEnvConfig && appEnvConfig.shareAppDomain)
+          ? `https://${appEnvConfig.shareAppDomain}/api/share?token=${encodeURIComponent(shareToken)}`
           : "";
-        const shareButtonHtml = shareToken ? `
+        const shareButtonHtml = shareUrl ? `
         <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-green" onclick="event.stopPropagation();">
           <span class="material-symbols-outlined" style="font-size:18px; color:#22c55e">share</span><span style="font-weight:bold; color:#16a34a;">共 有</span>
         </a>` : "";
