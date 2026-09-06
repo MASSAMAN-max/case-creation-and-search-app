@@ -1015,6 +1015,17 @@
       return String(str == null ? "" : str).replace(/"/g, '&quot;');
     }
 
+    // onclick="...('${...}')" のように、HTML属性内のJS文字列リテラル
+    // （シングルクォートで囲む想定）に値を埋め込む際に使うエスケープ。
+    // escapeHtml/escapeAttrはHTML特殊文字用で、JS文字列としての
+    // シングルクォート・バックスラッシュのエスケープは行わないため別関数にしている。
+    function escapeForJsAttr(str) {
+      return String(str == null ? "" : str)
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, "&quot;");
+    }
+
     // 日付文字列/ISO文字列を <input type="date"> にそのまま渡せる "yyyy-MM-dd" 形式へ変換する
     function parseDateForInput(d) {
       if (!d) return "";
@@ -1404,6 +1415,12 @@
       uploadChunk: (rowNumber, uploadId, chunkIndex, base64Chunk) => apiCall("uploadChunk", { rowNumber, uploadId, chunkIndex, base64Chunk }),
       finalizeChunkedUpload: (rowNumber, uploadId, totalChunks, fileName, fileType, mimeType) =>
         apiCall("finalizeChunkedUpload", { rowNumber, uploadId, totalChunks, fileName, fileType, mimeType }),
+
+      // ---- 案件共有アプリ連携 ----
+      // 「共有」ボタン用。既にこのアプリにログイン済みであることを使って、
+      // 案件共有アプリ側のログイン（Google/LINE）を省略するための
+      // 5分限定・この案件専用の閲覧用一時トークン（viewKey）を発行する。
+      issueShareViewKey: (shareToken) => apiCall("issueShareViewKey", { shareToken }),
     };
   
     // -------------------------------------------------------------
@@ -1431,6 +1448,45 @@
         console.error("❌ /api/config の取得に失敗しました:", err);
         // 失敗してもアプリ自体は継続させる（共有ボタンだけが使えなくなる程度に留める）
         appEnvConfig = null;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 【共有ボタンの処理】
+    // 案件共有アプリを開く際、このアプリに既にログイン済みであることを
+    // 使って、案件共有アプリ側のログイン（Google/LINE）を省略するための
+    // 一時トークン（viewKey）をGASに発行してもらってから遷移する。
+    //
+    // 【ポップアップブロック対策】
+    // window.open()は「ユーザー操作（クリック）の直後」に同期的に
+    // 呼ばないと、多くのブラウザでポップアップブロッカーに遮断される。
+    // 今回はGASへの問い合わせ（非同期）を挟むため、先に空のタブを
+    // 開いておき（これはクリック直後の同期呼び出しなのでブロックされない）、
+    // viewKey取得後にそのタブのlocationを差し替える、という手順を踏む。
+    // -------------------------------------------------------------
+    async function openShareApp(shareToken, shareAppDomain) {
+      // 【重要】クリック直後、同期的にタブを開いておく（about:blankでよい）
+      const newTab = window.open("", "_blank");
+      if (newTab) {
+        newTab.document.write("読み込み中です…");
+      }
+
+      try {
+        const result = await Api.issueShareViewKey(shareToken);
+        const url = `https://${shareAppDomain}/index.html?token=${encodeURIComponent(shareToken)}&viewKey=${encodeURIComponent(result.viewKey)}`;
+        if (newTab) {
+          newTab.location.href = url;
+        } else {
+          // ポップアップがブロックされていた場合のフォールバック
+          window.location.href = url;
+        }
+      } catch (err) {
+        console.error("❌ 閲覧用トークンの発行に失敗しました:", err);
+        if (newTab) {
+          newTab.document.body.innerText = "共有ページを開けませんでした。時間をおいて再度お試しください。";
+        } else {
+          alert("共有ページを開けませんでした。時間をおいて再度お試しください。");
+        }
       }
     }
 
@@ -2186,14 +2242,16 @@
         //   共有ページはVercelの /api/share（OGP対応の中継ページ）経由で開く。
         //   ドメインはハードコードせず、/api/config から取得した appEnvConfig.shareAppDomain を使う
         //   （以前ハードコードしていたことで、プレビュードメインのまま放置される事故が起きたため）。
+        // 【重要】以前は<a href>による静的リンクだったが、案件共有アプリ側の
+        //   ログイン省略機能（viewKey）導入により、クリック時にGASへ問い合わせて
+        //   一時トークンを取得してから遷移する動的な処理（openShareApp）に変更した。
+        //   そのため <a> ではなく <button onclick> を使う。
         const shareToken = record.共有トークン || "";
-        const shareUrl = (shareToken && appEnvConfig && appEnvConfig.shareAppDomain)
-          ? `https://${appEnvConfig.shareAppDomain}/api/share?token=${encodeURIComponent(shareToken)}`
-          : "";
-        const shareButtonHtml = shareUrl ? `
-        <a href="${shareUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-green" onclick="event.stopPropagation();">
+        const shareDomainReady = shareToken && appEnvConfig && appEnvConfig.shareAppDomain;
+        const shareButtonHtml = shareDomainReady ? `
+        <button type="button" onclick="event.stopPropagation(); openShareApp('${escapeForJsAttr(shareToken)}', '${escapeForJsAttr(appEnvConfig.shareAppDomain)}')" class="drive-folder-link action-btn action-btn-green">
           <span class="material-symbols-outlined" style="font-size:18px; color:#22c55e">share</span><span style="font-weight:bold; color:#16a34a;">共 有</span>
-        </a>` : "";
+        </button>` : "";
 
         // Webボタン（データ元サイトリンク）：カレンダーの説明欄に載せているものと同じURLを組み立てる。
         // GAS側 buildDataSourceUrl() と同一のロジック（受注媒体ごとのURLパターン＋システムID）をフロントでも再現する。
