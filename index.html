@@ -1416,9 +1416,6 @@
       finalizeChunkedUpload: (rowNumber, uploadId, totalChunks, fileName, fileType, mimeType) =>
         apiCall("finalizeChunkedUpload", { rowNumber, uploadId, totalChunks, fileName, fileType, mimeType }),
 
-      // ---- メール（mailボタン用：Android版Gmailアプリのディープリンク不具合対策） ----
-      getMailPermalink: (mailId) => apiCall("getMailPermalink", { mailId }),
-
       // ---- 案件共有アプリ連携 ----
       // 「共有」ボタン用。既にこのアプリにログイン済みであることを使って、
       // 案件共有アプリ側のログイン（Google/LINE）を省略するための
@@ -1489,62 +1486,6 @@
           newTab.document.body.innerText = "共有ページを開けませんでした。時間をおいて再度お試しください。";
         } else {
           alert("共有ページを開けませんでした。時間をおいて再度お試しください。");
-        }
-      }
-    }
-
-    // =================================================================
-    // mailボタン：クリック時にGAS経由でGmailのパーマリンク（恒久リンク）を取得し、
-    // 新しいタブで開く。
-    // -----------------------------------------------------------------------
-    // 【背景】以前は https://mail.google.com/mail/u/0/#all/{メールID} という
-    // フラグメント形式のURLへの直接リンクにしていたが、Android版Gmailアプリでは
-    // このURLのフラグメント部分（#以降）がディープリンク処理で正しく解釈されず、
-    // アプリが起動しても該当メールへ遷移せず受信トレイ表示で止まる不具合があった
-    // （PCブラウザでは問題なかった）。
-    // GAS公式に推奨されている GmailApp.getMessageById().getThread().getPermalink()
-    // という恒久リンク取得方法を使うことで、Android/iOSアプリのディープリンク処理との
-    // 互換性を高めている。
-    //
-    // 新しいタブは、非同期処理の後で window.open() すると多くのブラウザで
-    // ポップアップブロックの対象になってしまうため、クリックと同じタイミングで
-    // 先に空のタブを開いておき（about:blank）、URL取得後にそのタブのlocationを
-    // 差し替える方式にしている（openShareAppと同じ考え方）。
-    // =================================================================
-    async function openMailPermalink(mailId, btnEl) {
-      const newTab = window.open('about:blank', '_blank');
-      const originalHtml = btnEl ? btnEl.innerHTML : null;
-      if (btnEl) {
-        btnEl.disabled = true;
-        btnEl.innerHTML = '<span class="material-symbols-outlined spinning" style="font-size:18px;">progress_activity</span><span style="font-weight:bold;">開く中...</span>';
-      }
-      try {
-        const result = await Api.getMailPermalink(mailId);
-        if (result && result.url) {
-          if (newTab) {
-            newTab.location.href = result.url;
-          } else {
-            // ポップアップブロック等でタブを開けなかった場合は、現在のタブで開く
-            window.open(result.url, '_blank');
-          }
-        } else {
-          throw new Error("メールへのリンクを取得できませんでした。");
-        }
-      } catch (err) {
-        console.error("❌ メールを開けませんでした:", err);
-        if (newTab) newTab.close();
-        if (typeof Swal !== "undefined") {
-          Swal.fire({
-            icon: 'error',
-            title: 'メールを開けませんでした',
-            html: `<strong>${err.message}</strong>`,
-            confirmButtonText: '了解'
-          });
-        }
-      } finally {
-        if (btnEl && originalHtml !== null) {
-          btnEl.disabled = false;
-          btnEl.innerHTML = originalHtml;
         }
       }
     }
@@ -2309,14 +2250,18 @@
         </a>` : "";
 
         // メールボタン（データ元メール）：受注媒体に関係なく、メールIDに値があれば表示。
-        // Android版Gmailアプリでは「#all/{ID}」形式のリンクが正しく解釈されないことがあるため、
-        // <a href>の直接リンクにはせず、クリック時にGAS側でgetThread().getPermalink()を
-        // 取得してから開くボタンにしている（openMailPermalink()参照）。
-        const mailButtonHtml = record.メールID ? `
-        <button type="button" class="drive-folder-link action-btn action-btn-purple" style="cursor:pointer;"
-          onclick="event.stopPropagation(); openMailPermalink('${escapeForJsAttr(record.メールID)}', this);">
+        // 【注記】以前、Android版Gmailアプリでのディープリンク不具合対策として
+        // GAS側でパーマリンクを取得する方式を試みたが、この「メールID」列の値は
+        // GmailのURLバーからコピーしたWeb画面専用の内部ID（FMfcg...形式）であり、
+        // Gmail公式APIのメッセージID体系とは互換性が無く、GmailApp.getMessageById()
+        // では使えないことが判明したため断念した。元の直接リンク方式に戻している。
+        const dataSourceMailUrl = record.メールID
+          ? `https://mail.google.com/mail/u/0/#all/${encodeURIComponent(String(record.メールID).trim())}`
+          : "";
+        const mailButtonHtml = dataSourceMailUrl ? `
+        <a href="${dataSourceMailUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-purple" onclick="event.stopPropagation();">
           <span class="material-symbols-outlined" style="font-size:18px; color:#a855f7">mail</span><span style="font-weight:bold; color:#9333ea;">mail</span>
-        </button>` : "";
+        </a>` : "";
 
         // MAPボタン：カレンダーの説明欄に載せているMAPリンクと同じ行き先（緯度経度優先、無ければ住所）。
         const mapUrl = buildMapUrlFront(record.緯度経度, record.住所);
