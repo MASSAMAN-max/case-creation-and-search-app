@@ -1316,20 +1316,13 @@
       currentWorkCount--;
     };
   
-    const FILE_TYPES_DEF = {
-      "01": { name: "図面",     keywords: ["図面", "竣工"] },
-      "02": { name: "工程表",   keywords: ["工程表", "工程"] },
-      "03": { name: "平面図",   keywords: ["平面図", "平面"] },
-      "04": { name: "立面図",   keywords: ["立面図", "立面"] },
-      "05": { name: "注文書",   keywords: ["注文書", "注文", "発注書", "発注"] },
-      "06": { name: "駐車場",   keywords: ["駐車場", "駐車"] },
-      "07": { name: "現場写真", keywords: ["現場写真", "写真"] },
-      "08": { name: "見積書",   keywords: ["見積書", "見積"] },
-      "09": { name: "その他",   keywords: ["その他"] },
-      "10": { name: "地図",     keywords: ["地図", "案内図"] },
-      "20": { name: "請求書",   keywords: ["請求書", "請求"] },
-      "21": { name: "出来高",   keywords: ["出来高", "出来高報告書"] }
-    };
+    // 添付ファイル種別マスタ（id・名称・自動判定用キーワード）：
+    // 以前はここに、GAS側（00_設定_共通ユーティリティ.js の FILE_TYPES）と全く同じ内容を
+    // 別途ハードコードしていたが、二重管理による更新漏れリスクがあったため廃止した。
+    // 現在は loadAppDataMaster() のレスポンス（appConfig.fileTypes）から
+    // applySharedMasterData() が組み立てる。ログイン完了前は空オブジェクトのままなので、
+    // このオブジェクトを参照する処理（renderFileList等）はログイン後にしか呼ばれないこと。
+    let FILE_TYPES_DEF = {};
   
     // yyyy-mm-dd HH:MM:SS 形式
     function getNowDateTimeString() {
@@ -1605,6 +1598,33 @@
     // search()実行時にこれが残っていればawaitするだけにして、二重に読み込みに行かないようにする。
     let recordsLoadingPromise = null;
 
+    // =================================================================
+    // 🔗 GAS側マスタデータをフロント用の形へ変換して反映する
+    // -----------------------------------------------------------------------
+    // 【背景】以前は「添付ファイル種別マスタ（FILE_TYPES_DEF）」と
+    // 「受注媒体ごとのURLパターン（MEDIA_LINK_MAP_FRONT）」を、GAS側の定義
+    // （00_設定_共通ユーティリティ.js の FILE_TYPES、07_カレンダー連携.js の
+    // MEDIA_LINK_MAP）と全く同じ内容でこのファイルにも別途ハードコードしており、
+    // 「片方だけ更新して不整合になる」事故のリスクを抱えていた。
+    // 今後はGAS側から届いた値をこの関数でそのまま展開するだけにし、
+    // マスタの実体はGAS側の1箇所だけで管理する。
+    // loadAppDataMaster()を呼ぶたびに（初回ログイン時・新規/更新保存後の
+    // バックグラウンド再取得時）必ずこの関数も合わせて呼ぶこと。
+    // =================================================================
+    function applySharedMasterData(data) {
+      // 添付ファイル種別マスタ：GASからは配列 [{id, name, keywords}, ...] で届くため、
+      // 既存コード（FILE_TYPES_DEF[code].name 等）がそのまま使える「idをキーにしたオブジェクト」へ変換する
+      const fileTypesArray = Array.isArray(data.fileTypes) ? data.fileTypes : [];
+      const newFileTypesDef = {};
+      fileTypesArray.forEach(t => {
+        if (t && t.id) newFileTypesDef[t.id] = { name: t.name, keywords: t.keywords || [] };
+      });
+      FILE_TYPES_DEF = newFileTypesDef;
+
+      // 受注媒体ごとのURLパターン：GAS側と全く同じ形（{ 媒体名: { prefix } }）で届くため、そのまま反映する
+      MEDIA_LINK_MAP_FRONT = (data.mediaLinkMap && typeof data.mediaLinkMap === 'object') ? data.mediaLinkMap : {};
+    }
+
     async function initializeApp() {
       const loader = document.getElementById("initLoader");
       loader.style.display = "flex";
@@ -1613,6 +1633,7 @@
         // ① まずログイン認証を兼ねるマスタデータ取得のみを待つ。ここが通ればログイン成功。
         const data = await Api.loadAppDataMaster();
         appConfig = data;
+        applySharedMasterData(data);
         if (data.loginUser) {
           document.getElementById("userDisplayLabel").textContent = `ログインユーザー: ${data.loginUser}`;
           localStorage.setItem('app_login_userName', data.loginUser);
@@ -1920,14 +1941,14 @@
         if (isLegacyHeader) {
           if (currentGroup !== null) html += `</optgroup>`;
           const labelText = String(val).replace(/^---\s*|\s*---$/g, ''); // "--- あ行 ---" から "あ行" を抽出
-          html += `<optgroup label="${labelText}">`;
+          html += `<optgroup label="${escapeAttr(labelText)}">`;
           currentGroup = labelText;
           return;
         }
 
         if (gyou && gyou !== currentGroup) {
           if (currentGroup !== null) html += `</optgroup>`;
-          html += `<optgroup label="${gyou}">`;
+          html += `<optgroup label="${escapeAttr(gyou)}">`;
           currentGroup = gyou;
         }
 
@@ -1935,7 +1956,7 @@
         const isClientSelect = (elementId === "filterClient" || elementId === "addClientSelect" || (suffix && suffix.includes("発注元")));
         const text = isClientSelect ? formatDisplayText(val) : val;
 
-        html += `<option value="${val}">${text}</option>`;
+        html += `<option value="${escapeAttr(val)}">${escapeHtml(text)}</option>`;
       });
     
       if (currentGroup !== null) html += `</optgroup>`; // 最後にグループを閉じる
@@ -1977,7 +1998,7 @@
         // 「行」が切り替わったら <optgroup> を切替
         if (gyou && gyou !== currentGroup) {
           if (currentGroup !== null) html += `</optgroup>`;
-          html += `<optgroup label="${gyou}">`;
+          html += `<optgroup label="${escapeAttr(gyou)}">`;
           currentGroup = gyou;
         }
     
@@ -1987,7 +2008,7 @@
         const sel = (val === currentVal) ? 'selected' : '';
         if (sel) exist = true;
     
-        html += `<option value="${val}" ${sel}>${text}</option>`;
+        html += `<option value="${escapeAttr(val)}" ${sel}>${escapeHtml(text)}</option>`;
       });
     
       if (currentGroup !== null) html += `</optgroup>`;
@@ -1996,7 +2017,7 @@
       if (currentVal && !exist && !isFilter) {
         const isClient = (suffix === "発注元" || suffix.includes("発注元"));
         const text = isClient ? formatDisplayText(currentVal) : currentVal;
-        html += `<option value="${currentVal}" selected>${text}</option>`;
+        html += `<option value="${escapeAttr(currentVal)}" selected>${escapeHtml(text)}</option>`;
       }
     
       return html;
@@ -2120,14 +2141,13 @@
     // 検索結果リスト表示
     // =================================================================
     // 受注媒体ごとのデータ元サイトURLパターン（Webボタン用）。
-    // ※ GAS側 07_カレンダー連携.gs の MEDIA_LINK_MAP / buildDataSourceUrl と同一内容にしている。
-    //   カレンダーの説明欄に載せているリンクと同じ行き先になるよう、
-    //   どちらか一方だけ変更した場合はもう一方も必ず合わせて更新すること。
-    const MEDIA_LINK_MAP_FRONT = {
-      "ANDPAD": { prefix: "https://andpad.jp/my/orders/" },
-      "ダンドリワーク": { prefix: "https://www.dandoli.jp/oscarjj/sites/" },
-      "現場Plus": { prefix: "https://apg.kensetsu-cloud.jp/main/dyapp/a/AX4DD823/assoc/registersite/jobitemdetail/j/" }
-    };
+    // 以前はGAS側（07_カレンダー連携.js の MEDIA_LINK_MAP）と全く同じ内容を
+    // 別途ハードコードしていたが、二重管理による更新漏れリスクがあったため廃止した。
+    // 現在は loadAppDataMaster() のレスポンス（appConfig.mediaLinkMap）から
+    // applySharedMasterData() が組み立てる。これにより、カレンダー説明欄の
+    // リンク（GAS側 buildDataSourceUrl）と一覧のWebボタンのリンク先が
+    // 常に同じマスタから生成され、ズレる心配がなくなる。
+    let MEDIA_LINK_MAP_FRONT = {};
     function buildDataSourceUrlFront(media, systemId) {
       if (!media || !systemId) return null;
       const cfg = MEDIA_LINK_MAP_FRONT[String(media).trim()];
@@ -2216,7 +2236,7 @@
         const folderUrl = String(record.添付資料 || "").trim();
         if (folderUrl) {
           driveLinkHtml = `
-          <a href="${folderUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-yellow" onclick="event.stopPropagation();">
+          <a href="${escapeAttr(folderUrl)}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-yellow" onclick="event.stopPropagation();">
             <span class="material-symbols-outlined" style="font-size:18px; color:#ca8a04">folder_open</span><span style="font-weight:bold; color:#a16207;">資 料</span>
           </a>`;
         } else {
@@ -2245,7 +2265,7 @@
         // GAS側 buildDataSourceUrl() と同一のロジック（受注媒体ごとのURLパターン＋システムID）をフロントでも再現する。
         const dataSourceUrl = buildDataSourceUrlFront(record.受注媒体, record.システムID);
         const webButtonHtml = dataSourceUrl ? `
-        <a href="${dataSourceUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-blue" onclick="event.stopPropagation();">
+        <a href="${escapeAttr(dataSourceUrl)}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-blue" onclick="event.stopPropagation();">
           <span class="material-symbols-outlined" style="font-size:18px; color:#3b82f6">public</span><span style="font-weight:bold; color:#2563eb;">Web</span>
         </a>` : "";
 
@@ -2301,8 +2321,8 @@
             workScheduleHtml += `
               <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:14px; align-items:center; background:#f1f5f9; padding:6px 12px; border-radius:6px; width:fit-content;">
                 <span style="display:flex; align-items:center; gap:4px; color:#555;"><span class="material-symbols-outlined" style="font-size:16px;">calendar_month</span> ${dateLabel}</span>
-                <span style="display:flex; align-items:center; gap:4px; font-weight:bold; color:#334155;"><span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);">construction</span> ${wContent || "内容未定"}</span>
-                ${wWorker ? `<span style="display:flex; align-items:center; gap:4px; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:bold;"><span class="material-symbols-outlined" style="font-size:14px;">person</span> ${wWorker}</span>` : ''}
+                <span style="display:flex; align-items:center; gap:4px; font-weight:bold; color:#334155;"><span class="material-symbols-outlined" style="font-size:16px; color:var(--primary);">construction</span> ${escapeHtml(wContent) || "内容未定"}</span>
+                ${wWorker ? `<span style="display:flex; align-items:center; gap:4px; color:#0284c7; background:#e0f2fe; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:bold;"><span class="material-symbols-outlined" style="font-size:14px;">person</span> ${escapeHtml(wWorker)}</span>` : ''}
               </div>`;
           }
         });
@@ -2331,11 +2351,11 @@
             <div class="summary-info" style="flex:1; padding-right:12px;">
               <div class="row-meta">
                 <span class="badge-no">No.${record.No}</span>
-                <span style="font-size:14px; color:var(--text-sub); font-weight:bold;">${record.発注元}</span>
-                <span style="font-size:14px; color:#475569; font-weight:bold;">👤 ${record.担当者 || '－'}</span>
-                <span style="font-size:14px; color:#64748b; margin-left:auto; font-weight:bold; padding-right:10px;">受注媒体: ${record.受注媒体 || '－'}</span>
+                <span style="font-size:14px; color:var(--text-sub); font-weight:bold;">${escapeHtml(record.発注元)}</span>
+                <span style="font-size:14px; color:#475569; font-weight:bold;">👤 ${escapeHtml(record.担当者) || '－'}</span>
+                <span style="font-size:14px; color:#64748b; margin-left:auto; font-weight:bold; padding-right:10px;">受注媒体: ${escapeHtml(record.受注媒体) || '－'}</span>
               </div>
-              <div class="anken-title">${record.案件名}</div>
+              <div class="anken-title">${escapeHtml(record.案件名)}</div>
               ${workScheduleHtml}
               ${badgeHtml}
               ${driveLinkHtml}
@@ -2363,32 +2383,32 @@
                 
                 <div class="data-row-input field-latlng">
                   <label>緯度経度</label>
-                  <input type="text" id="緯度経度_${record.No}" value="${record.緯度経度 || ''}" style="width: 100%;">
+                  <input type="text" id="緯度経度_${record.No}" value="${escapeAttr(record.緯度経度 || '')}" style="width: 100%;">
                 </div>
               </div>
               
               <div class="data-row-input">
                 <label>施主名</label>
-                <input type="text" id="施主名_${record.No}" value="${record.施主名 || ''}" data-original-yomi="${escapeAttr(record.施主名よみ || '')}">
+                <input type="text" id="施主名_${record.No}" value="${escapeAttr(record.施主名 || '')}" data-original-yomi="${escapeAttr(record.施主名よみ || '')}">
               </div>
               
               <div class="data-row-input"><label>所在地（住所）</label>
-                <input type="text" id="住所_${record.No}" value="${record.住所 || ''}">
+                <input type="text" id="住所_${record.No}" value="${escapeAttr(record.住所 || '')}">
               </div>
               
               <div class="field-row">
                 <div class="data-row-input" style="flex: 1;"><label>延床面積</label>
-                  <input type="text" id="延床面積_${record.No}" value="${record.延床面積 || ''}">
+                  <input type="text" id="延床面積_${record.No}" value="${escapeAttr(record.延床面積 || '')}">
                 </div>
                 
                 <div class="data-row-input" style="flex: 1;"><label>キーBOX</label>
-                  <input type="text" id="キーBOX_${record.No}" value="${record.キーBOX || ''}">
+                  <input type="text" id="キーBOX_${record.No}" value="${escapeAttr(record.キーBOX || '')}">
                 </div>
               </div>
               
               <div class="field-row">
                 <div class="data-row-input" style="flex: 1;"><label>担当者</label>
-                  <select id="editStaffSelect_${record.No}" data-client="${record.発注元}" onchange="handleEditStaffChange(this, '${record.No}')">
+                  <select id="editStaffSelect_${record.No}" data-client="${escapeAttr(record.発注元)}" onchange="handleEditStaffChange(this, '${record.No}')">
                     ${staffOptionsHtml}
                   </select>
                   <div id="newEditStaffGroup_${record.No}" style="display:none; margin-top:3px;">
@@ -2397,7 +2417,7 @@
                 </div>
                 
                 <div class="data-row-input" style="flex: 1;"><label>連絡先</label>
-                  <input type="text" id="editPhoneInput_${record.No}" value="${record.連絡先 || ''}">
+                  <input type="text" id="editPhoneInput_${record.No}" value="${escapeAttr(record.連絡先 || '')}">
                 </div>
               </div>
             </div>
@@ -2421,7 +2441,7 @@
   
             <div class="form-group" style="margin-top:14px;">
               <label style="font-weight:bold; font-size:14px; color:var(--text-sub);">備 考</label>
-              <textarea id="備考_${record.No}" rows="3" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px;">${record.備考 || ''}</textarea>
+              <textarea id="備考_${record.No}" rows="3" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px;">${escapeHtml(record.備考 || '')}</textarea>
             </div>
   
             <div class="inner-accordion" style="margin-top:16px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
@@ -2431,8 +2451,8 @@
               </div>
               <div class="inner-accordion-details" style="display:none; padding:16px; background:#f8fafc; border-top:1px solid #cbd5e1;">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                  <div class="data-row-input"><label>システムID</label><input type="text" id="システムID_${record.No}" value="${record.システムID || ''}"></div>
-                  <div class="data-row-input"><label>メールID</label><input type="text" id="物件ID_${record.No}" value="${record.メールID || ''}"></div>
+                  <div class="data-row-input"><label>システムID</label><input type="text" id="システムID_${record.No}" value="${escapeAttr(record.システムID || '')}"></div>
+                  <div class="data-row-input"><label>メールID</label><input type="text" id="メールID_${record.No}" value="${escapeAttr(record.メールID || '')}"></div>
                 </div>    
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
                   <div class="data-row-input"><label>着工日</label><input type="date" id="着工日_${record.No}" value="${parseDate(record.着工日)}"></div>
@@ -3171,7 +3191,7 @@
       staffSel.innerHTML = '<option value="">選択してください</option>';
       (appConfig.managerList || []).forEach(s => { 
         const sName = getStaffName(s);
-        if (sName) staffSel.innerHTML += `<option value="${sName}">${sName}</option>`; 
+        if (sName) staffSel.innerHTML += `<option value="${escapeAttr(sName)}">${escapeHtml(sName)}</option>`; 
       });
       staffSel.innerHTML += `<option value="(新規担当者)" style="color:var(--primary); font-weight:bold;">(新規担当者)</option>`;
   
@@ -3273,26 +3293,25 @@
       
       // -------------------------------------------------------------
       // 新規入力項目の取得・補正
-      // （isNewXxx = true を渡すことで、GAS側が自動的にgetYomi()を実行）
+      // 【ヨミ自動生成について】GAS側（updateMasterListGeneric・addClientStaffGroup）は
+      // このisNewXxxのようなフラグには一切頼らず、マスタシートの既存データと照合して
+      // 「本当に新規の値か」を自前で判定し、新規と判定した場合にのみヨミを自動生成する。
+      // そのため、ここでは新規入力欄の値をpayloadへ差し替えるだけでよい。
       // -------------------------------------------------------------
       if (payload["受注媒体"] === "(新規受注媒体)") {
         payload["受注媒体"] = document.getElementById("newMediaInput").value.trim();
-        payload["isNewMedia"] = true;
       }
       
       if (payload["案件種別"] === "(新規案件種別)") {
         payload["案件種別"] = document.getElementById("newProjectTypeInput").value.trim();
-        payload["isNewProjectType"] = true;
       }
       
       if (payload["発注元"] === "(新規発注元)") {
         payload["発注元"] = document.getElementById("newClientInput").value.trim();
-        payload["isNewClient"] = true;
       }
       
       if (payload["担当者"] === "(新規担当者)") {
         payload["担当者"] = document.getElementById("newStaffInput").value.trim();
-        payload["isNewStaff"] = true;
       }
 
       // 工事担当者は複数選択ウィジェットのhidden inputに既にカンマ区切りで値が入っているため、
@@ -3300,7 +3319,6 @@
       for (let i = 1; i <= currentWorkCount; i++) {
         if (payload["工事内容" + i] === "(新規工事内容)") {
           payload["工事内容" + i] = document.getElementById(`newWorkContentInput_${i}`).value.trim();
-          payload["isNewWorkContent"] = true;
         }
         // 施工予定日：終了日が開始日より前になっている場合は入れ替えて補正する
         const sVal = payload["施工日" + i + "開始"];
@@ -3388,7 +3406,10 @@
 
           // バックグラウンドでマスタデータを再取得・更新
           Api.loadAppDataMaster().then(data => {
-            if (data && typeof appConfig !== "undefined") appConfig = data;
+            if (data && typeof appConfig !== "undefined") {
+              appConfig = data;
+              applySharedMasterData(data);
+            }
           }).catch(console.error);
 
           // カレンダー登録まで完了した時点で、リロードせず一覧をリアルタイムに最新化
@@ -3455,7 +3476,7 @@
         緯度経度: document.getElementById(`緯度経度_${rNum}`).value.replace(/\s+/g, ""),
         備考: document.getElementById(`備考_${rNum}`).value,
         システムID: document.getElementById(`システムID_${rNum}`).value,
-        メールID: document.getElementById(`物件ID_${rNum}`).value,
+        メールID: document.getElementById(`メールID_${rNum}`).value,
         着工日: document.getElementById(`着工日_${rNum}`).value,
         完成日: document.getElementById(`完成日_${rNum}`).value,
         引渡日: document.getElementById(`引渡日_${rNum}`).value
@@ -3472,7 +3493,6 @@
       const projectTypeSel = document.getElementById(`addProjectTypeSelect_${rNum}`);
       if (projectTypeSel && projectTypeSel.value === "(新規案件種別)") {
         fData["案件種別"] = document.getElementById(`newProjectTypeInput_${rNum}`).value.trim();
-        fData["isNewProjectType"] = true;
       } else if (projectTypeSel) {
         fData["案件種別"] = projectTypeSel.value;
       }
@@ -3515,7 +3535,6 @@
         const cSel = document.getElementById(`editWorkContent_${rNum}_${i}`);
         if (cSel.value === "(新規工事内容)") {
           fData["工事内容" + i] = document.getElementById(`newEditWorkContentInput_${rNum}_${i}`).value.trim();
-          fData["isNewWorkContent"] = true;
         } else {
           fData["工事内容" + i] = cSel.value;
         }
@@ -3528,7 +3547,6 @@
       const staffSel = document.getElementById(`editStaffSelect_${rNum}`);
       if (staffSel && staffSel.value === "(新規担当者)") {
         fData["担当者"] = document.getElementById(`newEditStaffInput_${rNum}`).value.trim();
-        fData["isNewStaff"] = true;
       } else if (staffSel) {
         fData["担当者"] = staffSel.value;
       }
