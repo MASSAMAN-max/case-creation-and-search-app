@@ -1335,12 +1335,16 @@
       // 🔐 ログイン簡略化のセキュリティ対策：
       // ブラウザにはID/パスワードそのものは保存せず、ログイントークンのみを保存する。
       // トークンがあればそれだけを送信し、無い場合（初回ログイン等）だけID/パスワードを送信する。
+      // 【sessionStorageを使う理由】ID/パスワードは「初回ログインリクエストを送るまでの
+      // ごく一瞬だけ」保持できればよい一時データのため、タブを閉じれば自動的に消える
+      // sessionStorageを使う。トークン（app_login_token）は複数端末・タブをまたいだ
+      // 永続ログインを維持する必要があるため、従来通りlocalStorageのままにしている。
       const token = localStorage.getItem('app_login_token');
       if (token) {
         payload.token = token;
       } else {
-        payload.loginId = localStorage.getItem('app_login_id');
-        payload.password = localStorage.getItem('app_login_password');
+        payload.loginId = sessionStorage.getItem('app_login_id');
+        payload.password = sessionStorage.getItem('app_login_password');
       }
     
       try {
@@ -1588,8 +1592,8 @@
       const btn = document.getElementById("loginBtn");
       btn.disabled = true; btn.textContent = "認証中...";
       localStorage.removeItem('app_login_token'); // 念のため古いトークンをクリアしてからID/パスワードでログインする
-      localStorage.setItem('app_login_id', id);
-      localStorage.setItem('app_login_password', pw);
+      sessionStorage.setItem('app_login_id', id);
+      sessionStorage.setItem('app_login_password', pw);
       document.getElementById("loginScreen").style.display = "none";
       await initializeApp();
     }
@@ -1644,8 +1648,8 @@
         if (data.token) {
           localStorage.setItem('app_login_token', data.token);
         }
-        localStorage.removeItem('app_login_id');
-        localStorage.removeItem('app_login_password');
+        sessionStorage.removeItem('app_login_id');
+        sessionStorage.removeItem('app_login_password');
         initSelectWithOptions("filterClient", data.clientList, "発注元", "すべて");
 
         // 検索フィルター：工事内容・工事担当者（複数選択トグル）を初期化
@@ -1678,10 +1682,15 @@
           confirmButtonColor: '#ef4444', 
           confirmButtonText: 'OK'
         });
+        // 【互換性のための後片付け】以前のバージョンではID/パスワードをlocalStorageに
+        // 保存していたため、旧バージョンから移行してきた利用者の端末に残っている
+        // 可能性がある古い値も念のため消しておく（新バージョンではsessionStorageのみ使用）。
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
         localStorage.removeItem('app_login_token');
         localStorage.removeItem('app_login_userName');
+        sessionStorage.removeItem('app_login_id');
+        sessionStorage.removeItem('app_login_password');
         // 3. ユーザーがOKを押した後にリロードが走る
         window.location.reload();
       }
@@ -3200,9 +3209,16 @@
       document.getElementById("newClientInputGroup").style.display = "none";
       document.getElementById("newStaffInputGroup").style.display = "none";
       document.getElementById("newWorkContentInputGroup_1").style.display = "none";
+
+      // 外部データの貼り付け連携：このモーダルを開いている間だけ有効化する
+      window.addEventListener('paste', handleProjectPaste);
     };
   
-    window.closeCreateModal = function() { document.getElementById("createModal").style.display = "none"; };
+    window.closeCreateModal = function() {
+      document.getElementById("createModal").style.display = "none";
+      // 外部データの貼り付け連携：モーダルを閉じたら必ず無効化する
+      window.removeEventListener('paste', handleProjectPaste);
+    };
 
     // 音声入力関数
     function startVoiceInput(button) {
@@ -3246,11 +3262,6 @@
         }
         if (transcript) {
           input.value = (input.value + transcript).trim();
-          
-          // ★ 変更点2: calculateAmount という関数が存在するときだけ実行する（エラー防止）
-          if (typeof calculateAmount === 'function') {
-            calculateAmount(input);
-          }
         }
       };
       
@@ -3751,18 +3762,31 @@
         }
     
         // 4. ブラウザに記憶されている自動ログイン用の情報を完全に削除
+        // （app_login_id/app_login_passwordは現在sessionStorageのみで使うが、
+        //   旧バージョンのlocalStorageに残っている可能性も考慮し両方消しておく）
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
         localStorage.removeItem('app_login_token');
         localStorage.removeItem('app_login_userName');
+        sessionStorage.removeItem('app_login_id');
+        sessionStorage.removeItem('app_login_password');
     
         // 5. すべてをクリアした状態で画面をリロード
         window.location.reload();
       }
     };
   
-        // 画面全体でのペーストイベントを監視
-    window.addEventListener('paste', async (e) => {
+    // =================================================================
+    // 📋 外部データの貼り付け連携（新規登録モーダル専用）
+    // -----------------------------------------------------------------------
+    // 【スコープ限定について】
+    // 以前は window 全体に常時貼り付けイベントを張っていたが、新規登録モーダルを
+    // 開いていない場面（検索キーワード欄への通常のペースト等）でも常に発火し、
+    // 貼り付けた文字列がたまたまJSONとして解釈できる場合に意図せず反応してしまう
+    // リスクがあった。そのため、新規登録モーダルを開いている間だけ
+    // （openCreateModal〜closeCreateModalの間だけ）リスナーを有効にする方式に変更した。
+    // =================================================================
+    async function handleProjectPaste(e) {
       const text = (e.clipboardData || window.clipboardData).getData('text');   
       try {
         const data = JSON.parse(text);
@@ -3770,7 +3794,6 @@
         const fieldMapping = {
           'システムID': 'system_id',
           'メールID': 'property_id',
-          '物件ID': 'property_id', // 外部連携側が旧キー名「物件ID」で送ってくる場合にも対応
           '案件名': 'project_name',
           '施主名': 'client_name',
           '住所': 'address',
@@ -3811,7 +3834,7 @@
       } catch (err) {
         // JSONではない場合は通常のブラウザ挙動に任せる
       }
-    });
+    }
     /** 日付をyyyy-mm-dd形式に変換 */
     function formatDateToYYYYMMDD(dateValue) {
       if (!dateValue) return '';
