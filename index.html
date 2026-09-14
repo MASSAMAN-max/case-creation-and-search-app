@@ -193,12 +193,10 @@
     .detail-card .field-row { display: flex; gap: 8px; width: 100%; }
     .detail-card .field-row > .data-row-input { min-width: 0; }
 
-    /* 案件種別:緯度経度 の比率　PC:1/4:3/4　→　スマホ:2/4:2/4 */
+    /* 案件種別・施主名・緯度経度の表示順を変更した際、緯度経度を横並び行から
+       独立させたため、比率調整用だった .field-latlng は使わなくなった。
+       .field-projecttype は現在も案件種別の行で使用しているため残す。 */
     .field-projecttype { flex: 1; }
-    .field-latlng { flex: 3; }
-    @media (max-width: 780px) {
-      .field-latlng { flex: 1; }
-    }
     
     /* データ行：ラベルと入力欄の縦積み */
     .data-row-input { display: flex; flex-direction: column; }
@@ -278,6 +276,18 @@
       backdrop-filter: blur(8px);
       transition: all 0.2s ease;
       overflow: hidden;
+      /* 【共有ボタンの見た目ズレ対策】資料・Web・mail・MAPは<a>タグだが、
+         共有ボタンだけ<button>タグを使っている（クリック時にGASへ問い合わせるため）。
+         <button>はブラウザ標準スタイルでフォント・行間・ボックスサイズの扱いが
+         <a>と異なることがあり、同じCSSを当てても微妙に見た目がズレる原因になる。
+         明示的にリセットし、<a>タグの4ボタンと完全に同じ見た目になるようにする。 */
+      font-family: inherit;
+      line-height: inherit;
+      box-sizing: border-box;
+      cursor: pointer;
+      vertical-align: middle;
+      appearance: none;
+      -webkit-appearance: none;
     }
     /* アイコン(material-symbols-outlined)と文字ラベルの間隔を詰める */
     .drive-folder-link .material-symbols-outlined { margin-right: 4px; }
@@ -2358,7 +2368,7 @@
             
               <div class="field-row">
               
-                <div class="data-row-input field-projecttype">
+                <div class="data-row-input field-projecttype" style="flex:1;">
                   <label>案件種別</label>
                   <select id="addProjectTypeSelect_${record.No}" onchange="toggleEditNewInput(this, 'newProjectTypeInputGroup_${record.No}')">
                     ${createOptionsHtml(appConfig.projectTypeList, record['案件種別'] || '', '案件種別')}
@@ -2367,16 +2377,16 @@
                     <input type="text" id="newProjectTypeInput_${record.No}" placeholder="新規案件種別">
                   </div>
                 </div>
-                
-                <div class="data-row-input field-latlng">
-                  <label>緯度経度</label>
-                  <input type="text" id="緯度経度_${record.No}" value="${escapeAttr(record.緯度経度 || '')}" style="width: 100%;">
-                </div>
               </div>
               
               <div class="data-row-input">
                 <label>施主名</label>
                 <input type="text" id="施主名_${record.No}" value="${escapeAttr(record.施主名 || '')}" data-original-yomi="${escapeAttr(record.施主名よみ || '')}">
+              </div>
+              
+              <div class="data-row-input">
+                <label>緯度経度</label>
+                <input type="text" id="緯度経度_${record.No}" value="${escapeAttr(record.緯度経度 || '')}" style="width: 100%;">
               </div>
               
               <div class="data-row-input"><label>所在地（住所）</label>
