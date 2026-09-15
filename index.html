@@ -2145,12 +2145,12 @@
     // 検索結果リスト表示
     // =================================================================
     // 受注媒体ごとのデータ元サイトURLパターン（Webボタン用）。
-    // 以前はGAS側（07_カレンダー連携.js の MEDIA_LINK_MAP）と全く同じ内容を
-    // 別途ハードコードしていたが、二重管理による更新漏れリスクがあったため廃止した。
-    // 現在は loadAppDataMaster() のレスポンス（appConfig.mediaLinkMap）から
-    // applySharedMasterData() が組み立てる。これにより、カレンダー説明欄の
-    // リンク（GAS側 buildDataSourceUrl）と一覧のWebボタンのリンク先が
-    // 常に同じマスタから生成され、ズレる心配がなくなる。
+    // ※ 以前はGAS側（07_カレンダー連携.js の MEDIA_LINK_MAP）と全く同じ内容を
+    //   別途ハードコードしていたが、二重管理による更新漏れリスクがあったため廃止した。
+    //   現在は loadAppDataMaster() のレスポンス（appConfig.mediaLinkMap）から
+    //   applySharedMasterData() が組み立てる。これにより、カレンダー説明欄の
+    //   リンク（GAS側 buildDataSourceUrl）と一覧のWebボタンのリンク先が
+    //   常に同じマスタから生成され、ズレる心配がなくなる。
     let MEDIA_LINK_MAP_FRONT = {};
     function buildDataSourceUrlFront(media, systemId) {
       if (!media || !systemId) return null;
@@ -2235,7 +2235,7 @@
         
         // ドライブフォルダリンクの組み立て
         // ※ ボタンが5つ（資料・共有・Web・メール・MAP）に増えたため、共通クラス .action-btn で
-        //   全体的にボタンを大きくしたデザインに統一している（デザインの方向性は維持）。
+        //   padding・font-sizeをさらに詰めたデザインに統一している（デザインの方向性は維持）。
         let driveLinkHtml = '';
         const folderUrl = String(record.添付資料 || "").trim();
         if (folderUrl) {
@@ -3080,32 +3080,64 @@
     //
     // rowNumberが確定してから（案件の保存が完了してから）呼び出す必要がある。
     // =================================================================
+    // -------------------------------------------------------------
+    // 【離脱確認】添付ファイルのアップロード中に、誤ってページを
+    // リロード・タブを閉じてしまうと、その時点までの進捗が失われ、
+    // 一部のファイルだけが保存されない事故に繋がる（実際に発生した）。
+    // アップロード中はこのフラグを立て、beforeunloadで警告を出すことで、
+    // 事故の発生を減らす（完全に防げるわけではない点に注意。ユーザーが
+    // 確認ダイアログで「離れる」を選べば、結局中断される）。
+    // -------------------------------------------------------------
+    let isUploadingAttachedFiles = false;
+
+    window.addEventListener("beforeunload", (e) => {
+      if (isUploadingAttachedFiles) {
+        // 【重要】現在のブラウザ仕様では、カスタムメッセージの表示は
+        // できず、ブラウザ標準の確認文言が出るだけになる。
+        // preventDefault()とreturnValueの設定が、確認ダイアログを
+        // 表示させるための標準的な書き方。
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    });
+
     async function uploadAllAttachedFiles(rowNumber, files) {
       if (!files || files.length === 0) return;
 
       const imageFileObjs = files.filter(f => isImageFile(f.file));
       const otherFileObjs = files.filter(f => !isImageFile(f.file));
       const skippedNames = [];
+      const totalCount = imageFileObjs.length + otherFileObjs.length;
+      let succeededCount = 0;
 
-      // 画像：圧縮してBase64化してから1枚ずつ送信
-      for (const fileObj of imageFileObjs) {
-        try {
-          const base64File = await fileToBase64(fileObj);
-          await Api.uploadbox(rowNumber, base64File.fileType, [base64File]);
-        } catch (err) {
-          console.error(`❌ 画像アップロード失敗: ${fileObj.file.name}`, err);
-          skippedNames.push(fileObj.file.name);
+      isUploadingAttachedFiles = true;
+      try {
+        // 画像：圧縮してBase64化してから1枚ずつ送信
+        for (const fileObj of imageFileObjs) {
+          try {
+            const base64File = await fileToBase64(fileObj);
+            await Api.uploadbox(rowNumber, base64File.fileType, [base64File]);
+            succeededCount++;
+          } catch (err) {
+            console.error(`❌ 画像アップロード失敗: ${fileObj.file.name}`, err);
+            skippedNames.push(fileObj.file.name);
+          }
         }
-      }
 
-      // 画像以外：チャンク分割方式でVercel経由で送信
-      for (const fileObj of otherFileObjs) {
-        try {
-          await uploadFileViaChunkedUpload(rowNumber, fileObj);
-        } catch (err) {
-          console.error(`❌ ファイルアップロード失敗: ${fileObj.file.name}`, err);
-          skippedNames.push(fileObj.file.name);
+        // 画像以外：チャンク分割方式でVercel経由で送信
+        for (const fileObj of otherFileObjs) {
+          try {
+            await uploadFileViaChunkedUpload(rowNumber, fileObj);
+            succeededCount++;
+          } catch (err) {
+            console.error(`❌ ファイルアップロード失敗: ${fileObj.file.name}`, err);
+            skippedNames.push(fileObj.file.name);
+          }
         }
+      } finally {
+        // 【重要】途中で例外が起きた場合でも、必ずフラグを戻す
+        // （そうしないと、以降ずっとリロード警告が出続けてしまう）
+        isUploadingAttachedFiles = false;
       }
 
       if (skippedNames.length > 0 && typeof Swal !== "undefined") {
@@ -3113,6 +3145,22 @@
           icon: 'warning',
           title: '一部のファイルを送信できませんでした',
           html: `次のファイルのアップロードに失敗しました。<br><strong>${skippedNames.join('、')}</strong><br><br>お手数ですが、もう一度お試しください。`,
+          confirmButtonText: '了解'
+        });
+      }
+
+      // -------------------------------------------------------------
+      // 【完了後の件数チェック】try/catchで捕捉できるエラー（通信失敗等）
+      // とは別に、「試行した件数」と「実際に成功した件数」を突き合わせる。
+      // これにより、想定外の原因（リロードによる中断等、tryブロックの
+      // 外側で処理そのものが止まってしまうケース）で一部が欠けていても、
+      // ユーザーが気づけるようにする。
+      // -------------------------------------------------------------
+      if (succeededCount < totalCount && skippedNames.length === 0 && typeof Swal !== "undefined") {
+        await Swal.fire({
+          icon: 'warning',
+          title: 'アップロード件数をご確認ください',
+          html: `${totalCount}件中${succeededCount}件のみ保存が確認できました。<br>編集画面から、添付ファイルの件数をご確認ください。`,
           confirmButtonText: '了解'
         });
       }
