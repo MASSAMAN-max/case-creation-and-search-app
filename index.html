@@ -123,7 +123,7 @@
       gap: 6px;
     }
 
-    .voice-input-wrapper input {
+    .voice-input-wrapper input, .voice-input-wrapper textarea {
       flex: 1;
     }
     /* マイク点滅アニメーション */
@@ -723,6 +723,12 @@
         </div>
       </div>
 
+      <!-- 施工日未設定の案件のみ表示するチェックボックス：詳細検索を開かなくても常に使えるよう常時表示エリアに配置 -->
+      <div style="display: flex; align-items: center; gap: 6px; margin-top: 14px;">
+        <input type="checkbox" id="filterUnscheduledOnly" onchange="handleUnscheduledOnlyChange()" style="width:16px; height:16px; cursor:pointer;">
+        <label for="filterUnscheduledOnly" style="font-size: 0.85rem; color: var(--text-sub); cursor:pointer;">施工日未設定の案件のみ表示</label>
+      </div>
+
       <!-- 詳細検索の開閉ボタン -->
       <div style="margin-top: 14px;">
         <button type="button" id="toggleAdvancedSearchBtn" class="btn" onclick="toggleAdvancedSearch()"
@@ -731,7 +737,7 @@
         </button>
       </div>
 
-      <!-- 詳細検索エリア（工事内容・工事担当者・施工日・施工日未設定）：既定は非表示 -->
+      <!-- 詳細検索エリア（工事内容・工事担当者・担当者・施工日）：既定は非表示 -->
       <div id="advancedSearchArea" style="display:none; margin-top: 16px; padding-top: 16px; border-top: 2px solid #f0f2f5;">
         <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
 
@@ -746,6 +752,12 @@
             <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">工事担当者で絞り込み（複数選択可）</label>
             <div id="filterWorkerContainer"></div>
           </div>
+
+          <!-- フィルター1-4：担当者（複数選択可）。何も選択しない場合はすべて対象 -->
+          <div style="flex: 1; min-width: 200px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">担当者で絞り込み（複数選択可）</label>
+            <div id="filterManagerContainer"></div>
+          </div>
           
           <!-- フィルター2：施工日の日付範囲選択 -->
           <div style="display: flex; flex-wrap: wrap; gap: 10px; flex: 2; min-width: 280px;">
@@ -758,12 +770,6 @@
               <input type="date" id="filterEndDate" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
             </div>
           </div>
-        </div>
-
-        <!-- 施工日未設定の案件のみ表示するチェックボックス -->
-        <div style="display: flex; align-items: center; gap: 6px; margin-top: 12px;">
-          <input type="checkbox" id="filterUnscheduledOnly" onchange="handleUnscheduledOnlyChange()" style="width:16px; height:16px; cursor:pointer;">
-          <label for="filterUnscheduledOnly" style="font-size: 0.85rem; color: var(--text-sub); cursor:pointer;">施工日未設定の案件のみ表示</label>
         </div>
       </div>
     </div>
@@ -878,21 +884,44 @@
           </div>
     
           <!-- セクション3：物件情報 -->
-          <!-- 所在地（住所） -->
+          <!-- 現場住所 -->
           <div class="form-group">
-            <label><span class="material-symbols-outlined">home</span> 所在地（住所）</label>
+            <label><span class="material-symbols-outlined">home</span> 現場住所</label>
             <div class="voice-input-wrapper">
-              <input type="text" id="address" name="住所" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
+              <input type="text" id="address" name="現場住所" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
               <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
                 <span class="material-symbols-outlined">mic</span>
               </button>
             </div>
           </div>
     
-          <!-- 緯度経度（地図連携用） -->
+          <!-- 現場緯度経度（地図連携用） -->
           <div class="form-group">
-            <label><span class="material-symbols-outlined">pin_drop</span> 緯度経度</label>
-            <input type="text" name="緯度経度" placeholder="例：36.8420,137.4060" style="width: 100%;">
+            <label><span class="material-symbols-outlined">pin_drop</span> 現場緯度経度</label>
+            <input type="text" name="現場緯度経度" placeholder="例：36.8420,137.4060" style="width: 100%;">
+          </div>
+
+          <!-- 駐車場情報：普段は折りたたんでおき、必要な案件だけ開いて入力する -->
+          <div class="inner-accordion" style="margin-top:16px; margin-bottom:20px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
+            <div class="inner-accordion-summary" onclick="toggleInnerAccordion(this)" style="cursor:pointer; background:#e2e8f0; padding:12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#334155;">
+              <span style="display:flex; align-items:center; gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">local_parking</span> 駐車場情報</span>
+              <span class="material-symbols-outlined inner-expand-icon" style="transition:transform 0.2s;">expand_more</span>
+            </div>
+            <div class="inner-accordion-details" style="display:none; padding:16px; background:#f8fafc; border-top:1px solid #cbd5e1;">
+              <div class="form-group" style="margin-bottom:14px;">
+                <label><span class="material-symbols-outlined">local_parking</span> 駐車場住所</label>
+                <div class="voice-input-wrapper">
+                  <input type="text" id="parking_address" name="駐車場住所" placeholder="例：現場近くのコインパーキング名など">
+                  <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+                    <span class="material-symbols-outlined">mic</span>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label><span class="material-symbols-outlined">pin_drop</span> 駐車場緯度経度</label>
+                <input type="text" id="parking_latlng" name="駐車場緯度経度" placeholder="例：36.8420,137.4060" style="width: 100%;">
+              </div>
+            </div>
           </div>
     
           <!-- 延床面積・キーBOX ※画面幅に関わらず常に横並び -->
@@ -1652,6 +1681,8 @@
         initWorkerMultiSelect("filterWorkContent", data.workContentList || [], "");
         document.getElementById("filterWorkerContainer").innerHTML = buildFilterMultiSelectHtml("filterWorker", "工事担当者を選択");
         initWorkerMultiSelect("filterWorker", data.userList || [], "");
+        document.getElementById("filterManagerContainer").innerHTML = buildFilterMultiSelectHtml("filterManager", "担当者を選択");
+        initWorkerMultiSelect("filterManager", data.managerList || [], "");
 
         // ② 認証が完了した時点で、案件データの読み込み完了を待たずにすぐメイン画面を表示する
         loader.style.display = "none";
@@ -1735,6 +1766,7 @@
       const keyword = document.getElementById("searchValue").value;
       const workContentFilter = getFilterMultiSelectValues("filterWorkContent");
       const workerFilter = getFilterMultiSelectValues("filterWorker");
+      const managerFilter = getFilterMultiSelectValues("filterManager");
       
       try {
         // キャッシュが無い場合：バックグラウンド読み込みが進行中ならその完了を待ち、
@@ -1744,7 +1776,7 @@
           document.getElementById("loaderText").textContent = "データを読み込み中...";
           await loadAllRecordsInBackground();
         }
-        const records = filterRecordsClientSide(allRecordsCache, { client, keyword, startDate, endDate, unscheduledOnly, workContentFilter, workerFilter });
+        const records = filterRecordsClientSide(allRecordsCache, { client, keyword, startDate, endDate, unscheduledOnly, workContentFilter, workerFilter, managerFilter });
         displayResults(records);
         loader.style.display = "none";
         btn.disabled = false;
@@ -1803,7 +1835,7 @@
       return text.trim().toLowerCase();
     }
 
-    function filterRecordsClientSide(records, { client, keyword, startDate, endDate, unscheduledOnly, workContentFilter = [], workerFilter = [] }) {
+    function filterRecordsClientSide(records, { client, keyword, startDate, endDate, unscheduledOnly, workContentFilter = [], workerFilter = [], managerFilter = [] }) {
       const nClient = normalizeText(client);
       const nKeyword = normalizeText(keyword);
       const sDate = startDate ? new Date(startDate) : null;
@@ -1814,6 +1846,9 @@
 
       return records.filter(r => {
         if (nClient && normalizeText(r["発注元"]) !== nClient) return false;
+
+        // 担当者フィルター（複数選択・OR条件）：何も選択されていなければ絞り込まず全件対象。
+        if (managerFilter.length > 0 && !managerFilter.includes(String(r["担当者"] || "").trim())) return false;
 
         const workSetIndices = getRecordWorkSetIndices(r);
 
@@ -1862,7 +1897,7 @@
         if (!isDateMatched) return false;
 
         if (nKeyword) {
-          const fullText = normalizeText(String(r["No"] || "") + String(r["案件名"] || "") + String(r["住所"] || ""));
+          const fullText = normalizeText(String(r["No"] || "") + String(r["案件名"] || "") + String(r["現場住所"] || ""));
           if (!fullText.includes(nKeyword)) return false;
         }
         return true;
@@ -2287,8 +2322,8 @@
           <span class="material-symbols-outlined" style="font-size:22px; color:#a855f7">mail</span><span style="font-weight:bold; color:#9333ea;">mail</span>
         </a>` : "";
 
-        // MAPボタン：カレンダーの説明欄に載せているMAPリンクと同じ行き先（緯度経度優先、無ければ住所）。
-        const mapUrl = buildMapUrlFront(record.緯度経度, record.住所);
+        // MAPボタン：カレンダーの説明欄に載せている現場MAPリンクと同じ行き先（現場緯度経度優先、無ければ現場住所）。
+        const mapUrl = buildMapUrlFront(record.現場緯度経度, record.現場住所);
         const mapButtonHtml = mapUrl ? `
         <a href="${mapUrl}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-red" onclick="event.stopPropagation();">
           <span class="material-symbols-outlined" style="font-size:22px; color:#ef4444">location_on</span><span style="font-weight:bold; color:#dc2626;">MAP</span>
@@ -2385,12 +2420,39 @@
               </div>
               
               <div class="data-row-input">
-                <label>緯度経度</label>
-                <input type="text" id="緯度経度_${record.No}" value="${escapeAttr(record.緯度経度 || '')}" style="width: 100%;">
+                <label>現場緯度経度</label>
+                <input type="text" id="現場緯度経度_${record.No}" value="${escapeAttr(record.現場緯度経度 || '')}" style="width: 100%;">
               </div>
               
-              <div class="data-row-input"><label>所在地（住所）</label>
-                <input type="text" id="住所_${record.No}" value="${escapeAttr(record.住所 || '')}">
+              <div class="data-row-input"><label>現場住所</label>
+                <div class="voice-input-wrapper">
+                  <input type="text" id="現場住所_${record.No}" value="${escapeAttr(record.現場住所 || '')}">
+                  <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+                    <span class="material-symbols-outlined">mic</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="inner-accordion" style="margin-top:4px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
+                <div class="inner-accordion-summary" onclick="toggleInnerAccordion(this)" style="cursor:pointer; background:#e2e8f0; padding:12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#334155;">
+                  <span style="display:flex; align-items:center; gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">local_parking</span> 駐車場情報</span>
+                  <span class="material-symbols-outlined inner-expand-icon" style="transition:transform 0.2s;">expand_more</span>
+                </div>
+                <div class="inner-accordion-details" style="display:none; padding:16px; background:#f8fafc; border-top:1px solid #cbd5e1;">
+                  <div class="data-row-input" style="margin-bottom:14px;">
+                    <label>駐車場住所</label>
+                    <div class="voice-input-wrapper">
+                      <input type="text" id="駐車場住所_${record.No}" value="${escapeAttr(record.駐車場住所 || '')}">
+                      <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+                        <span class="material-symbols-outlined">mic</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="data-row-input">
+                    <label>駐車場緯度経度</label>
+                    <input type="text" id="駐車場緯度経度_${record.No}" value="${escapeAttr(record.駐車場緯度経度 || '')}" style="width: 100%;">
+                  </div>
+                </div>
               </div>
               
               <div class="field-row">
@@ -2438,7 +2500,12 @@
   
             <div class="form-group" style="margin-top:14px;">
               <label style="font-weight:bold; font-size:14px; color:var(--text-sub);">備 考</label>
-              <textarea id="備考_${record.No}" rows="3" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px;">${escapeHtml(record.備考 || '')}</textarea>
+              <div class="voice-input-wrapper">
+                <textarea id="備考_${record.No}" rows="3" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px;">${escapeHtml(record.備考 || '')}</textarea>
+                <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+                  <span class="material-symbols-outlined">mic</span>
+                </button>
+              </div>
             </div>
   
             <div class="inner-accordion" style="margin-top:16px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
@@ -2586,6 +2653,7 @@
       document.getElementById("filterEndDate").disabled = false;
       resetFilterMultiSelect("filterWorkContent");
       resetFilterMultiSelect("filterWorker");
+      resetFilterMultiSelect("filterManager");
       
       currentSearchResults = [];
       currentSearchPage = 1;
@@ -3220,6 +3288,10 @@
       document.getElementById("createSubmitBtn").disabled = false;
       selectedFilesMap["NEW_PROJECT"] = [];
       document.getElementById("createFileList").innerHTML = "";
+
+      // 駐車場情報セクションを毎回閉じた状態から開始する（前回開いたままの状態を引き継がない）
+      document.querySelectorAll("#createProjectForm .inner-accordion-details").forEach(el => { el.style.display = "none"; });
+      document.querySelectorAll("#createProjectForm .inner-expand-icon").forEach(el => { el.style.transform = "rotate(0deg)"; });
     
       initSelectWithOptions("addMediaSelect", appConfig.mediaList || [], "受注媒体");
       initSelectWithOptions("addProjectTypeSelect", appConfig.projectTypeList || [], "案件種別");
@@ -3517,10 +3589,12 @@
       // 1. フォームデータの収集
       const fData = {
         No: rNum,
-        住所: document.getElementById(`住所_${rNum}`).value,
+        現場住所: document.getElementById(`現場住所_${rNum}`).value,
+        現場緯度経度: document.getElementById(`現場緯度経度_${rNum}`).value.replace(/\s+/g, ""),
+        駐車場住所: document.getElementById(`駐車場住所_${rNum}`).value,
+        駐車場緯度経度: document.getElementById(`駐車場緯度経度_${rNum}`).value.replace(/\s+/g, ""),
         延床面積: document.getElementById(`延床面積_${rNum}`).value,
         キーBOX: document.getElementById(`キーBOX_${rNum}`).value,
-        緯度経度: document.getElementById(`緯度経度_${rNum}`).value.replace(/\s+/g, ""),
         備考: document.getElementById(`備考_${rNum}`).value,
         システムID: document.getElementById(`システムID_${rNum}`).value,
         メールID: document.getElementById(`メールID_${rNum}`).value,
@@ -3628,7 +3702,7 @@
         selectedFilesMap[rNum] = [];
         if (typeof renderFileList === 'function') renderFileList(rNum);
         if (btnEl) btnEl.disabled = false;
-        const itemEl = document.getElementById(`住所_${rNum}`)?.closest('.result-item');
+        const itemEl = document.getElementById(`現場住所_${rNum}`)?.closest('.result-item');
         if (itemEl) itemEl.classList.remove('is-open');
         
         // 3. 軽量なトースト通知（1段目完了）※2段目完了の通知が出るまで表示し続ける
