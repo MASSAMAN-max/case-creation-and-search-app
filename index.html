@@ -3905,14 +3905,15 @@
           'システムID': 'system_id',
           'メールID': 'property_id',
           '案件名': 'project_name',
-          '施主名': 'client_name',
+          '物件名': 'client_name',
+          '物件名（カナ）': 'client_name_yomi',
           '住所': 'address',
           '専有面積・延床面積': 'room_area',
           'キーBOX': 'key_box',
           '着工日': 'construction_start_date',
           '完成日': 'completion_date',
           '案件種別': 'addProjectTypeSelect',
-          '発注元': 'addClientSelect'
+          '工事': 'addClientSelect'
         };
         // 日付フィールドのリスト
         const dateFields = ['着工日', '完成日'];
@@ -3931,7 +3932,7 @@
             processedValue = formatDateToYYYYMMDD(value);
           }
           // 発注元の括弧内抽出
-          if (key === '発注元' && value) {
+          if (key === '工事' && value) {
             processedValue = extractTextInParentheses(value);
           }
           
@@ -3939,6 +3940,19 @@
           inputElement.dispatchEvent(new Event('input', { bubbles: true }));
           inputElement.dispatchEvent(new Event('change', { bubbles: true }));
         });
+
+        // 受注媒体を「ANDPAD」に固定
+        const mediaSelect = document.getElementById('addMediaSelect');
+        if (mediaSelect) {
+          const mailOption = Array.from(mediaSelect.options).find(
+            option => option.textContent.trim() === 'ANDPAD'
+          );
+
+          if (mailOption) {
+            mediaSelect.value = mailOption.value;
+            mediaSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
         
         alert('データを各入力欄に展開しました！');      
       } catch (err) {
