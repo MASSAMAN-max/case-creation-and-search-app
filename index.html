@@ -493,29 +493,43 @@
     /* ローディング：テキストのパルスアニメーション */
     @keyframes pulseText { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 
-    /* ログアウトボタン：左上に固定表示 */
-    .mini-logout-btn {
-      width: fit-content;
-      z-index: 2000;
-      display: flex;
+    /* 【ユーザー表示ラベル統合型ログアウトボタン】
+       通常時は「ログインユーザー: 〇〇」を表示し、カーソルを乗せる（ホバーする）と
+       ログアウトアイコン＋「ログアウト」表示に切り替わるボタン。
+       タップ操作ではホバー状態を経由できない（スマホ等）ため、通常時の見た目のまま
+       タップしてもボタンとして機能するようにしており、押すと従来通り
+       handleLogout()の確認ダイアログ（「ログアウトしますか？」）が表示される。 */
+    .user-logout-label {
+      margin-left: auto;
+      display: none; /* ログイン成功時にJSでflexに切り替える */
       align-items: center;
-      gap: 4px;
-      padding: 6px 10px;
-      font-size: 12px;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-sub);
       font-weight: bold;
-      background-color: #f1f5f9;
-      color: #64748b;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
+      background: #e2e8f0;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid transparent;
       cursor: pointer;
       transition: all 0.2s ease;
+      /* <button>を<span>相当の見た目にするための標準スタイルリセット */
+      font-family: inherit;
+      line-height: inherit;
+      box-sizing: border-box;
+      appearance: none;
+      -webkit-appearance: none;
     }
-    
-    /* ログアウトボタン内のアイコン調整 */
-    .mini-logout-btn .material-symbols-outlined { font-size: 16px; }
-    
-    /* ログアウトボタンホバー状態：赤系のハイライト */
-    .mini-logout-btn:hover { background-color: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+    .user-logout-label .logout-icon { display: none; font-size: 16px; }
+    .user-logout-label .label-text-hover { display: none; }
+    .user-logout-label:hover {
+      background-color: #fee2e2;
+      color: #ef4444;
+      border-color: #fca5a5;
+    }
+    .user-logout-label:hover .logout-icon { display: inline-flex; }
+    .user-logout-label:hover .label-text-default { display: none; }
+    .user-logout-label:hover .label-text-hover { display: inline; }
 
     /* トップへ戻るボタン追加 */
     .scrollToTopBtn {
@@ -675,12 +689,14 @@
   <div id="mainApp" style="display:none; padding: 12px;">
 
     <div style="display: flex; align-items: center; margin: 12px 12px 8px 12px;">
-      <!-- ログアウトボタン（左上） -->
-      <button type="button" id="logoutBtn" class="mini-logout-btn" onclick="handleLogout()" style="display:none;">
-        <span class="material-symbols-outlined">logout</span><span>ログアウト</span>
+      <!-- ユーザー表示ラベル兼ログアウトボタン（右上）：
+           通常は「ログインユーザー: 〇〇」を表示し、ホバーすると「ログアウト」表示に切り替わる。
+           クリック（タップ）すると、ホバーの有無に関わらずhandleLogout()の確認ダイアログが開く。 -->
+      <button type="button" id="userLogoutLabel" class="user-logout-label" onclick="handleLogout()" style="display:none;" title="クリックでログアウト">
+        <span class="material-symbols-outlined logout-icon">logout</span>
+        <span id="userDisplayLabel" class="label-text-default"></span>
+        <span class="label-text-hover">ログアウト</span>
       </button>
-      <!-- ユーザー表示ラベル（右上） -->
-      <span id="userDisplayLabel" style="margin-left: auto; font-size: 13px; color: var(--text-sub); font-weight: bold; background: #e2e8f0; padding: 4px 12px; border-radius: 20px;"></span>
     </div>
       
     <!-- 検索・フィルターセクション -->
@@ -1687,8 +1703,8 @@
         // ② 認証が完了した時点で、案件データの読み込み完了を待たずにすぐメイン画面を表示する
         loader.style.display = "none";
         document.getElementById("mainApp").style.display = "block";
-        // ログインが成功してメイン画面が出たら、ログアウトボタンを表示する
-        const logoutBtn = document.getElementById("logoutBtn");
+        // ログインが成功してメイン画面が出たら、ユーザー表示ラベル（兼ログアウトボタン）を表示する
+        const logoutBtn = document.getElementById("userLogoutLabel");
         if (logoutBtn) logoutBtn.style.display = "flex";
 
         // ③ 案件データはメイン画面表示をブロックせず、裏側で読み込む
@@ -3855,8 +3871,8 @@
         if (idInput) idInput.value = "";
         if (passInput) passInput.value = "";
     
-        // 2. ログアウトボタンを隠す
-        const logoutBtn = document.getElementById("logoutBtn");
+        // 2. ユーザー表示ラベル（兼ログアウトボタン）を隠す
+        const logoutBtn = document.getElementById("userLogoutLabel");
         if (logoutBtn) logoutBtn.style.display = "none";
 
         // 3. サーバー側のトークンも確実に失効させる（漏洩時の悪用防止のため、
@@ -3905,15 +3921,14 @@
           'システムID': 'system_id',
           'メールID': 'property_id',
           '案件名': 'project_name',
-          '物件名': 'client_name',
-          '物件名（カナ）': 'client_name_yomi',
+          '施主名': 'client_name',
           '住所': 'address',
           '専有面積・延床面積': 'room_area',
           'キーBOX': 'key_box',
           '着工日': 'construction_start_date',
           '完成日': 'completion_date',
           '案件種別': 'addProjectTypeSelect',
-          '工事': 'addClientSelect'
+          '発注元': 'addClientSelect'
         };
         // 日付フィールドのリスト
         const dateFields = ['着工日', '完成日'];
@@ -3932,7 +3947,7 @@
             processedValue = formatDateToYYYYMMDD(value);
           }
           // 発注元の括弧内抽出
-          if (key === '工事' && value) {
+          if (key === '発注元' && value) {
             processedValue = extractTextInParentheses(value);
           }
           
@@ -3940,19 +3955,6 @@
           inputElement.dispatchEvent(new Event('input', { bubbles: true }));
           inputElement.dispatchEvent(new Event('change', { bubbles: true }));
         });
-
-        // 受注媒体を「ANDPAD」に固定
-        const mediaSelect = document.getElementById('addMediaSelect');
-        if (mediaSelect) {
-          const mailOption = Array.from(mediaSelect.options).find(
-            option => option.textContent.trim() === 'ANDPAD'
-          );
-
-          if (mailOption) {
-            mediaSelect.value = mailOption.value;
-            mediaSelect.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-        }
         
         alert('データを各入力欄に展開しました！');      
       } catch (err) {
