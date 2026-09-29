@@ -976,7 +976,7 @@
           <div class="form-group">
             <label><span class="material-symbols-outlined">notes</span> 備 考</label>
             <div class="voice-input-wrapper">
-              <textarea name="備考" rows="2" placeholder="特記事項があれば入力してください" style="width: 100%; box-sizing: border-box;"></textarea>
+              <textarea name="備考" id="remarks" rows="2" placeholder="特記事項があれば入力してください" style="width: 100%; box-sizing: border-box;"></textarea>
               <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
                 <span class="material-symbols-outlined">mic</span>
               </button>
@@ -3918,17 +3918,21 @@
         const data = JSON.parse(text);
         // フィールドマッピング定義
         const fieldMapping = {
-          'システムID': 'system_id',
-          'メールID': 'property_id',
-          '案件名': 'project_name',
-          '施主名': 'client_name',
-          '住所': 'address',
+          'システムID': 	      'system_id',
+          'メールID': 		      'property_id',
+          '案件名': 		        'project_name',
+          '施主名': 		        'client_name',
+	        '施主名よみ': 	      'client_name_yomi',
+          '住所': 		        'address',
           '専有面積・延床面積': 'room_area',
-          'キーBOX': 'key_box',
-          '着工日': 'construction_start_date',
-          '完成日': 'completion_date',
-          '案件種別': 'addProjectTypeSelect',
-          '発注元': 'addClientSelect'
+          'キーBOX': 		      'key_box',
+          '着工日': 		        'construction_start_date',
+          '完成日': 		        'completion_date',
+          '案件種別': 		      'addProjectTypeSelect',
+          '発注元': 		        'addClientSelect',
+          '担当者': 		        'addStaffSelect',
+          '備考': 		        'remarks'
+
         };
         // 日付フィールドのリスト
         const dateFields = ['着工日', '完成日'];
