@@ -494,7 +494,7 @@
     @keyframes pulseText { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 
     /* 【ユーザー表示ラベル統合型ログアウトボタン】
-       通常時は「ログインユーザー: 〇〇」を表示し、カーソルを乗せる（ホバーする）と
+       通常時は「👤ユーザー名」を表示し、カーソルを乗せる（ホバーする）と
        ログアウトアイコン＋「ログアウト」表示に切り替わるボタン。
        タップ操作ではホバー状態を経由できない（スマホ等）ため、通常時の見た目のまま
        タップしてもボタンとして機能するようにしており、押すと従来通り
@@ -690,7 +690,7 @@
 
     <div style="display: flex; align-items: center; margin: 12px 12px 8px 12px;">
       <!-- ユーザー表示ラベル兼ログアウトボタン（右上）：
-           通常は「ログインユーザー: 〇〇」を表示し、ホバーすると「ログアウト」表示に切り替わる。
+           通常は「👤ユーザー名」を表示し、ホバーすると「ログアウト」表示に切り替わる。
            クリック（タップ）すると、ホバーの有無に関わらずhandleLogout()の確認ダイアログが開く。 -->
       <button type="button" id="userLogoutLabel" class="user-logout-label" onclick="handleLogout()" style="display:none;" title="クリックでログアウト">
         <span class="material-symbols-outlined logout-icon">logout</span>
@@ -724,16 +724,20 @@
         
         <!-- フィルター3：キーワード検索入力欄 -->
         <div style="flex: 2; min-width: 250px;">
-          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: var(--text-sub);">キーワード検索（No、案件名など）</label>
-          <input type="text" id="searchValue" placeholder="文字を入力（Enterキーでも検索できます）" style="width: 100%;">
+          <input type="text" id="searchValue" placeholder="キーワード検索（No、案件名など）" style="width: 100%;">
         </div>
         
         <!-- 検索・クリア・詳細検索ボタン -->
-        <div style="display: flex; gap: 8px; min-width: 280px; flex: 1;">
-          <button id="searchBtn" class="btn btn-primary" onclick="search()" style="flex: 1; padding: 13px; font-size:18px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; min-width: 300px; flex: 1;">
+          <!-- 詳細検索の開閉ボタン（一番左）。開閉時の配色変更はtoggleAdvancedSearch()が担当 -->
+          <button type="button" id="toggleAdvancedSearchBtn" class="btn" onclick="toggleAdvancedSearch()"
+            style="flex: 0 0 auto; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding: 13px 14px; font-size:16px;">
+            <span class="material-symbols-outlined" id="advancedSearchIcon" style="transition: transform 0.2s;">tune</span> 詳細検索
+          </button>
+          <button id="searchBtn" class="btn btn-primary" onclick="search()" style="flex: 1 1 auto; padding: 13px 10px; font-size:16px;">
             <span class="material-symbols-outlined">search</span> 検索する
           </button>
-          <button id="clearBtn" class="btn btn-secondary" onclick="clearSearchFilters()" style="flex: 1; padding: 13px; font-size:18px;">
+          <button id="clearBtn" class="btn btn-secondary" onclick="clearSearchFilters()" style="flex: 1 1 auto; padding: 13px 10px; font-size:16px;">
             <span class="material-symbols-outlined">clear</span> クリア
           </button>
         </div>
@@ -743,14 +747,6 @@
       <div style="display: flex; align-items: center; gap: 6px; margin-top: 14px;">
         <input type="checkbox" id="filterUnscheduledOnly" onchange="handleUnscheduledOnlyChange()" style="width:16px; height:16px; cursor:pointer;">
         <label for="filterUnscheduledOnly" style="font-size: 0.85rem; color: var(--text-sub); cursor:pointer;">施工日未設定の案件のみ表示</label>
-      </div>
-
-      <!-- 詳細検索の開閉ボタン -->
-      <div style="margin-top: 14px;">
-        <button type="button" id="toggleAdvancedSearchBtn" class="btn" onclick="toggleAdvancedSearch()"
-          style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:10px 18px; font-size:15px;">
-          <span class="material-symbols-outlined" id="advancedSearchIcon" style="transition: transform 0.2s;">tune</span> 詳細検索
-        </button>
       </div>
 
       <!-- 詳細検索エリア（工事内容・工事担当者・担当者・施工日）：既定は非表示 -->
@@ -884,21 +880,6 @@
             </div>
           </div>
 
-          <!-- セクション2：工事予定・担当割当（動的追加可能） -->
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 12px 0; font-size: 18px; color: #475569; display: flex; align-items: center; gap: 6px;">
-              工事予定・担当割当
-            </h3>
-            
-            <!-- 工事予定フィールド動的生成エリア -->
-            <div id="dynamicWorkFieldsContainer"></div>
-          
-            <!-- 工事日程追加ボタン -->
-            <button type="button" id="addWorkBtn" class="btn" style="margin-top:16px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="showNextWorkField()">
-              <span class="material-symbols-outlined" style="font-size:18px; transform: translateY(0px);">add_circle</span> 施工日・工事内容・担当を追加
-            </button>
-          </div>
-    
           <!-- セクション3：物件情報 -->
           <!-- 現場住所 -->
           <div class="form-group">
@@ -983,6 +964,22 @@
             </div>
           </div>
           
+          <!-- 工事予定・担当割当（動的追加可能）※備考の下に配置 -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 18px; color: #475569; display: flex; align-items: center; gap: 6px;">
+              工事予定・担当割当
+            </h3>
+            
+            <!-- 工事予定フィールド動的生成エリア -->
+            <div id="dynamicWorkFieldsContainer"></div>
+          
+            <!-- 工事日程追加ボタン -->
+            <button type="button" id="addWorkBtn" class="btn" style="margin-top:16px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="showNextWorkField()">
+              <span class="material-symbols-outlined" style="font-size:18px; transform: translateY(0px);">add_circle</span> 施工日・工事内容・担当を追加
+            </button>
+          </div>
+    
+
           <!-- セクション5：検査日時指定（日付＋時刻） -->
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px;">検査日（時刻指定）</label>
@@ -1025,7 +1022,7 @@
               <div class="form-group" style="margin:0; grid-column: span 2;">
                 <label>引渡日</label>
                 <!-- ★style属性の重複を1つに統合 -->
-                <input type="date" id=delivery_date name="引渡日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+                <input type="date" id="delivery_date" name="引渡日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
               </div>
             </div>
           </div>
@@ -1536,9 +1533,8 @@
       } else {
         document.getElementById("initLoader").style.display = "none";
         document.getElementById("loginScreen").style.display = "flex";
-        const enter = (e) => { if (e.key === "Enter") handleLoginSubmit(); };
-        document.getElementById("loginIdInput").addEventListener("keypress", enter);
-        document.getElementById("loginPasswordInput").addEventListener("keypress", enter);
+        // Enterキーでのログインは<form onsubmit>が処理するため、keypressの個別登録は不要
+        // （以前は両方が発火し、ログイン処理・GAS通信が二重に走っていた）
       }
       document.getElementById("searchValue").addEventListener("keydown", function(e) {
         if (e.key === "Enter") search();
@@ -1547,19 +1543,19 @@
       window.addEventListener("scroll", handleScroll);
     });
   
+    // 検査日の「時」「分」セレクトの選択肢を生成する共通関数（新規登録用・編集用で共用）
+    function buildInspectionTimeOptions() {
+      const pad = n => String(n).padStart(2, '0');
+      const hours = ['<option value="">時</option>'];
+      for (let h = 0; h < 24; h++) hours.push(`<option value="${pad(h)}">${pad(h)}</option>`);
+      const minutes = ['<option value="">分</option>'];
+      for (let m = 0; m < 60; m += 15) minutes.push(`<option value="${pad(m)}">${pad(m)}</option>`);
+      return { hours, minutes };
+    }
+
     // 新規関数：時刻セレクトボックスを初期化
     window.initializeInspectionTimeSelects = function() {
-      // 時間（0～23）
-      const hours = ['<option value="">時</option>'];
-      for (let h = 0; h < 24; h++) {
-        hours.push(`<option value="${String(h).padStart(2, '0')}">${String(h).padStart(2, '0')}</option>`);
-      }
-      
-      // 分（0, 15, 30, 45）
-      const minutes = ['<option value="">分</option>'];
-      for (let m = 0; m < 60; m += 15) {
-        minutes.push(`<option value="${String(m).padStart(2, '0')}">${String(m).padStart(2, '0')}</option>`);
-      }
+      const { hours, minutes } = buildInspectionTimeOptions();
       
       // 新規登録モーダル内のセレクトに設定
       const newHourSel = document.getElementById("newInspectionHour");
@@ -1570,17 +1566,7 @@
     
     // 時刻値を保持
     window.initializeInspectionTimeSelectsForRecord = function(recordNo) {
-      // 時間（0～23）
-      const hours = ['<option value="">時</option>'];
-      for (let h = 0; h < 24; h++) {
-        hours.push(`<option value="${String(h).padStart(2, '0')}">${String(h).padStart(2, '0')}</option>`);
-      }
-      
-      // 分（0, 15, 30, 45）
-      const minutes = ['<option value="">分</option>'];
-      for (let m = 0; m < 60; m += 15) {
-        minutes.push(`<option value="${String(m).padStart(2, '0')}">${String(m).padStart(2, '0')}</option>`);
-      }
+      const { hours, minutes } = buildInspectionTimeOptions();
       
       const hourSel = document.getElementById(`検査日時_${recordNo}`);
       const minuteSel = document.getElementById(`検査日分_${recordNo}`);
@@ -1679,7 +1665,7 @@
         appConfig = data;
         applySharedMasterData(data);
         if (data.loginUser) {
-          document.getElementById("userDisplayLabel").textContent = `ログインユーザー: ${data.loginUser}`;
+          document.getElementById("userDisplayLabel").textContent = `👤${data.loginUser}`;
           localStorage.setItem('app_login_userName', data.loginUser);
         }
         // 🔐 ID/パスワードでの認証が成功した場合、サーバーから新しいログイントークンが返ってくる。
@@ -1962,7 +1948,9 @@
 
       // (株)、（株）、株式会社、有限会社 などを強力に消去
       return text
-        .replace(/[（\(\[\【]?(株式会社|有限会社|合同会社|株|有)[）\)\]\】]?/g, "")
+        // 「株式会社」等の法人格、および括弧付きの略称（株）（有）のみ除去する。
+        // ※「株」「有」を括弧なしで消すと「有田建設」等の社名まで壊れるため、括弧付きに限定している
+        .replace(/株式会社|有限会社|合同会社|[（(\[【][株有][）)\]】]/g, "")
         .trim();
     }
 
@@ -2256,7 +2244,7 @@
       const endNo = Math.min(startNo + RESULTS_PAGE_SIZE, totalCount);
 
       countDiv.innerHTML = `<span style="color:var(--primary); font-size: 18px;">${totalCount}</span> 件を表示中`
-        + (totalPages > 1 ? `（${startNo + 1}〜${endNo}件目 / ${currentSearchPage}〜${totalPages}ページ）` : '');
+        + (totalPages > 1 ? `（${startNo + 1}〜${endNo}件目 / ${currentSearchPage} / ${totalPages}ページ）` : '');
   
       // -----------------------------------------------------------------
       // 【変更箇所】配列の末尾から先頭に向かって逆順に処理し、現在のページ範囲（50件分）だけ描画する
@@ -2397,7 +2385,7 @@
             <div class="summary-info" style="flex:1; padding-right:12px;">
               <div class="row-meta">
                 <span class="badge-no">No.${record.No}</span>
-                <span style="font-size:14px; color:var(--text-sub); font-weight:bold;">${escapeHtml(record.発注元)}</span>
+                <span style="font-size:14px; color:var(--text-sub); font-weight:bold;">${escapeHtml(formatDisplayText(record.発注元))}</span>
                 <span style="font-size:14px; color:#475569; font-weight:bold;">👤 ${escapeHtml(record.担当者) || '－'}</span>
                 <span style="font-size:14px; color:#64748b; margin-left:auto; font-weight:bold; padding-right:10px;">受注媒体: ${escapeHtml(record.受注媒体) || '－'}</span>
               </div>
@@ -3932,11 +3920,11 @@
           'キーBOX': 		   'key_box',
           '着工日': 		       'construction_start_date',
           '完成日': 		       'completion_date',
-          '引渡日': 		       'delivery_date name',
+          '引渡日': 		       'delivery_date',
           '備考': 		       'remarks'
         };
         // 日付フィールドのリスト
-        const dateFields = ['着工日', '完成日'];
+        const dateFields = ['着工日', '完成日', '引渡日'];
         // マッピングを元にデータを流し込み
         Object.entries(data).forEach(([key, value]) => {
           const targetId = fieldMapping[key];
