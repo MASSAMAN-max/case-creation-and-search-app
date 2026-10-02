@@ -895,7 +895,7 @@
           <!-- 現場緯度経度（地図連携用） -->
           <div class="form-group">
             <label><span class="material-symbols-outlined">pin_drop</span> 現場緯度経度</label>
-            <input type="text" name="現場緯度経度" placeholder="例：36.8420,137.4060" style="width: 100%;">
+            <input type="text" id="Latitude_longitude" name="現場緯度経度" placeholder="例：36.8420,137.4060" style="width: 100%;">
           </div>
 
           <!-- 駐車場情報：普段は折りたたんでおき、必要な案件だけ開いて入力する -->
@@ -3908,14 +3908,15 @@
         const fieldMapping = {
           'システムID': 	       'system_id',
           'メールID': 		   'property_id',
+          '受注媒体': 		   'addMediaSelect',	
           '案件種別': 		   'addProjectTypeSelect',
           '発注元': 		       'addClientSelect',
-          '担当者': 		       'addStaffSelect',
-          '受注媒体': 		   'addMediaSelect',		  
+          '担当者': 		       'addStaffSelect',	  
           '案件名': 		       'project_name',
           '施主名': 		       'client_name',
 	      '施主名よみ': 	   	   'client_name_yomi',
           '住所': 		       'address',
+          '現場緯度経度': 	　 'Latitude_longitude',			
           '専有面積・延床面積': 'room_area',
           'キーBOX': 		   'key_box',
           '着工日': 		       'construction_start_date',
