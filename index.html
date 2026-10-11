@@ -1398,6 +1398,29 @@
       return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
     }
   
+    // ログインの有効期限切れ（AUTH_EXPIRED）への対応用フラグ。
+    // isAppInitialized … メイン画面を表示済みか（起動時の認証失敗は、initializeApp側のcatchで処理するため区別する）
+    let isAppInitialized = false;
+    let isHandlingAuthExpired = false;
+
+    // 利用中にログインの有効期限が切れた・無効化された場合の処理。
+    // 保存済みのトークンを破棄し（次に開いた時にログイン画面になる）、案内を出してOKで再読み込みする。
+    // ※ 呼び出し元（保存処理など）も続けて自分のエラー表示を出すことがあるが、SweetAlert2は同時に1つしか
+    //   表示できないため、後から出た同じ趣旨の表示に置き換わるだけで、重なることはない。
+    async function handleAuthExpired(message) {
+      if (!isAppInitialized || isHandlingAuthExpired) return;
+      isHandlingAuthExpired = true;
+      localStorage.removeItem('app_login_token');
+      localStorage.removeItem('app_login_userName');
+      const result = await Swal.fire({
+        icon: 'info',
+        title: '再ログインが必要です',
+        text: message || 'ログインの有効期限が切れました。再度ログインしてください。',
+        confirmButtonText: 'OK'
+      });
+      if (result.isConfirmed) window.location.reload();
+    }
+
     async function apiCall(action, payload = {}, retriesLeft = 2) {
       // 🔐 ログイン簡略化のセキュリティ対策：
       // ブラウザにはID/パスワードそのものは保存せず、ログイントークンのみを保存する。
@@ -1430,7 +1453,10 @@
         } 
         const resData = await response.json();
         if (resData.status === "error") {
-          throw new Error(resData.message);
+          // サーバーが認証エラーの種類（code）を返した場合は、呼び出し側で判別できるよう保持する
+          const businessError = new Error(resData.message);
+          businessError.code = resData.code || "";
+          throw businessError;
         }
         return resData.data;
       } catch (err) {
@@ -1443,6 +1469,7 @@
           await new Promise(r => setTimeout(r, 1200));
           return apiCall(action, payload, retriesLeft - 1);
         }
+        if (err.code === 'AUTH_EXPIRED') handleAuthExpired(err.message);
         throw err;
       }
     }
@@ -1689,6 +1716,7 @@
         // ② 認証が完了した時点で、案件データの読み込み完了を待たずにすぐメイン画面を表示する
         loader.style.display = "none";
         document.getElementById("mainApp").style.display = "block";
+        isAppInitialized = true; // 以後の認証エラーは、handleAuthExpired で処理する
         // ログインが成功してメイン画面が出たら、ユーザー表示ラベル（兼ログアウトボタン）を表示する
         const logoutBtn = document.getElementById("userLogoutLabel");
         if (logoutBtn) logoutBtn.style.display = "flex";
@@ -1704,9 +1732,9 @@
         loader.style.display = "none";
         // 2. await を使ってユーザーがOKを押すのを待つ
         await Swal.fire({
-          title: 'ログインに失敗しました。',
+          title: err.code === 'AUTH_EXPIRED' ? '再ログインが必要です' : 'ログインに失敗しました。',
           text: err.message,
-          icon: 'error', 
+          icon: err.code === 'AUTH_EXPIRED' ? 'info' : 'error', 
           confirmButtonColor: '#ef4444', 
           confirmButtonText: 'OK'
         });
