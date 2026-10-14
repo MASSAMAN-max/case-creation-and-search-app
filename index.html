@@ -376,10 +376,6 @@
       border-color: rgba(239,68,68,0.7);
     }
 
-    /* フォルダ開くアイコン：ホバーでアップアニメーション */
-    .drive-open-icon { cursor: pointer; transition: transform 0.2s ease, color 0.2s ease; }
-    .drive-open-icon:hover { transform: translateY(-6px); color: var(--primary); }
-    
     /* フォルダ未作成状態：無効化表示（グレーアウト） */
     .drive-folder-link-disabled {
       display: inline-flex;
@@ -477,13 +473,6 @@
       .multi-select-dropdown input[type="text"] { font-size: 16px; padding: 12px; }
     }
 
-    /* ローディング：回転アニメーション */
-    .spinning { animation: spin 1s linear infinite; display: inline-block; }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
     /* ローディング：波状のバーアニメーション */
     @keyframes geminiWave {
       0%, 100% { transform: scaleY(0.3); opacity: 0.6; }
@@ -1391,13 +1380,6 @@
     // このオブジェクトを参照する処理（renderFileList等）はログイン後にしか呼ばれないこと。
     let FILE_TYPES_DEF = {};
   
-    // yyyy-mm-dd HH:MM:SS 形式
-    function getNowDateTimeString() {
-      const now = new Date();
-      const pad = n => String(n).padStart(2, '0');
-      return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-    }
-  
     // ログインの有効期限切れ（AUTH_EXPIRED）への対応用フラグ。
     // isAppInitialized … メイン画面を表示済みか（起動時の認証失敗は、initializeApp側のcatchで処理するため区別する）
     let isAppInitialized = false;
@@ -1411,7 +1393,6 @@
       if (!isAppInitialized || isHandlingAuthExpired) return;
       isHandlingAuthExpired = true;
       localStorage.removeItem('app_login_token');
-      localStorage.removeItem('app_login_userName');
       const result = await Swal.fire({
         icon: 'info',
         title: '再ログインが必要です',
@@ -1501,8 +1482,8 @@
       processBackgroundTasks: (fData, rNum, flags) => apiCall("processBackgroundTasks", { fData, rNum, flags }),
 
       // ---- 添付ファイル（チャンク分割アップロード） ----
-      uploadbox: (rowNumber, fileType, filesData) => apiCall("uploadbox", { rowNumber, fileType, filesData }),
-      initChunkedUpload: (rowNumber, fileName, mimeType) => apiCall("initChunkedUpload", { rowNumber, fileName, mimeType }),
+      uploadbox: (rowNumber, filesData) => apiCall("uploadbox", { rowNumber, filesData }),
+      initChunkedUpload: (rowNumber, fileName) => apiCall("initChunkedUpload", { rowNumber, fileName }),
       uploadChunk: (rowNumber, uploadId, chunkIndex, base64Chunk) => apiCall("uploadChunk", { rowNumber, uploadId, chunkIndex, base64Chunk }),
       finalizeChunkedUpload: (rowNumber, uploadId, totalChunks, fileName, fileType, mimeType) =>
         apiCall("finalizeChunkedUpload", { rowNumber, uploadId, totalChunks, fileName, fileType, mimeType }),
@@ -1693,7 +1674,6 @@
         applySharedMasterData(data);
         if (data.loginUser) {
           document.getElementById("userDisplayLabel").textContent = `👤${data.loginUser}`;
-          localStorage.setItem('app_login_userName', data.loginUser);
         }
         // 🔐 ID/パスワードでの認証が成功した場合、サーバーから新しいログイントークンが返ってくる。
         //   これを保存し、代わりにID/パスワードは（ログイン処理の一時保持用に入れていたものを）直ちに削除する。
@@ -1724,9 +1704,6 @@
         // ③ 案件データはメイン画面表示をブロックせず、裏側で読み込む
         loadAllRecordsInBackground();
 
-        // 保存処理後のリロードであれば、直前の検索条件を復元して再検索する
-        // （restorePendingSearchStateIfAny内のsearch()が、必要であれば上のバックグラウンド読み込みの完了を待つ）
-        restorePendingSearchStateIfAny();
       } catch (err) {
         // 1. ローダーを非表示にする
         loader.style.display = "none";
@@ -1744,7 +1721,6 @@
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
         localStorage.removeItem('app_login_token');
-        localStorage.removeItem('app_login_userName');
         sessionStorage.removeItem('app_login_id');
         sessionStorage.removeItem('app_login_password');
         // 3. ユーザーがOKを押した後にリロードが走る
@@ -2100,6 +2076,9 @@
     // 「追加」ボタンで無制限にセットを増やせる。
     // =================================================================
     const editWorkCounts = {}; // record.No -> 現在表示中の最大セット番号
+    // 描画した時点で存在していた最大セット番号。
+    // 「×」で削除されたセットに空値を送り、シート・カレンダーから消すために使う
+    const editWorkInitialMax = {};
 
     function getRecordWorkSetIndices(record) {
       const indices = new Set();
@@ -2167,6 +2146,7 @@
     function buildEditWorkFieldsContainerHtml(record) {
       const indices = getRecordActiveWorkSetIndices(record);
       editWorkCounts[record.No] = indices[indices.length - 1];
+      editWorkInitialMax[record.No] = indices[indices.length - 1];
       let html = `<div id="editWorkFieldsContainer_${record.No}" style="display:flex; flex-direction:column; gap:12px;">`;
       indices.forEach((i, idx) => {
         const cContent = record['工事内容' + i] || '';
@@ -2448,7 +2428,7 @@
               
               <div class="data-row-input">
                 <label>施主名</label>
-                <input type="text" id="施主名_${record.No}" value="${escapeAttr(record.施主名 || '')}" data-original-yomi="${escapeAttr(record.施主名よみ || '')}">
+                <input type="text" id="施主名_${record.No}" value="${escapeAttr(record.施主名 || '')}">
               </div>
               
               <div class="data-row-input">
@@ -3105,7 +3085,7 @@
       const mimeType = file.type || 'application/octet-stream';
 
       // ① アップロードセッションを開始する
-      const session = await Api.initChunkedUpload(rowNumber, file.name, mimeType);
+      const session = await Api.initChunkedUpload(rowNumber, file.name);
       const uploadId = session && session.uploadId;
       if (!uploadId) {
         throw new Error("アップロードセッションを開始できませんでした。");
@@ -3216,7 +3196,7 @@
         for (const fileObj of imageFileObjs) {
           try {
             const base64File = await fileToBase64(fileObj);
-            await Api.uploadbox(rowNumber, base64File.fileType, [base64File]);
+            await Api.uploadbox(rowNumber, [base64File]);
             succeededCount++;
           } catch (err) {
             console.error(`❌ 画像アップロード失敗: ${fileObj.file.name}`, err);
@@ -3480,8 +3460,6 @@
         }
       }
 
-      payload["loginUser"] = localStorage.getItem('app_login_userName') || '';
-      payload["作成日時"] = getNowDateTimeString();
 
       // -------------------------------------------------------------
       // 検査日＋時刻の結合処理
@@ -3542,7 +3520,7 @@
         // で個別に送信する。
         // =================================================================
         const newRowNumber = response.rowNumber;
-        const flags = { inspectionDateChanged: !!payload["検査日"], isNew: true };
+        const flags = { isNew: true };
         const payloadWithoutFiles = Object.assign({}, payload);
         delete payloadWithoutFiles.files;
 
@@ -3620,7 +3598,6 @@
       
       // 1. フォームデータの収集
       const fData = {
-        No: rNum,
         現場住所: document.getElementById(`現場住所_${rNum}`).value,
         現場緯度経度: document.getElementById(`現場緯度経度_${rNum}`).value.replace(/\s+/g, ""),
         駐車場住所: document.getElementById(`駐車場住所_${rNum}`).value,
@@ -3670,12 +3647,24 @@
         fData["検査日"] = "";
       }
       
-      // 工事日程・内容・担当者（セット数は無制限。画面に実際に存在するセットだけ処理する）
-      const maxWorkIndex = editWorkCounts[rNum] || 1;
+      // 工事日程・内容・担当者（セット数は無制限）
+      // 描画時に存在したセット、または追加されたセットの大きい方まで処理する
+      const initialMax = editWorkInitialMax[rNum] || 1;
+      const maxWorkIndex = Math.max(editWorkCounts[rNum] || 1, initialMax);
       for (let i = 1; i <= maxWorkIndex; i++) {
         const startEl = document.getElementById(`editWorkStart_${rNum}_${i}`);
         const endEl = document.getElementById(`editWorkEnd_${rNum}_${i}`);
-        if (!startEl) continue; // このセットは「削除」されて画面上に存在しない
+        if (!startEl) {
+          // 「×」で削除されたセット：元々存在した番号なら空値を送り、
+          // シートの値とカレンダー予定を消す（追加後すぐ削除した番号は送らない）
+          if (i <= initialMax) {
+            fData["施工日" + i + "開始"] = "";
+            fData["施工日" + i + "終了"] = "";
+            fData["工事内容" + i] = "";
+            fData["工事担当者" + i] = "";
+          }
+          continue;
+        }
 
         let startVal = startEl.value;
         let endVal = endEl ? endEl.value : "";
@@ -3709,8 +3698,6 @@
         fData["連絡先"] = phoneInput.value.trim();
       }
       
-      fData["loginUser"] = localStorage.getItem('app_login_userName') || '';
-      fData["更新日時"] = getNowDateTimeString();
       
       // 添付ファイル
       // ※ チャンク分割方式（PDF等）の対象があるため、ここでは事前変換は行わず、
@@ -3736,6 +3723,18 @@
         if (btnEl) btnEl.disabled = false;
         const itemEl = document.getElementById(`現場住所_${rNum}`)?.closest('.result-item');
         if (itemEl) itemEl.classList.remove('is-open');
+
+        // 変更が1件も無い場合は、カレンダー同期・通知メール・マスタ更新を行わない。
+        // 添付ファイルだけ追加されている可能性があるため、アップロードのみ続行する。
+        if (response && response.isDataChanged === false) {
+          showToast("変更箇所はありませんでした。");
+          if (files.length > 0) {
+            uploadAllAttachedFiles(rowNumber, files).catch(fileErr => {
+              console.error("❌ 添付ファイルのアップロードでエラーが発生しました:", fileErr);
+            });
+          }
+          return;
+        }
         
         // 3. 軽量なトースト通知（1段目完了）※2段目完了の通知が出るまで表示し続ける
         showToast("データ登録が完了しました。その他カレンダー、ファイル登録等処理中...", false, true);
@@ -3746,12 +3745,11 @@
         // uploadAllAttachedFiles() で種別ごとに適切な方式（画像=Base64、PDF等=チャンク分割方式）
         // で個別に送信する。
         // =================================================================
-        const flags = (response && response.flags) ? response.flags : {};
         const fDataForBackgroundTasks = Object.assign({}, fData);
         delete fDataForBackgroundTasks.files;
         
         try {
-          await Api.processBackgroundTasks(fDataForBackgroundTasks, rowNumber, flags);
+          await Api.processBackgroundTasks(fDataForBackgroundTasks, rowNumber, {});
           // すべての処理完了 → 一覧を自動的に最新化（ここでトースト表示も更新される）
           await refreshListAfterAllProcessing();
 
@@ -3819,39 +3817,6 @@
       }
     }
 
-    // =================================================================
-    // 現在の検索条件をsessionStorageへ保存/復元
-    // （バックグラウンド処理完了後にリロード→同条件で再検索するために使用）
-    // =================================================================
-    function saveSearchStateForReload() {
-      const state = {
-        client: document.getElementById("filterClient").value,
-        startDate: document.getElementById("filterStartDate").value,
-        endDate: document.getElementById("filterEndDate").value,
-        unscheduledOnly: document.getElementById("filterUnscheduledOnly").checked,
-        keyword: document.getElementById("searchValue").value
-      };
-      sessionStorage.setItem("pending_search_state", JSON.stringify(state));
-    }
-
-    function restorePendingSearchStateIfAny() {
-      const raw = sessionStorage.getItem("pending_search_state");
-      if (!raw) return;
-      sessionStorage.removeItem("pending_search_state");
-      try {
-        const state = JSON.parse(raw);
-        document.getElementById("filterClient").value = state.client || "";
-        document.getElementById("filterStartDate").value = state.startDate || "";
-        document.getElementById("filterEndDate").value = state.endDate || "";
-        document.getElementById("filterUnscheduledOnly").checked = !!state.unscheduledOnly;
-        handleUnscheduledOnlyChange();
-        document.getElementById("searchValue").value = state.keyword || "";
-        search();
-      } catch (e) {
-        console.error("検索条件の復元に失敗しました:", e);
-      }
-    }
-
     // すべての処理（1段目＋2段目）完了後、ページをリロードせずに一覧データを裏で再取得し、
     // 現在の検索条件を保ったまま一覧をリアルタイムに最新化する。完了したらトースト通知で知らせる。
     async function refreshListAfterAllProcessing() {
@@ -3909,7 +3874,6 @@
         localStorage.removeItem('app_login_id');
         localStorage.removeItem('app_login_password');
         localStorage.removeItem('app_login_token');
-        localStorage.removeItem('app_login_userName');
         sessionStorage.removeItem('app_login_id');
         sessionStorage.removeItem('app_login_password');
     
