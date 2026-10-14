@@ -713,7 +713,7 @@
         
         <!-- フィルター3：キーワード検索入力欄 -->
         <div style="flex: 2; min-width: 250px;">
-          <input type="text" id="searchValue" placeholder="キーワード検索（No、案件名など）" style="width: 100%;">
+          <input type="text" id="searchValue" placeholder="キーワード検索（No、案件名、施主名・よみ、住所）" style="width: 100%;">
         </div>
         
         <!-- 検索・クリア・詳細検索ボタン -->
@@ -1841,9 +1841,20 @@
       return text.trim().toLowerCase();
     }
 
+    // 施主名よみ検索用の正規化：全角英数→半角、半角カナ→全角カナ（NFKC）にしたうえで、
+    // カタカナをひらがなへ統一する。これにより、ひらがな・カタカナどちらで入力しても
+    // ひらがなで保存されている「施主名よみ」に一致する。
+    function normalizeYomi(t) {
+      if (!t) return "";
+      return String(t).normalize("NFKC")
+        .replace(/[ァ-ヶ]/g, s => String.fromCharCode(s.charCodeAt(0) - 0x60))
+        .trim().toLowerCase();
+    }
+
     function filterRecordsClientSide(records, { client, keyword, startDate, endDate, unscheduledOnly, workContentFilter = [], workerFilter = [], managerFilter = [] }) {
       const nClient = normalizeText(client);
       const nKeyword = normalizeText(keyword);
+      const nYomiKeyword = normalizeYomi(keyword);
       const sDate = startDate ? new Date(startDate) : null;
       const eDate = endDate ? new Date(endDate) : null;
       const noDateFilter = !sDate && !eDate && !unscheduledOnly;
@@ -1903,8 +1914,10 @@
         if (!isDateMatched) return false;
 
         if (nKeyword) {
-          const fullText = normalizeText(String(r["No"] || "") + String(r["案件名"] || "") + String(r["現場住所"] || ""));
-          if (!fullText.includes(nKeyword)) return false;
+          // 検索対象：No・案件名・現場住所・施主名（通常の文字列照合）＋ 施主名よみ（ひらがな照合）
+          const fullText = normalizeText(String(r["No"] || "") + String(r["案件名"] || "") + String(r["現場住所"] || "") + String(r["施主名"] || ""));
+          const yomiText = normalizeYomi(r["施主名よみ"]);
+          if (!fullText.includes(nKeyword) && !yomiText.includes(nYomiKeyword)) return false;
         }
         return true;
       });
