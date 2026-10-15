@@ -1,0 +1,597 @@
+/* =====================================================================
+   01_style.css ― 案件管理アプリ 全体のスタイル
+   ---------------------------------------------------------------------
+   カラー定義（:root の変数）・共通部品（ボタン・フォーム）・一覧カード・
+   モーダル・ローディング・スマホ対応（@media）をまとめている。
+   ===================================================================== */
+/* カラースキーム・デザイントークン定義（CSS変数） */
+:root {
+  --primary: #4a90e2;           /* 主色：青系 */
+  --primary-hover: #357abd;     /* 主色ホバー状態 */
+  --success: #2ecc71;           /* 成功・確認色：緑 */
+  --success-hover: #27ae60;     /* 成功色ホバー状態 */
+  --text-main: #222222;         /* メインテキスト色 */
+  --text-sub: #555555;          /* サブテキスト色 */
+  --border: #cccccc;            /* ボーダー色 */
+  --bg-light: #f4f6f9;          /* 背景色：薄いグレー */
+}
+
+/* ページ全体のベーススタイル：フォント・背景・余白 */
+body {
+  font-family: Meiryo, "Meiryo UI", "Hiragino Kaku Gothic ProN", sans-serif;
+  margin: 0;
+  background-color: var(--bg-light);
+  color: var(--text-main);
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+/* フォーム要素共通スタイル：input, select, textarea の標準化
+   ※「工事担当者」選択欄（.multi-select-toggle）と統一したデザイン（枠線1px・角丸6px・padding10px）に合わせる。
+     font-sizeの16pxはモバイルでの自動ズーム防止のため維持。 */
+input, select, textarea {
+  font-family: inherit;
+  font-size: 16px !important;  /* モバイルでのズーム防止 */
+  padding: 10px;
+  border: 1px solid #adb5bd;
+  border-radius: 6px;
+  box-sizing: border-box;
+  background: white;
+}
+
+/* フォーム要素フォーカス時のスタイル：ボーダー色・背景色変更 */
+input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; background: #fdfdfd; }
+
+/* ボタン共通スタイル：Flexレイアウト・ホバーアニメーション */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+/* ボタン：プライマリ（主要な操作） */
+.btn-primary { background-color: var(--primary); color: white; }
+.btn-primary:hover { background-color: var(--primary-hover); }
+
+/* ボタン：サクセス（確定・作成操作） */
+.btn-success { background-color: var(--success); color: white; }
+.btn-success:hover { background-color: var(--success-hover); }
+
+/* ボタン：セカンダリ（キャンセル・補助操作） */
+.btn-secondary { background-color: #bdc3c7; color: white; }
+
+.btn-sm {
+  background-color: var(--success);
+  color: white;
+  font-size: 12px;
+  padding: 6px 10px;
+  min-width: fit-content;
+}
+.btn-sm:hover {
+  background-color: #45a049;
+}
+.btn-sm:disabled {
+  background-color: #a8f7a8;
+  cursor: not-allowed;
+}
+.btn-sm.recording {
+  background-color: #F44336;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(244, 67, 54, 0);
+  }
+}
+
+.voice-input-wrapper {
+  display: flex;
+  gap: 6px;
+}
+
+.voice-input-wrapper input, .voice-input-wrapper textarea {
+  flex: 1;
+}
+/* マイク点滅アニメーション */
+@keyframes blink {
+  0%, 49%, 100% {
+    opacity: 1;
+  }
+  50%, 99% {
+    opacity: 0.3;
+  }
+}
+
+/* フォームグループ内のラベル：アイコン・テキストの整列 */
+.form-group label { display: flex; align-items: center; font-weight: bold; margin-bottom: 8px; white-space: nowrap; }
+
+/* ラベル内のアイコンスタイル：Material Symbols の色・サイズ調整 */
+.form-group label .material-symbols-outlined { font-size: 21px; color: var(--primary); transform: translateY(5px);  /* 縦方向の微調整 */ }
+
+/* ドラッグ&ドロップのテキスト配置 */
+.drag-drop-text { text-align: center; }
+
+/* ログイン画面全体：画面中央配置 */
+.login-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: white; }
+
+/* ログインボックス：幅制限・内部余白 */
+.login-box { width: 100%; max-width: 400px; padding: 32px; box-sizing: border-box; }
+
+/* 検索結果1件のカード：白背景・シャドウ・展開機能 */
+.result-item { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 18px; overflow: hidden;
+  border: 1px solid #e2e8f0; border-left: 4px solid transparent;  /* 初期状態：左枠線は透明 */ transition: all 0.2s ease;
+}
+
+/* 検索結果見出し部分：クリック時の背景変更 */
+.result-summary { padding: 20px; cursor: pointer; display: flex; justify-content: space-between;
+  align-items: center; background: white; transition: background 0.2s;
+}
+.result-summary:hover { background: #f8fafc; }
+
+/* 検索結果詳細部分：初期表示は非表示、展開時にブロック表示 */
+.result-details { display: none; padding: 24px; border-top: 2px solid #e2e8f0; background: #fcfdfe; }
+
+/* 検索結果が開いている状態：左枠線を主色に、シャドウ強調 */
+.result-item.is-open { display: block; border-left-color: var(--primary);  /* 左枠線をメインカラーに */
+  background: #f8fafc; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+.result-item.is-open .result-summary { background: #f8fafc; }
+.result-item.is-open .result-details { display: block; }
+.result-item.is-open .expand-icon { transform: rotate(180deg);  /* 展開時にアイコン回転 */ }
+
+/* 検索結果メタ情報：Noバッジ・案件タイトル等の配置 */
+.row-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; width: 100%; }
+
+/* No バッジ：背景色付きラベル */
+.badge-no { background: #e2e8f0; color: #334155; padding: 3px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; }
+
+/* 案件タイトル：大きめのフォント */
+.anken-title { font-size: 20px; font-weight: bold; color: #0f172a; }
+
+/* 詳細情報カード：各項目を縦に積み、必要な行だけ横並び（flex比率で幅を制御） */
+.detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+/* 2項目を横並びにする行の共通スタイル */
+.detail-card .field-row { display: flex; gap: 8px; width: 100%; }
+.detail-card .field-row > .data-row-input { min-width: 0; }
+
+/* 案件種別・施主名・緯度経度の表示順を変更した際、緯度経度を横並び行から
+   独立させたため、比率調整用だった .field-latlng は使わなくなった。
+   .field-projecttype は現在も案件種別の行で使用しているため残す。 */
+.field-projecttype { flex: 1; }
+
+/* データ行：ラベルと入力欄の縦積み */
+.data-row-input { display: flex; flex-direction: column; }
+.data-row-input label { font-size: 13px; color: #475569; font-weight: bold; margin-bottom: 4px; }
+.data-row-input input, .data-row-input select { width: 100%; }
+
+/* アップロードボックス：ドラッグ&ドロップ対応エリア */
+.uploadbox { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s;
+  margin-top: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+
+/* ドラッグオーバー時の見た目変更：ボーダー・背景色が変わる */
+.uploadbox.dragover { border-color: var(--primary); background: #e0f2fe; }
+.uploadbox.dragover .cloud-icon { transform: translateY(-6px); /* クラウドアイコンが浮き上がる */ color: var(--primary); /* クラウドアイコンの色が主色に */ }
+
+/* クラウドアイコン共通設定：サイズ統一・トランジション */
+.cloud-icon {
+  font-size: 40px !important;
+  color: #60a5fa;
+  flex-shrink: 0;
+  display: inline-block;
+  line-height: 1;
+  letter-spacing: normal;
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+/* ファイル項目：表示済みファイル一覧のスタイル */
+.file-item { display: flex; align-items: center; background: white; padding: 8px 12px;
+   border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 6px; font-size: 14px;
+}
+
+/* ファイルバッジ：ファイル名タグのスタイル */
+.file-badge {
+  display: inline-block;
+  padding: 0 10px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 400;
+  color: #0d47a1;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+
+.file-badge + .file-badge {
+  border-left: 1px solid #cbd5e1;
+}
+
+/* フォルダリンク：Google Drive等への外部リンクボタン
+   ※ ボタンが5つ（資料・共有・Web・メール・MAP）に増えたため、デザインの方向性は維持しつつ
+      全体的にボタンを大きくしている（padding・font-size・アイコンサイズを拡大）。 */
+.drive-folder-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 0;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(240,247,255,0.92) 100%);
+  border: 1px solid rgba(147,197,253,0.55);
+  border-radius: 14px;
+  text-decoration: none;
+  /*color: #2563eb;*/
+  color: #0d47a1;
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  overflow: hidden;
+  /* 【共有ボタンの見た目ズレ対策】資料・Web・mail・MAPは<a>タグだが、
+     共有ボタンだけ<button>タグを使っている（クリック時にGASへ問い合わせるため）。
+     <button>はブラウザ標準スタイルでフォント・行間・ボックスサイズの扱いが
+     <a>と異なることがあり、同じCSSを当てても微妙に見た目がズレる原因になる。
+     明示的にリセットし、<a>タグの4ボタンと完全に同じ見た目になるようにする。 */
+  font-family: inherit;
+  line-height: inherit;
+  box-sizing: border-box;
+  cursor: pointer;
+  vertical-align: middle;
+  appearance: none;
+  -webkit-appearance: none;
+}
+/* アイコン(material-symbols-outlined)と文字ラベルの間隔を詰める */
+.drive-folder-link .material-symbols-outlined { margin-right: 4px; }
+
+/* フォルダリンクホバー状態：アップアニメーション・シャドウ強調 */
+.drive-folder-link:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(232,242,255,0.98) 100%);
+  box-shadow: 0 8px 20px rgba(37,99,235,0.12);
+  border-color: rgba(59,130,246,0.7);
+}
+
+/* アクションボタン共通の配置（資料・共有・Web・メール・MAPの5つで共通利用）
+   余白（ボタン同士の間隔・折り返し時の行間）はボタン自身のmarginではなく、
+   ボタン群を包むラッパー（.action-btn-row）のgapで一元管理する。 */
+.action-btn {
+  flex: 1;
+  min-width: 90px;
+  justify-content: center;
+  margin: 0;
+}
+
+/* アクションボタン（資料・共有・Web・メール・MAP）を包むラッパー。
+   画面幅が狭くボタンが2行目に折り返す場合でも、行間（row-gap）が
+   ちゃんと空くように flex-wrap + gap（縦・横で別指定）で管理する。 */
+.action-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 10px;
+  column-gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* 配色バリエーション：資料＝薄黄、共有＝薄緑、Web＝薄青、メール＝薄紫、MAP＝薄赤
+   （ベースの .drive-folder-link のグラデーション・シャドウの雰囲気を保ったまま色相だけ変える） */
+.action-btn-yellow {
+  background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(254,249,195,0.92) 100%);
+  border-color: rgba(250,204,21,0.55);
+  box-shadow: 0 4px 12px rgba(202,138,4,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+.action-btn-yellow:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(254,240,138,0.98) 100%);
+  box-shadow: 0 8px 20px rgba(202,138,4,0.12);
+  border-color: rgba(234,179,8,0.7);
+}
+.action-btn-green {
+  background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(220,252,231,0.92) 100%);
+  border-color: rgba(34,197,94,0.55);
+  box-shadow: 0 4px 12px rgba(22,163,74,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+.action-btn-green:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(187,247,208,0.98) 100%);
+  box-shadow: 0 8px 20px rgba(22,163,74,0.12);
+  border-color: rgba(34,197,94,0.7);
+}
+.action-btn-blue {
+  background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(219,234,254,0.92) 100%);
+  border-color: rgba(96,165,250,0.55);
+  box-shadow: 0 4px 12px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+.action-btn-blue:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(191,219,254,0.98) 100%);
+  box-shadow: 0 8px 20px rgba(37,99,235,0.12);
+  border-color: rgba(59,130,246,0.7);
+}
+.action-btn-purple {
+  background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(243,232,255,0.92) 100%);
+  border-color: rgba(192,132,252,0.55);
+  box-shadow: 0 4px 12px rgba(147,51,234,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+.action-btn-purple:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(233,213,255,0.98) 100%);
+  box-shadow: 0 8px 20px rgba(147,51,234,0.12);
+  border-color: rgba(168,85,247,0.7);
+}
+.action-btn-red {
+  background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(254,226,226,0.92) 100%);
+  border-color: rgba(248,113,113,0.55);
+  box-shadow: 0 4px 12px rgba(220,38,38,0.08), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+.action-btn-red:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(254,202,202,0.98) 100%);
+  box-shadow: 0 8px 20px rgba(220,38,38,0.12);
+  border-color: rgba(239,68,68,0.7);
+}
+
+/* フォルダ未作成状態：無効化表示（グレーアウト） */
+.drive-folder-link-disabled {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 無効化状態のアイコン：薄いグレー */
+.drive-folder-link-disabled .cloud-icon { font-size: 22px !important; width: 22px; height: 22px; color: #cbd5e1 !important; }
+
+/* トースト通知：右上から出現するメッセージ */
+.toast-box {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  transform: translateX(140%);  /* 初期状態：要素の実際の幅を基準に画面外へ隠す */
+  background: #10b981;  /* 成功時の緑色 */
+  color: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 9999;
+  max-width: 350px;
+  white-space: pre-wrap;  /* 改行・長文に対応 */
+}
+
+/* トースト表示時：スライドイン */
+.toast-box.show { transform: translateX(0); }
+
+/* モーダルオーバーレイ：半透明の背景 */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6);
+  z-index: 5000; display: flex; align-items: center; justify-content: center; }
+
+/* モーダルコンテンツ：白いボックス中央配置 */
+.modal-content { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 600px; box-sizing: border-box;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+}
+
+/* フォームグループ：マージン・ラベル・入力欄の間隔 */
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 15px; color: #334155; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; }
+
+/* 必須バッジ：赤い小さなラベル */
+.badge-required { background-color: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-left: 8px; vertical-align: middle; }
+
+/* 新規案件登録フォーム：常に横並びにしたい2項目の行（画面幅に関わらず崩れない） */
+.form-row-2col { display: flex; gap: 12px; margin-bottom: 18px; }
+.form-row-2col > .form-group { flex: 1; min-width: 0; margin-bottom: 0; }
+
+/* 新規案件登録フォーム：PCでは横並び、スマホでは縦積みに切り替える行（例：発注元・案件名） */
+.form-row-responsive { display: flex; gap: 12px; margin-bottom: 18px; }
+.form-row-responsive > .form-group { min-width: 0; margin-bottom: 0; }
+.form-row-responsive > .form-group.col-1 { flex: 1; }
+.form-row-responsive > .form-group.col-2 { flex: 2; }
+@media (max-width: 780px) {
+  .form-row-responsive { flex-direction: column; }
+}
+
+/* レスポンシブデザイン：タブレット・モバイル対応
+   ※ detail-card はflexベースの構成のため、grid-template-columns の強制上書きは不要。
+     工事セットの入力欄（.work-section）は、新規登録と同じ見た目に統一したため廃止した。 */
+@media (max-width: 780px) {
+  .drag-drop-text { display: none; }
+
+  /* 工事担当者・工事内容などのトグル選択リストは、スマホでは画面中央に大きく表示する
+     （発注元セレクトのネイティブピッカーのような存在感を持たせる）。
+     box-shadowの巨大なスプレッドで背景全体を暗くする定番のCSSテクニックを使い、
+     専用のオーバーレイ要素を追加せずに実現している。 */
+  .multi-select-dropdown {
+    position: fixed !important;
+    top: 6vh !important;
+    left: 4vw !important;
+    right: 4vw !important;
+    bottom: 6vh !important;
+    width: auto !important;
+    max-height: none !important;
+    margin-top: 0 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55), 0 20px 50px rgba(0,0,0,0.35) !important;
+    z-index: 6000 !important;
+  }
+  .worker-toggle-row { font-size: 17px; padding: 14px; }
+  .worker-group-label { font-size: 14px; padding: 10px 14px; }
+  .multi-select-dropdown input[type="text"] { font-size: 16px; padding: 12px; }
+}
+
+/* ローディング：波状のバーアニメーション */
+@keyframes geminiWave {
+  0%, 100% { transform: scaleY(0.3); opacity: 0.6; }
+  50% { transform: scaleY(1); opacity: 1; filter: drop-shadow(0 0 4px rgba(74,144,226,0.5)); }
+}
+
+/* ローディング：テキストのパルスアニメーション */
+@keyframes pulseText { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+/* 【ユーザー表示ラベル統合型ログアウトボタン】
+   通常時は「👤ユーザー名」を表示し、カーソルを乗せる（ホバーする）と
+   ログアウトアイコン＋「ログアウト」表示に切り替わるボタン。
+   タップ操作ではホバー状態を経由できない（スマホ等）ため、通常時の見た目のまま
+   タップしてもボタンとして機能するようにしており、押すと従来通り
+   handleLogout()の確認ダイアログ（「ログアウトしますか？」）が表示される。 */
+.user-logout-label {
+  margin-left: auto;
+  display: none; /* ログイン成功時にJSでflexに切り替える */
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-sub);
+  font-weight: bold;
+  background: #e2e8f0;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  /* <button>を<span>相当の見た目にするための標準スタイルリセット */
+  font-family: inherit;
+  line-height: inherit;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.user-logout-label .logout-icon { display: none; font-size: 16px; }
+.user-logout-label .label-text-hover { display: none; }
+.user-logout-label:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+.user-logout-label:hover .logout-icon { display: inline-flex; }
+.user-logout-label:hover .label-text-default { display: none; }
+.user-logout-label:hover .label-text-hover { display: inline; }
+
+/* トップへ戻るボタン追加 */
+.scrollToTopBtn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: none;
+  z-index: 999;
+  box-shadow: 0 4px 12px rgba(74,144,226,0.3);
+  transition: all 0.3s ease;
+  align-items: center;
+  justify-content: center;
+}
+.scrollToTopBtn:hover {
+  background-color: var(--primary-hover);
+  box-shadow: 0 6px 16px rgba(74,144,226,0.4);
+  transform: translateY(-3px);
+}
+
+/* 工事担当者選択：行ごとのグループ見出し（発注元セレクトのoptgroupと同系配色で統一） */
+.worker-group-label {
+  font-weight: bold;
+  color: #1e40af;
+  background-color: #eff6ff;
+  font-size: 13px;
+  padding: 6px 12px;
+}
+.worker-group-body { display: flex; flex-direction: column; }
+
+/* 工事担当者選択：1行分（トグル＋名前）。左詰めで視認性を確保 */
+.worker-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #1e293b;
+}
+.worker-toggle-row:hover { background: #f1f5f9; }
+.worker-toggle-label { text-align: left; overflow-wrap: anywhere; }
+
+/* トグルスイッチ本体（チェックボックスの見た目をトグル化） */
+.toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #cbd5e1; transition: 0.2s; border-radius: 22px;
+}
+.toggle-slider::before {
+  position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+  background-color: white; transition: 0.2s; border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.toggle-switch input:checked + .toggle-slider { background-color: var(--success); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+/* 「工事担当者」選択ボタン等、input/selectと見た目を揃えたいボタン共通クラス。
+   個別にインラインで枠線・角丸・paddingを指定するのではなく、input/select/textareaと
+   同じグローバルデザイン（1px solid #adb5bd、角丸6px、padding10px）に統一する。 */
+.control-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px;
+  border: 1px solid #adb5bd;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 16px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.control-btn:focus { border-color: var(--primary); outline: none; background: #fdfdfd; }
+/* 検索フィルター欄のセレクトと同じ薄いグレー背景にする場合に付与する補助クラス */
+.control-btn.control-btn-filter { background: #fafafa; }
+
+/* 見出し（あ行・か行…）のスタイル設定 */
+optgroup {
+  font-weight: bold;
+  color: #1e40af;            /* 文字色：濃いブルー */
+  background-color: #eff6ff; /* 背景色：薄いブルー */
+  font-style: normal;        /* 斜体を解除 */
+  padding: 4px 0;
+}
+
+/* 選択肢（子要素）のスタイルを元に戻す設定 */
+optgroup option {
+  color: #333333;            /* 文字色を通常色に */
+  background-color: #ffffff; /* 背景色を白に */
+  font-weight: normal;
+  padding: 4px 8px;
+}
