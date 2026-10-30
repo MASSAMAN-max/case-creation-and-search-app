@@ -225,6 +225,15 @@ function buildInspectionTimeOptions() {
   return { hours, minutes };
 }
 
+// 検査日の「時」を選んだとき、「分」が未選択なら自動で「00」にする（新規登録・編集で共用）
+// （時だけ選んで分が空のままだと、時刻なしの日付のみとして保存されてしまうのを防ぐ）
+window.handleInspectionHourChange = function(hourSel, minuteSelId) {
+  const minuteSel = document.getElementById(minuteSelId);
+  if (hourSel.value !== "" && minuteSel && minuteSel.value === "") {
+    minuteSel.value = "00";
+  }
+};
+
 // 新規関数：時刻セレクトボックスを初期化
 window.initializeInspectionTimeSelects = function() {
   const { hours, minutes } = buildInspectionTimeOptions();
@@ -362,24 +371,27 @@ function findManagerInMaster(clientName, staffName) {
 // 担当者を選んだ時の連絡先の反映（新規登録・編集フォーム共通）
 //   ・(新規担当者)         ：連絡先を空にして手入力可にする
 //   ・マスタにある担当者   ：連絡先を自動入力し、読み取り専用にする
-//   ・マスタに無い名前     ：手入力可にする。clearIfUnmatchedがtrueなら連絡先も空にする
+//   ・マスタに無い名前     ：手入力可にする// 担当者を選んだ時の連絡先の反映（新規登録・編集フォーム共通）
+//   ・(新規担当者)         ：連絡先を空にする
+//   ・マスタにある担当者   ：連絡先を自動入力する（その後に編集してもよい）
+//   ・マスタに無い名前     ：clearIfUnmatchedがtrueなら連絡先を空にする
 //     （新規登録は空にする／編集は既存の連絡先を残す、という従来の挙動の違いを維持している）
+// 連絡先欄は常に編集可能。変更した場合のマスタ上書きはGAS側（addClientStaffGroup）で行う。
 function applyManagerPhone(selectEl, phoneInput, clientName, clearIfUnmatched) {
   if (!phoneInput) return; // 安全対策：要素が見つからない場合はスキップ
 
+  phoneInput.readOnly = false; // 常に編集可能
+
   if (selectEl.value === "(新規担当者)") {
     phoneInput.value = "";
-    phoneInput.readOnly = false;
     return;
   }
 
   const matched = findManagerInMaster(clientName, selectEl.value);
   if (matched && typeof matched === 'object') {
     phoneInput.value = matched.phone || matched.連絡先 || "";
-    phoneInput.readOnly = true; // マスタにある担当者は書き換え不可
-  } else {
-    if (clearIfUnmatched) phoneInput.value = "";
-    phoneInput.readOnly = false;
+  } else if (clearIfUnmatched) {
+    phoneInput.value = "";
   }
 }
 
