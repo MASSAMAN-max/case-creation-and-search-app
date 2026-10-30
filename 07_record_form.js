@@ -105,6 +105,9 @@ function buildWorkSetFormHtml({ i, isFirst, ids, useNames, removeOnclick, conten
     </button>`;
   const wrapperStyle = isFirst ? "" : "margin-top:20px; border-top:1px dashed #cbd5e1; padding-top:12px; position:relative;";
 
+  // 横幅が半分になるため、ラベルは折り返しを許可する（共通CSSの nowrap を上書き）
+  const labelStyle = "margin-bottom: 0px; align-items: center; gap: 2px; white-space: normal;";
+
   return `
     <div id="${ids.group}" class="work-input-group" style="${wrapperStyle} display:grid; grid-template-columns: 1fr; gap: 2px;">
       ${removeBtnHtml}
@@ -125,21 +128,24 @@ function buildWorkSetFormHtml({ i, isFirst, ids, useNames, removeOnclick, conten
         </div>
       </div>
 
-      <div class="form-group">
-        <label style="margin-bottom: 0px; align-items: center; gap: 2px;">
-          <span class="material-symbols-outlined" style="font-size: 18px;">construction</span><span>工事内容 ${i}</span> <span class="badge-required">必須</span>
-        </label>
-        <select${nameAttr(`工事内容${i}`)} id="${ids.content}" required style="width:100%; margin-top: 2px;" onchange="toggleNewInput(this, '${ids.contentNewGroup}')">${contentOptionsHtml}</select>
-        <div id="${ids.contentNewGroup}" style="display: none; margin-top: 2px;">
-          <input type="text" id="${ids.contentNewInput}" placeholder="新規工事内容を入力">
+      <!-- 工事内容と工事担当者は横一列（画面幅に関わらず1:1） -->
+      <div class="form-row-2col">
+        <div class="form-group">
+          <label style="${labelStyle}">
+            <span class="material-symbols-outlined" style="font-size: 18px;">construction</span><span>工事内容 ${i}</span> <span class="badge-required">必須</span>
+          </label>
+          <select${nameAttr(`工事内容${i}`)} id="${ids.content}" required style="width:100%; margin-top: 2px;" onchange="toggleNewInput(this, '${ids.contentNewGroup}')">${contentOptionsHtml}</select>
+          <div id="${ids.contentNewGroup}" style="display: none; margin-top: 2px;">
+            <input type="text" id="${ids.contentNewInput}" placeholder="新規工事内容を入力" style="width:100%;">
+          </div>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label style="margin-bottom: 0px; align-items: center; gap: 2px;">
-          <span class="material-symbols-outlined" style="font-size: 18px;">supervisor_account</span><span>工事担当者 ${i}（複数選択可）</span>
-        </label>
-        ${buildWorkerMultiSelectHtml(ids.workerUid, useNames ? `工事担当者${i}` : '')}
+        <div class="form-group">
+          <label style="${labelStyle}">
+            <span class="material-symbols-outlined" style="font-size: 18px;">supervisor_account</span><span>工事担当者 ${i}</span>
+          </label>
+          ${buildWorkerMultiSelectHtml(ids.workerUid, useNames ? `工事担当者${i}` : '')}
+        </div>
       </div>
     </div>
   `;
@@ -592,6 +598,11 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
     fData["連絡先"] = phoneInput.value.trim();
   }
 
+  // 連絡先が、この案件の元の値から変更されたか（マスタの連絡先を上書きするかの判定に使う）
+  const originalRecord = (allRecordsCache || []).find(r => r.rowNumber === rowNumber);
+  const originalPhone = originalRecord ? String(originalRecord["連絡先"] || "").trim() : "";
+  const phoneChanged = (fData["連絡先"] !== undefined) && (fData["連絡先"] !== originalPhone);
+	
   // 添付ファイル
   // ※ チャンク分割方式（PDF等）の対象があるため、ここでは事前変換は行わず、
   //   選択されたファイルの一覧をそのまま保持しておく。
@@ -642,7 +653,16 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
     delete fDataForBackgroundTasks.files;
 
     try {
-      await Api.processBackgroundTasks(fDataForBackgroundTasks, rowNumber, {});
+      await Api.processBackgroundTasks(fDataForBackgroundTasks, rowNumber, { phoneChanged: phoneChanged });
+
+      // マスタ（担当者・連絡先の候補）を再取得して、次回の選択に最新の連絡先が出るようにする
+      Api.loadAppDataMaster().then(data => {
+        if (data && typeof appConfig !== "undefined") {
+          appConfig = data;
+          applySharedMasterData(data);
+        }
+      }).catch(console.error);
+
       // すべての処理完了 → 一覧を自動的に最新化（ここでトースト表示も更新される）
       await refreshListAfterAllProcessing();
 
