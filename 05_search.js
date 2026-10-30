@@ -465,7 +465,7 @@ function renderCurrentResultsPage() {
           <label style="font-weight:bold; font-size:14px; color:var(--text-sub);">検査日（時刻指定）</label>
           <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
             <input type="date" id="検査日_${record.No}" value="${parseDate(record.検査日)}" onclick="this.showPicker?.()" style="cursor:pointer;">
-            <select id="検査日時_${record.No}" style="padding: 10px; border: 2px solid var(--border); border-radius: 8px; box-sizing: border-box;">
+            <select id="検査日時_${record.No}" onchange="handleInspectionHourChange(this, '検査日分_${record.No}')" style="padding: 10px; border: 2px solid var(--border); border-radius: 8px; box-sizing: border-box;">
               <option value="">時</option>
             </select>
             <select id="検査日分_${record.No}" style="padding: 10px; border: 2px solid var(--border); border-radius: 8px; box-sizing: border-box;">
