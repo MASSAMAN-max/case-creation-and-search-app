@@ -262,13 +262,11 @@ function renderCurrentResultsPage() {
     }
     // 案件共有ボタン
     // ※ URLにはNo（連番）ではなく、他案件を推測されないようハッシュ化された共有トークンを使う。
-    //   共有ページはVercelの /api/share（OGP対応の中継ページ）経由で開く。
+    //   共有方法選択ページ（share.html）を、tokenだけ付けて新しいタブで開く。
     //   ドメインはハードコードせず、/api/config から取得した appEnvConfig.shareAppDomain を使う
     //   （以前ハードコードしていたことで、プレビュードメインのまま放置される事故が起きたため）。
-    // 【重要】以前は<a href>による静的リンクだったが、案件共有アプリ側の
-    //   ログイン省略機能（viewKey）導入により、クリック時にGASへ問い合わせて
-    //   一時トークンを取得してから遷移する動的な処理（openShareApp）に変更した。
-    //   そのため <a> ではなく <button onclick> を使う。
+    // 【注記】クリック時の処理（openShareApp）で share.html を開くため、
+    //   <a> ではなく <button onclick> を使っている。
     const shareToken = record.共有トークン || "";
     const shareDomainReady = shareToken && appEnvConfig && appEnvConfig.shareAppDomain;
     const shareButtonHtml = shareDomainReady ? `
