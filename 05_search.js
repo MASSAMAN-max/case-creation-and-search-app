@@ -73,12 +73,12 @@ async function search(shouldScroll = true) {
   } catch (err) {
     loader.style.display = "none";
     btn.disabled = false;
-    resultsDiv.innerHTML = '<p style="color:red; text-align:center;">エラー: ' + err.message + '</p>';
+    resultsDiv.innerHTML = '<p style="color:red; text-align:center;">エラー: ' + escapeHtml(err.message) + '</p>';
     console.error("❌ 検索エラー:", err);
     Swal.fire({
       icon: 'error',
       title: '検索中にエラーが発生しました',
-      html: `<strong>${err.message}</strong><br><br><small>詳細はコンソール（F12）を確認してください</small>`,
+      html: `<strong>${escapeHtml(err.message)}</strong><br><br><small>詳細はコンソール（F12）を確認してください</small>`,
       confirmButtonText: '了解'
     });
   }
@@ -238,7 +238,7 @@ function renderCurrentResultsPage() {
     let hasBadge = false;
     for (let code in FILE_TYPES_DEF) {
       if (savedBadges.includes(code)) {
-        badgeHtml += `<span class="file-badge">${FILE_TYPES_DEF[code].name}</span>`;
+        badgeHtml += `<span class="file-badge">${escapeHtml(FILE_TYPES_DEF[code].name)}</span>`;
         hasBadge = true;
       }
     }
