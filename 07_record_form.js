@@ -398,7 +398,7 @@ async function handleCreateSubmit(event) {
     const fDataForSheetOnly = Object.assign({}, payload);
     delete fDataForSheetOnly.files; // 高速な1段目にはファイルの重いデータを含めない
 
-    const response = await Api.createRecordSheetOnly(fDataForSheetOnly);
+    const response = await Api.updateRecordSheetOnly(fDataForSheetOnly, rowNumber, rNum);
 
     // 1. ローダー解除＆新規モーダルを閉じる
     loader.style.display = "none";
@@ -425,7 +425,7 @@ async function handleCreateSubmit(event) {
     delete payloadWithoutFiles.files;
 
     try {
-      await Api.processBackgroundTasks(payloadWithoutFiles, newRowNumber, flags);
+      await Api.processBackgroundTasks(fDataForBackgroundTasks, rowNumber, { phoneChanged: phoneChanged }, rNum);
 
       // ここまで（カレンダー登録・マスタ更新）が完了した時点で完了通知に切り替える。
       // 添付ファイルのアップロードはこの後も裏側で継続し、完了を待たずに一覧を更新する。
