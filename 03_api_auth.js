@@ -24,14 +24,20 @@ async function handleAuthExpired(message) {
   if (result.isConfirmed) window.location.reload();
 }
 
-async function apiCall(action, payload = {}, retriesLeft = 2) {
-  // 🔐 ログイン簡略化のセキュリティ対策：
-  // ブラウザにはID/パスワードそのものは保存せず、ログイントークンのみを保存する。
-  // トークンがあればそれだけを送信し、無い場合（初回ログイン等）だけID/パスワードを送信する。
-  // 【sessionStorageを使う理由】ID/パスワードは「初回ログインリクエストを送るまでの
-  // ごく一瞬だけ」保持できればよい一時データのため、タブを閉じれば自動的に消える
-  // sessionStorageを使う。トークン（app_login_token）は複数端末・タブをまたいだ
-  // 永続ログインを維持する必要があるため、従来通りlocalStorageのままにしている。
+// 自動で再試行してよいaction（同じリクエストを2回送っても、結果が変わらないもの）。
+// 登録・更新・アップロードは、再送すると二重登録・二重の通知メールになるため含めない
+// （通信が遅いだけで、サーバー側は処理済みのことがある）。
+//   ・loadAppDataMaster … 読み取り（ログイン時は、使われなかったトークンが1つ残るだけ）
+//   ・loadAllRecords    … 読み取り
+//   ・logout            … 2回実行しても同じ
+//   ・initChunkedUpload … 案件フォルダの確保と、uploadIdの発行だけ
+//   ・uploadChunk       … サーバー側で、同じ番号のチャンクを置き換える作りにしている（05_添付ファイル.js）
+const RETRY_SAFE_ACTIONS = new Set([
+  'loadAppDataMaster', 'loadAllRecords', 'logout', 'initChunkedUpload', 'uploadChunk'
+]);
+
+async function apiCall(action, payload = {}, retriesLeft = RETRY_SAFE_ACTIONS.has(action) ? 2 : 0) {
+  // （トークン・ID/パスワードの付与、fetch、resData のエラー判定は変更なし）
   const token = localStorage.getItem('app_login_token');
   if (token) {
     payload.token = token;
@@ -63,19 +69,21 @@ async function apiCall(action, payload = {}, retriesLeft = 2) {
     }
     return resData.data;
   } catch (err) {
-    const isTransientHttpError = err.message.startsWith("HTTPエラー");
+    // 通信エラー：HTTPエラー、または fetch 自体の失敗（TypeError）
+    const isCommunicationError = err.message.startsWith("HTTPエラー") || err.name === "TypeError";
 
-    if (isTransientHttpError && retriesLeft > 0) {
-      console.warn(
-        `⚠️ ${action}: 通信エラーのため再試行します（残り${retriesLeft}回）: ${err.message}`
-      );
+    if (isCommunicationError && retriesLeft > 0) {
+      console.warn(`⚠️ ${action}: 通信エラーのため再試行します（残り${retriesLeft}回）: ${err.message}`);
       await new Promise(r => setTimeout(r, 1200));
       return apiCall(action, payload, retriesLeft - 1);
+    }
+    if (isCommunicationError && !RETRY_SAFE_ACTIONS.has(action)) {
+      // 再送していないため、サーバー側で処理が実行済みの可能性がある。二重に実行しないよう、確認を促す
+      err.message += "\n処理はサーバー側で実行されている可能性があります。一覧を更新して結果を確認してから、必要であれば再度お試しください。";
     }
     if (err.code === 'AUTH_EXPIRED') handleAuthExpired(err.message);
     throw err;
   }
-}
 
 // =================================================================
 // 🔌 GAS通信の集約レイヤー（Api）
