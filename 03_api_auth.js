@@ -100,8 +100,8 @@ const Api = {
 
   // ---- 案件データ 登録・更新 ----
   createRecordSheetOnly: (fData) => apiCall("createRecordSheetOnly", { fData }),
-  updateRecordSheetOnly: (fData, rNum) => apiCall("updateRecordSheetOnly", { fData, rNum }),
-  processBackgroundTasks: (fData, rNum, flags) => apiCall("processBackgroundTasks", { fData, rNum, flags }),
+  updateRecordSheetOnly: (fData, rNum, expectedNo) => apiCall("updateRecordSheetOnly", { fData, rNum, expectedNo }),
+  processBackgroundTasks: (fData, rNum, flags, expectedNo) => apiCall("processBackgroundTasks", { fData, rNum, flags, expectedNo }),
 
   // ---- 添付ファイル（チャンク分割アップロード） ----
   uploadbox: (rowNumber, filesData) => apiCall("uploadbox", { rowNumber, filesData }),
