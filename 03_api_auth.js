@@ -84,7 +84,7 @@ async function apiCall(action, payload = {}, retriesLeft = RETRY_SAFE_ACTIONS.ha
     if (err.code === 'AUTH_EXPIRED') handleAuthExpired(err.message);
     throw err;
   }
-
+}
 // =================================================================
 // 🔌 GAS通信の集約レイヤー（Api）
 // -----------------------------------------------------------------------
