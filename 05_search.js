@@ -249,7 +249,7 @@ function renderCurrentResultsPage() {
     //   padding・font-sizeをさらに詰めたデザインに統一している（デザインの方向性は維持）。
     let driveLinkHtml = '';
     const folderUrl = String(record.添付資料 || "").trim();
-    if (folderUrl) {
+    if (isHttpUrl(folderUrl)) {
       driveLinkHtml = `
       <a href="${escapeAttr(folderUrl)}" target="_blank" rel="noopener noreferrer" class="drive-folder-link action-btn action-btn-yellow" onclick="event.stopPropagation();">
         <span class="material-symbols-outlined" style="font-size:22px; color:#ca8a04">folder_open</span><span style="font-weight:bold; color:#a16207;">資 料</span>
