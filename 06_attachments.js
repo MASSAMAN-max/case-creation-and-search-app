@@ -384,7 +384,7 @@ async function uploadAllAttachedFiles(rowNumber, files) {
     await Swal.fire({
       icon: 'warning',
       title: '一部のファイルを送信できませんでした',
-      html: `次のファイルのアップロードに失敗しました。<br><strong>${skippedNames.join('、')}</strong><br><br>お手数ですが、もう一度お試しください。`,
+      html: `次のファイルのアップロードに失敗しました。<br><strong>${escapeHtml(skippedNames.join('、'))}</strong><br><br>お手数ですが、もう一度お試しください。`,
       confirmButtonText: '了解'
     });
   }
