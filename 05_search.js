@@ -16,7 +16,7 @@ function loadAllRecordsInBackground() {
   if (countDiv && !countDiv.innerHTML) {
     countDiv.innerHTML = '<span style="color:#94a3b8;">案件データを読み込み中...</span>';
   }
-  recordsLoadingPromise = Api.loadAllRecords()
+  recordsLoadingPromise = Api.loadAllRecords({ trigger: "startup" })
     .then(records => {
       allRecordsCache = records;
       recordsLoadingPromise = null;
