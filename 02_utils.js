@@ -157,3 +157,9 @@ function showToast(message, isError = false, persist = false) {
     }, 10000);
   }
 }
+
+// リンク先として使ってよいURLか（http・https のみ許可）。
+// 「javascript:」などで始まる値が href に入ると、クリックしたときにスクリプトが動くため。
+function isHttpUrl(url) {
+  return /^https?:\/\//i.test(String(url || "").trim());
+}
