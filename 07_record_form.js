@@ -463,7 +463,7 @@ async function handleCreateSubmit(event) {
         Swal.fire({
           icon: 'error',
           title: '背景処理でエラーが発生しました',
-          html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
+          html: `<strong>${escapeHtml(bgErr.message)}</strong><br><br><small>カレンダー同期でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
           confirmButtonText: '了解'
         });
       }
@@ -694,7 +694,7 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
     Swal.fire({
       icon: 'error',
       title: '保存エラーが発生しました',
-      html: `<strong>${err.message}</strong><br><br><small>詳細はコンソール（F12）を確認してください</small>`,
+      html: `<strong>${escapeHtml(err.message)}</strong><br><br><small>詳細はコンソール（F12）を確認してください</small>`,
       confirmButtonText: '了解'
     });
   }
