@@ -104,7 +104,7 @@ const Api = {
   logout: (token) => apiCall("logout", { token }),
 
   // ---- 案件データ 読み込み ----
-  loadAllRecords: () => apiCall("loadAllRecords"),
+  loadAllRecords: (payload = {}) => apiCall("loadAllRecords", payload),
 
   // ---- 案件データ 登録・更新 ----
   createRecordSheetOnly: (fData) => apiCall("createRecordSheetOnly", { fData }),
