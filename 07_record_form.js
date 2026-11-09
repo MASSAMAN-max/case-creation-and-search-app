@@ -512,12 +512,16 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
     引渡日: document.getElementById(`引渡日_${rNum}`).value
   };
 
-  // 施主名：変更されている場合のみ送信する。
-  // 施主名が変わった場合、GAS側で「施主名よみ」を自動生成するため、
-  // ここでは施主名だけを送る（よみは元々表示していない＝ユーザーが直接編集する項目ではないため）。
+  // 施主名・施主名よみ：画面の値をそのまま送る。
+  //  ・施主名を変更し、よみが空欄 → GAS側で施主名から自動生成する
+  //  ・施主名を変更せず、よみが空欄 → GAS側で既存のよみを変更しない
   const clientNameEl = document.getElementById(`施主名_${rNum}`);
   if (clientNameEl) {
     fData["施主名"] = clientNameEl.value;
+  }
+  const clientNameYomiEl = document.getElementById(`施主名よみ_${rNum}`);
+  if (clientNameYomiEl) {
+    fData["施主名よみ"] = clientNameYomiEl.value;
   }
 
   const projectTypeSel = document.getElementById(`addProjectTypeSelect_${rNum}`);
