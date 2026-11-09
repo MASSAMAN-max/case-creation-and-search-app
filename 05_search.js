@@ -392,7 +392,10 @@ function renderCurrentResultsPage() {
             <label>施主名</label>
             <input type="text" id="施主名_${record.No}" value="${escapeAttr(record.施主名 || '')}">
           </div>
-
+          <div class="data-row-input">
+            <label>施主名よみ</label>
+            <input type="text" id="施主名よみ_${record.No}" value="${escapeAttr(record.施主名よみ || '')}" placeholder="施主名を変更したとき、空欄なら自動生成されます">
+          </div>
           <div class="data-row-input">
             <label>現場緯度経度</label>
             <input type="text" id="現場緯度経度_${record.No}" value="${escapeAttr(record.現場緯度経度 || '')}" style="width: 100%;">
