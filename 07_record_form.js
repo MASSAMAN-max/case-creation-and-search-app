@@ -398,7 +398,7 @@ async function handleCreateSubmit(event) {
     const fDataForSheetOnly = Object.assign({}, payload);
     delete fDataForSheetOnly.files; // 高速な1段目にはファイルの重いデータを含めない
 
-    const response = await Api.updateRecordSheetOnly(fDataForSheetOnly, rowNumber, rNum);
+    const response = await Api.createRecordSheetOnly(fDataForSheetOnly);
 
     // 1. ローダー解除＆新規モーダルを閉じる
     loader.style.display = "none";
@@ -425,7 +425,7 @@ async function handleCreateSubmit(event) {
     delete payloadWithoutFiles.files;
 
     try {
-      await Api.processBackgroundTasks(fDataForBackgroundTasks, rowNumber, { phoneChanged: phoneChanged }, rNum);
+      await Api.processBackgroundTasks(payloadWithoutFiles, newRowNumber, flags);
 
       // ここまで（カレンダー登録・マスタ更新）が完了した時点で完了通知に切り替える。
       // 添付ファイルのアップロードはこの後も裏側で継続し、完了を待たずに一覧を更新する。
@@ -478,7 +478,7 @@ async function handleCreateSubmit(event) {
       Swal.fire({
         icon: 'error',
         title: '登録エラーが発生しました',
-        html: `<strong>${err.message}</strong><br><br><small>詳細はコンソール（F12）を確認してください</small>`,
+        html: `<strong>${escapeHtml(err.message)}</strong><br><br><small>詳細はコンソール（F12）を確認してください</small>`,
         confirmButtonText: '了解'
       });
     }
@@ -616,7 +616,7 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
     document.getElementById("loaderText").textContent = "データを更新中";
     const fDataForSheetOnly = Object.assign({}, fData);
     delete fDataForSheetOnly.files;
-    const response = await Api.updateRecordSheetOnly(fDataForSheetOnly, rowNumber);
+    const response = await Api.updateRecordSheetOnly(fDataForSheetOnly, rowNumber, rNum);
 
     // 1. ローダーを消して画面を解放
     loader.style.display = "none";
@@ -653,7 +653,7 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
     delete fDataForBackgroundTasks.files;
 
     try {
-      await Api.processBackgroundTasks(fDataForBackgroundTasks, rowNumber, { phoneChanged: phoneChanged });
+      await Api.processBackgroundTasks(fDataForBackgroundTasks, rowNumber, { phoneChanged: phoneChanged }, rNum);
 
       // マスタ（担当者・連絡先の候補）を再取得して、次回の選択に最新の連絡先が出るようにする
       Api.loadAppDataMaster().then(data => {
@@ -680,7 +680,7 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
       Swal.fire({
         icon: 'error',
         title: '背景処理でエラーが発生しました',
-        html: `<strong>${bgErr.message}</strong><br><br><small>カレンダー同期でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
+        html: `<strong>${escapeHtml(bgErr.message)}</strong><br><br><small>カレンダー同期でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
         confirmButtonText: '了解'
       });
     }
