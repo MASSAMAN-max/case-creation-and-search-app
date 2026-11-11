@@ -161,26 +161,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); outlin
 /* 案件タイトル：大きめのフォント */
 .anken-title { font-size: 20px; font-weight: bold; color: #0f172a; }
 
-/* 詳細情報カード：各項目を縦に積み、必要な行だけ横並び（flex比率で幅を制御） */
-.detail-card {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-/* 2項目を横並びにする行の共通スタイル */
-.detail-card .field-row { display: flex; gap: 8px; width: 100%; }
-.detail-card .field-row > .data-row-input { min-width: 0; }
+/* 一覧カード見出しの右端に寄せる補助情報（受注媒体・案件種別）。文字の大きさ・色・右余白を揃える */
+.summary-side-text { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; color: #64748b; font-weight: bold; padding-right: 10px; white-space: nowrap; }
+.summary-side-text .material-symbols-outlined { font-size: 18px; }
 
-/* 案件種別・施主名・緯度経度の表示順を変更した際、緯度経度を横並び行から
-   独立させたため、比率調整用だった .field-latlng は使わなくなった。
-   .field-projecttype は現在も案件種別の行で使用しているため残す。 */
-.field-projecttype { flex: 1; }
-
-/* データ行：ラベルと入力欄の縦積み */
-.data-row-input { display: flex; flex-direction: column; }
-.data-row-input label { font-size: 13px; color: #475569; font-weight: bold; margin-bottom: 4px; }
-.data-row-input input, .data-row-input select { width: 100%; }
+/* 案件名（左）と案件種別（右端）を横並びにする行。案件名が長い場合は、案件名側が折り返す */
+.title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.title-row .anken-title { flex: 1; min-width: 0; }
 
 /* アップロードボックス：ドラッグ&ドロップ対応エリア */
 .uploadbox { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s;
@@ -418,7 +405,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); outlin
 }
 
 /* レスポンシブデザイン：タブレット・モバイル対応
-   ※ detail-card はflexベースの構成のため、grid-template-columns の強制上書きは不要。
+   ※ 案件一覧の編集フォームは、新規登録フォームと同じ .form-group / .form-row-2col で構成している。
      工事セットの入力欄（.work-section）は、新規登録と同じ見た目に統一したため廃止した。 */
 @media (max-width: 780px) {
   .drag-drop-text { display: none; }
