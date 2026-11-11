@@ -643,13 +643,6 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
     fData["施主名よみ"] = clientNameYomiEl.value;
   }
 
-  const projectTypeSel = document.getElementById(`addProjectTypeSelect_${rNum}`);
-  if (projectTypeSel && projectTypeSel.value === "(新規案件種別)") {
-    fData["案件種別"] = document.getElementById(`newProjectTypeInput_${rNum}`).value.trim();
-  } else if (projectTypeSel) {
-    fData["案件種別"] = projectTypeSel.value;
-  }
-
   // 検査日＋時刻の結合
   const inspectionDate = document.getElementById(`検査日_${rNum}`).value;
   const inspectionHourSel = document.getElementById(`検査日時_${rNum}`);
