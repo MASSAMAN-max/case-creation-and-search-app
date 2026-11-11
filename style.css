@@ -130,25 +130,36 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); outlin
 /* ログインボックス：幅制限・内部余白 */
 .login-box { width: 100%; max-width: 400px; padding: 32px; box-sizing: border-box; }
 
-/* 検索結果1件のカード：白背景・シャドウ・展開機能 */
-.result-item { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 18px; overflow: hidden;
-  border: 1px solid #e2e8f0; border-left: 4px solid transparent;  /* 初期状態：左枠線は透明 */ transition: all 0.2s ease;
+/* 検索結果1件のカード：薄い背景色・左の太線・シャドウ・展開機能。
+   色は6色を表示順に繰り返す（下の nth-child）。色は変数で持ち、左の太線・Noバッジ・詳細部分の区切り線で
+   --card-accent（濃い色）、カードの背景で --card-tint（薄い色）を使う。
+   ※ 色は「一覧での表示位置」で決まるため、新規登録・絞り込み・ページ切り替えで表示位置が変わると色も変わる。 */
+.result-item {
+  --card-accent: #1976D2;   /* 左の太線・Noバッジ・区切り線の色 */
+  --card-tint: #E3F2FD;     /* カードの薄い背景色 */
+  background: var(--card-tint); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 18px; overflow: hidden;
+  border: 1px solid #e2e8f0; border-left: 6px solid var(--card-accent); transition: all 0.2s ease;
 }
+.result-item:nth-child(6n+2) { --card-accent: #2E7D32; --card-tint: #E8F5E9; }
+.result-item:nth-child(6n+3) { --card-accent: #EF6C00; --card-tint: #FFF3E0; }
+.result-item:nth-child(6n+4) { --card-accent: #7B1FA2; --card-tint: #F3E5F5; }
+.result-item:nth-child(6n+5) { --card-accent: #00838F; --card-tint: #E0F7FA; }
+.result-item:nth-child(6n+6) { --card-accent: #C2185B; --card-tint: #FCE4EC; }
 
-/* 検索結果見出し部分：クリック時の背景変更 */
+/* 検索結果見出し部分：背景はカードの色を透かし、クリック（ホバー）時は少し明るくする */
 .result-summary { padding: 20px; cursor: pointer; display: flex; justify-content: space-between;
-  align-items: center; background: white; transition: background 0.2s;
+  align-items: center; background: transparent; transition: background 0.2s;
 }
-.result-summary:hover { background: #f8fafc; }
+.result-summary:hover { background: rgba(255, 255, 255, 0.5); }
 
-/* 検索結果詳細部分：初期表示は非表示、展開時にブロック表示 */
-.result-details { display: none; padding: 24px; border-top: 2px solid #e2e8f0; background: #fcfdfe; }
+/* 検索結果詳細部分：初期表示は非表示、展開時にブロック表示。区切り線はカードの色 */
+.result-details { display: none; padding: 24px; border-top: 2px solid var(--card-accent); background: #fcfdfe; }
 
-/* 検索結果が開いている状態：左枠線を主色に、シャドウ強調 */
-.result-item.is-open { display: block; border-left-color: var(--primary);  /* 左枠線をメインカラーに */
-  background: #f8fafc; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+/* 検索結果が開いている状態：シャドウを強調（左の太線・背景の色はカードの色のまま） */
+.result-item.is-open { display: block;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 }
-.result-item.is-open .result-summary { background: #f8fafc; }
+.result-item.is-open .result-summary { background: rgba(255, 255, 255, 0.5); }
 .result-item.is-open .result-details { display: block; }
 .result-item.is-open .expand-icon { transform: rotate(180deg);  /* 展開時にアイコン回転 */ }
 
@@ -157,17 +168,18 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); outlin
 
 /* No バッジ：背景色付きラベル */
 .badge-no { background: #e2e8f0; color: #334155; padding: 3px 10px; border-radius: 6px; font-size: 14px; font-weight: bold; }
+.result-item .badge-no { background: var(--card-accent); color: #fff; }  /* 一覧カード内では、カードの色にする */
 
 /* 案件タイトル：大きめのフォント */
 .anken-title { font-size: 20px; font-weight: bold; color: #0f172a; }
 
-/* 一覧カード見出しの右端に寄せる補助情報（受注媒体・案件種別）。文字の大きさ・色・右余白を揃える */
-.summary-side-text { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; color: #64748b; font-weight: bold; padding-right: 10px; white-space: nowrap; }
-.summary-side-text .material-symbols-outlined { font-size: 18px; }
+/* ファイル種別バッジ行の右端に寄せる補助情報（案件種別・受注媒体）を、横並びでまとめる枠。
+   幅が足りない場合は折り返し、折り返した行も右寄せになる */
+.summary-side-group { margin-left: auto; padding-right: 10px; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px 14px; }
 
-/* 案件名（左）と案件種別（右端）を横並びにする行。案件名が長い場合は、案件名側が折り返す */
-.title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.title-row .anken-title { flex: 1; min-width: 0; }
+/* 案件種別・受注媒体：文字の大きさ・色を揃える */
+.summary-side-text { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; color: #64748b; font-weight: bold; white-space: nowrap; }
+.summary-side-text .material-symbols-outlined { font-size: 18px; }
 
 /* アップロードボックス：ドラッグ&ドロップ対応エリア */
 .uploadbox { border: 2px dashed #cbd5e1; padding: 20px; border-radius: 8px; text-align: center; background: #f8fafc; transition: all 0.2s;
