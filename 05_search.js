@@ -357,9 +357,12 @@ function renderCurrentResultsPage() {
             <span class="badge-no">No.${record.No}</span>
             <span style="font-size:14px; color:var(--text-sub); font-weight:bold;">${escapeHtml(formatDisplayText(record.発注元))}</span>
             <span style="font-size:14px; color:#475569; font-weight:bold;">👤 ${escapeHtml(record.担当者) || '－'}</span>
-            <span style="font-size:14px; color:#64748b; margin-left:auto; font-weight:bold; padding-right:10px;">受注媒体: ${escapeHtml(record.受注媒体) || '－'}</span>
+            <span class="summary-side-text" style="margin-left:auto;" title="受注媒体"><span class="material-symbols-outlined">campaign</span>${escapeHtml(record.受注媒体) || '－'}</span>
           </div>
-          <div class="anken-title">${escapeHtml(record.案件名)}</div>
+          <div class="title-row">
+            <div class="anken-title">${escapeHtml(record.案件名)}</div>
+            <span class="summary-side-text" title="案件種別">${escapeHtml(record.案件種別) || '－'}</span>
+          </div>
           ${workScheduleHtml}
           ${badgeHtml}
           <div class="action-btn-row">
@@ -373,132 +376,164 @@ function renderCurrentResultsPage() {
         <span class="material-symbols-outlined expand-icon" style="transition: transform 0.2s; color:#94a3b8; font-size:30px;">expand_more</span>
       </div>
       <div class="result-details">
-        <div class="detail-card">
+        <!-- 編集フォーム：施主名以降の並び順・デザインは、新規案件登録フォーム（index.html の createProjectForm）と揃えている。
+             保存処理（07_record_form.js の saveRecord）が各要素を id で読むため、id は変更しないこと。 -->
 
-          <div class="field-row">
+        <!-- 案件種別（見出しの右端にも表示しているが、変更はここで行う） -->
+        <div class="form-group">
+          <label><span class="material-symbols-outlined">category</span> 案件種別</label>
+          <select id="addProjectTypeSelect_${record.No}" style="width: 100%;" onchange="toggleNewInput(this, 'newProjectTypeInputGroup_${record.No}')">
+            ${createOptionsHtml(appConfig.projectTypeList, record['案件種別'] || '', '案件種別')}
+          </select>
+          <div id="newProjectTypeInputGroup_${record.No}" style="display: none; margin-top: 3px;">
+            <input type="text" id="newProjectTypeInput_${record.No}" placeholder="新規案件種別" style="width: 100%;">
+          </div>
+        </div>
 
-            <div class="data-row-input field-projecttype" style="flex:1;">
-              <label>案件種別</label>
-              <select id="addProjectTypeSelect_${record.No}" onchange="toggleNewInput(this, 'newProjectTypeInputGroup_${record.No}')">
-                ${createOptionsHtml(appConfig.projectTypeList, record['案件種別'] || '', '案件種別')}
-              </select>
-              <div id="newProjectTypeInputGroup_${record.No}" style="display: none; margin-top: 3px;">
-                <input type="text" id="newProjectTypeInput_${record.No}" placeholder="新規案件種別">
-              </div>
-            </div>
-          </div>
-
-          <div class="data-row-input">
-            <label>施主名</label>
-            <input type="text" id="施主名_${record.No}" value="${escapeAttr(record.施主名 || '')}">
-          </div>
-          <div class="data-row-input">
-            <label>施主名よみ</label>
-            <input type="text" id="施主名よみ_${record.No}" value="${escapeAttr(record.施主名よみ || '')}" placeholder="施主名を変更したとき、空欄なら自動生成されます">
-          </div>
-          <div class="data-row-input">
-            <label>現場緯度経度</label>
-            <input type="text" id="現場緯度経度_${record.No}" value="${escapeAttr(record.現場緯度経度 || '')}" style="width: 100%;">
-          </div>
-
-          <div class="data-row-input"><label>現場住所</label>
+        <!-- 施主名・施主名よみ ※画面幅に関わらず常に横並び -->
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">badge</span> 施主名</label>
             <div class="voice-input-wrapper">
-              <input type="text" id="現場住所_${record.No}" value="${escapeAttr(record.現場住所 || '')}">
+              <input type="text" id="施主名_${record.No}" value="${escapeAttr(record.施主名 || '')}" placeholder="例：山田太郎">
               <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
                 <span class="material-symbols-outlined">mic</span>
               </button>
             </div>
           </div>
-
-          <div class="inner-accordion" style="margin-top:4px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
-            <div class="inner-accordion-summary" onclick="toggleInnerAccordion(this)" style="cursor:pointer; background:#e2e8f0; padding:12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#334155;">
-              <span style="display:flex; align-items:center; gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">local_parking</span> 駐車場情報</span>
-              <span class="material-symbols-outlined inner-expand-icon" style="transition:transform 0.2s;">expand_more</span>
-            </div>
-            <div class="inner-accordion-details" style="display:none; padding:16px; background:#f8fafc; border-top:1px solid #cbd5e1;">
-              <div class="data-row-input" style="margin-bottom:14px;">
-                <label>駐車場住所</label>
-                <div class="voice-input-wrapper">
-                  <input type="text" id="駐車場住所_${record.No}" value="${escapeAttr(record.駐車場住所 || '')}">
-                  <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
-                    <span class="material-symbols-outlined">mic</span>
-                  </button>
-                </div>
-              </div>
-              <div class="data-row-input">
-                <label>駐車場緯度経度</label>
-                <input type="text" id="駐車場緯度経度_${record.No}" value="${escapeAttr(record.駐車場緯度経度 || '')}" style="width: 100%;">
-              </div>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <div class="data-row-input" style="flex: 1;"><label>延床面積</label>
-              <input type="text" id="延床面積_${record.No}" value="${escapeAttr(record.延床面積 || '')}">
-            </div>
-
-            <div class="data-row-input" style="flex: 1;"><label>キーBOX</label>
-              <input type="text" id="キーBOX_${record.No}" value="${escapeAttr(record.キーBOX || '')}">
-            </div>
-          </div>
-
-          <div class="field-row">
-            <div class="data-row-input" style="flex: 1;"><label>担当者</label>
-              <select id="editStaffSelect_${record.No}" data-client="${escapeAttr(record.発注元)}" onchange="handleEditStaffChange(this, '${record.No}')">
-                ${staffOptionsHtml}
-              </select>
-              <div id="newEditStaffGroup_${record.No}" style="display:none; margin-top:3px;">
-                <input type="text" id="newEditStaffInput_${record.No}" placeholder="新規担当者名">
-              </div>
-            </div>
-
-            <div class="data-row-input" style="flex: 1;"><label>連絡先</label>
-              <input type="text" id="editPhoneInput_${record.No}" value="${escapeAttr(record.連絡先 || '')}">
-            </div>
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">badge</span> 施主名よみ（任意）</label>
+            <input type="text" id="施主名よみ_${record.No}" value="${escapeAttr(record.施主名よみ || '')}" placeholder="施主名を変更したとき、空欄なら自動生成されます">
           </div>
         </div>
 
-        <div>
-          ${buildEditWorkFieldsContainerHtml(record)}
-        </div>
-
-        <div class="form-group" style="margin-top:14px;">
-          <label style="font-weight:bold; font-size:14px; color:var(--text-sub);">検査日（時刻指定）</label>
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
-            <input type="date" id="検査日_${record.No}" value="${parseDate(record.検査日)}" onclick="this.showPicker?.()" style="cursor:pointer;">
-            <select id="検査日時_${record.No}" onchange="handleInspectionHourChange(this, '検査日分_${record.No}')" style="padding: 10px; border: 2px solid var(--border); border-radius: 8px; box-sizing: border-box;">
-              <option value="">時</option>
-            </select>
-            <select id="検査日分_${record.No}" style="padding: 10px; border: 2px solid var(--border); border-radius: 8px; box-sizing: border-box;">
-              <option value="">分</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-top:14px;">
-          <label style="font-weight:bold; font-size:14px; color:var(--text-sub);">備 考</label>
+        <!-- 現場住所 -->
+        <div class="form-group">
+          <label><span class="material-symbols-outlined">home</span> 現場住所</label>
           <div class="voice-input-wrapper">
-            <textarea id="備考_${record.No}" rows="3" style="width:100%; border:2px solid var(--border); border-radius:8px; padding:12px;">${escapeHtml(record.備考 || '')}</textarea>
+            <input type="text" id="現場住所_${record.No}" value="${escapeAttr(record.現場住所 || '')}" placeholder="例：〒937-0061 富山県魚津市仏田３４６１−２">
             <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
               <span class="material-symbols-outlined">mic</span>
             </button>
           </div>
         </div>
 
-        <div class="inner-accordion" style="margin-top:16px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
+        <!-- 現場緯度経度（地図連携用） -->
+        <div class="form-group">
+          <label><span class="material-symbols-outlined">pin_drop</span> 現場緯度経度</label>
+          <input type="text" id="現場緯度経度_${record.No}" value="${escapeAttr(record.現場緯度経度 || '')}" placeholder="例：36.8420,137.4060" style="width: 100%;">
+        </div>
+
+        <!-- 駐車場情報：普段は折りたたんでおき、必要な案件だけ開いて入力する -->
+        <div class="inner-accordion" style="margin-top:16px; margin-bottom:20px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
           <div class="inner-accordion-summary" onclick="toggleInnerAccordion(this)" style="cursor:pointer; background:#e2e8f0; padding:12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#334155;">
-            <span style="display:flex; align-items:center; gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">admin_panel_settings</span> システム管理項目他)</span>
+            <span style="display:flex; align-items:center; gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">local_parking</span> 駐車場情報</span>
             <span class="material-symbols-outlined inner-expand-icon" style="transition:transform 0.2s;">expand_more</span>
           </div>
           <div class="inner-accordion-details" style="display:none; padding:16px; background:#f8fafc; border-top:1px solid #cbd5e1;">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-              <div class="data-row-input"><label>システムID</label><input type="text" id="システムID_${record.No}" value="${escapeAttr(record.システムID || '')}"></div>
-              <div class="data-row-input"><label>メールID</label><input type="text" id="メールID_${record.No}" value="${escapeAttr(record.メールID || '')}"></div>
+            <div class="form-group" style="margin-bottom:14px;">
+              <label><span class="material-symbols-outlined">local_parking</span> 駐車場住所</label>
+              <div class="voice-input-wrapper">
+                <input type="text" id="駐車場住所_${record.No}" value="${escapeAttr(record.駐車場住所 || '')}" placeholder="例：現場近くのコインパーキング名など">
+                <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+                  <span class="material-symbols-outlined">mic</span>
+                </button>
+              </div>
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
-              <div class="data-row-input"><label>着工日</label><input type="date" id="着工日_${record.No}" value="${parseDate(record.着工日)}"></div>
-              <div class="data-row-input"><label>完成日</label><input type="date" id="完成日_${record.No}" value="${parseDate(record.完成日)}"></div>
-              <div class="data-row-input"><label>引渡日</label><input type="date" id="引渡日_${record.No}" value="${parseDate(record.引渡日)}"></div>
+            <div class="form-group" style="margin:0;">
+              <label><span class="material-symbols-outlined">pin_drop</span> 駐車場緯度経度</label>
+              <input type="text" id="駐車場緯度経度_${record.No}" value="${escapeAttr(record.駐車場緯度経度 || '')}" placeholder="例：36.8420,137.4060" style="width: 100%;">
+            </div>
+          </div>
+        </div>
+
+        <!-- 延床面積・キーBOX ※画面幅に関わらず常に横並び -->
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">square_foot</span> 延床面積</label>
+            <input type="text" id="延床面積_${record.No}" value="${escapeAttr(record.延床面積 || '')}" placeholder="例：85㎡" style="width: 100%;">
+          </div>
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">key</span> キーBOX</label>
+            <input type="text" id="キーBOX_${record.No}" value="${escapeAttr(record.キーBOX || '')}" placeholder="キーBOXの暗証番号や保管場所" style="width: 100%;">
+          </div>
+        </div>
+
+        <!-- 担当者・連絡先 ※画面幅に関わらず常に横並び -->
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">person</span> 担当者</label>
+            <select id="editStaffSelect_${record.No}" data-client="${escapeAttr(record.発注元)}" style="width:100%;" onchange="handleEditStaffChange(this, '${record.No}')">
+              ${staffOptionsHtml}
+            </select>
+            <div id="newEditStaffGroup_${record.No}" style="display:none; margin-top:8px;">
+              <input type="text" id="newEditStaffInput_${record.No}" placeholder="新規担当者名を入力してください" style="width: 100%;">
+            </div>
+          </div>
+          <div class="form-group">
+            <label><span class="material-symbols-outlined">phone</span> 連絡先</label>
+            <input type="text" id="editPhoneInput_${record.No}" value="${escapeAttr(record.連絡先 || '')}" placeholder="担当者を選択すると自動反映されます" style="width: 100%;">
+          </div>
+        </div>
+
+        <!-- 備考欄（新規登録と同じく、工事予定・担当割当の上に置く） -->
+        <div class="form-group">
+          <label><span class="material-symbols-outlined">notes</span> 備 考</label>
+          <div class="voice-input-wrapper">
+            <textarea id="備考_${record.No}" rows="2" placeholder="特記事項があれば入力してください" style="width: 100%; box-sizing: border-box;">${escapeHtml(record.備考 || '')}</textarea>
+            <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
+              <span class="material-symbols-outlined">mic</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 工事予定・担当割当 -->
+        <div>
+          ${buildEditWorkFieldsContainerHtml(record)}
+        </div>
+
+        <!-- 検査日（日付＋時刻） -->
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #334155; font-size: 14px;">検査日（時刻指定）</label>
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px;">
+            <input type="date" id="検査日_${record.No}" value="${parseDate(record.検査日)}" onclick="this.showPicker?.()" style="width: 100%; cursor: pointer;">
+            <select id="検査日時_${record.No}" onchange="handleInspectionHourChange(this, '検査日分_${record.No}')" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
+              <option value="">時</option>
+            </select>
+            <select id="検査日分_${record.No}" style="padding: 10px; border: 1px solid #adb5bd; border-radius: 6px; box-sizing: border-box;">
+              <option value="">分</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- システム管理項目他（普段は折りたたんでおく） -->
+        <div class="inner-accordion" style="margin-bottom:20px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
+          <div class="inner-accordion-summary" onclick="toggleInnerAccordion(this)" style="cursor:pointer; background:#e2e8f0; padding:12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#334155;">
+            <span style="display:flex; align-items:center; gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">admin_panel_settings</span> システム管理項目他</span>
+            <span class="material-symbols-outlined inner-expand-icon" style="transition:transform 0.2s;">expand_more</span>
+          </div>
+          <div class="inner-accordion-details" style="display:none; padding:16px; background:#f1f5f9; border-top:1px solid #cbd5e1;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group" style="margin:0;">
+                <label>システムID</label>
+                <input type="text" id="システムID_${record.No}" value="${escapeAttr(record.システムID || '')}" placeholder="システムID" style="width: 100%;">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>メールID</label>
+                <input type="text" id="メールID_${record.No}" value="${escapeAttr(record.メールID || '')}" placeholder="メールID" style="width: 100%;">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>着工日</label>
+                <input type="date" id="着工日_${record.No}" value="${parseDate(record.着工日)}" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>完成日</label>
+                <input type="date" id="完成日_${record.No}" value="${parseDate(record.完成日)}" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+              </div>
+              <div class="form-group" style="margin:0; grid-column: span 2;">
+                <label>引渡日</label>
+                <input type="date" id="引渡日_${record.No}" value="${parseDate(record.引渡日)}" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+              </div>
             </div>
           </div>
         </div>
