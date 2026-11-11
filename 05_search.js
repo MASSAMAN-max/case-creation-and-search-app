@@ -235,13 +235,17 @@ function renderCurrentResultsPage() {
     const savedBadges = String(record.保存済みファイル || "").split(",").map(s => s.trim()).filter(Boolean);
 
     let badgeHtml = '<div style="margin-top:6px; margin-bottom:2px; display:flex; flex-wrap:wrap; gap:4px; align-items:center;">';
-    let hasBadge = false;
     for (let code in FILE_TYPES_DEF) {
       if (savedBadges.includes(code)) {
         badgeHtml += `<span class="file-badge">${escapeHtml(FILE_TYPES_DEF[code].name)}</span>`;
-        hasBadge = true;
       }
     }
+    // 行の右端に、案件種別・受注媒体を横並びで表示する（どちらも表示のみ。ファイル種別バッジが無くても右端に出る）
+    badgeHtml += `
+      <span class="summary-side-group">
+        <span class="summary-side-text" title="案件種別"><span class="material-symbols-outlined">house</span>${escapeHtml(record.案件種別) || '－'}</span>
+        <span class="summary-side-text" title="受注媒体"><span class="material-symbols-outlined">campaign</span>${escapeHtml(record.受注媒体) || '－'}</span>
+      </span>`;
     badgeHtml += '</div>';
 
     // ドライブフォルダリンクの組み立て
@@ -357,13 +361,8 @@ function renderCurrentResultsPage() {
             <span class="badge-no">No.${record.No}</span>
             <span style="font-size:14px; color:var(--text-sub); font-weight:bold;">${escapeHtml(formatDisplayText(record.発注元))}</span>
             <span style="font-size:14px; color:#475569; font-weight:bold;">👤 ${escapeHtml(record.担当者) || '－'}</span>
-            <span class="summary-side-text" style="margin-left:auto;" title="受注媒体"><span class="material-symbols-outlined">campaign</span>${escapeHtml(record.受注媒体) || '－'}</span>
           </div>
-          <!-- 案件名（左）と案件種別（右端）。案件種別は表示のみで、編集フォームには出さない -->
-          <div class="title-row">
-            <div class="anken-title">${escapeHtml(record.案件名)}</div>
-            <span class="summary-side-text" title="案件種別"><span class="material-symbols-outlined">category</span>${escapeHtml(record.案件種別) || '－'}</span>
-          </div>
+          <div class="anken-title">${escapeHtml(record.案件名)}</div>
           ${workScheduleHtml}
           ${badgeHtml}
           <div class="action-btn-row">
