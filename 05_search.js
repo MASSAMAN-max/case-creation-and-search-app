@@ -359,9 +359,10 @@ function renderCurrentResultsPage() {
             <span style="font-size:14px; color:#475569; font-weight:bold;">👤 ${escapeHtml(record.担当者) || '－'}</span>
             <span class="summary-side-text" style="margin-left:auto;" title="受注媒体"><span class="material-symbols-outlined">campaign</span>${escapeHtml(record.受注媒体) || '－'}</span>
           </div>
+          <!-- 案件名（左）と案件種別（右端）。案件種別は表示のみで、編集フォームには出さない -->
           <div class="title-row">
             <div class="anken-title">${escapeHtml(record.案件名)}</div>
-            <span class="summary-side-text" title="案件種別">${escapeHtml(record.案件種別) || '－'}</span>
+            <span class="summary-side-text" title="案件種別"><span class="material-symbols-outlined">category</span>${escapeHtml(record.案件種別) || '－'}</span>
           </div>
           ${workScheduleHtml}
           ${badgeHtml}
@@ -378,17 +379,6 @@ function renderCurrentResultsPage() {
       <div class="result-details">
         <!-- 編集フォーム：施主名以降の並び順・デザインは、新規案件登録フォーム（index.html の createProjectForm）と揃えている。
              保存処理（07_record_form.js の saveRecord）が各要素を id で読むため、id は変更しないこと。 -->
-
-        <!-- 案件種別（見出しの右端にも表示しているが、変更はここで行う） -->
-        <div class="form-group">
-          <label><span class="material-symbols-outlined">category</span> 案件種別</label>
-          <select id="addProjectTypeSelect_${record.No}" style="width: 100%;" onchange="toggleNewInput(this, 'newProjectTypeInputGroup_${record.No}')">
-            ${createOptionsHtml(appConfig.projectTypeList, record['案件種別'] || '', '案件種別')}
-          </select>
-          <div id="newProjectTypeInputGroup_${record.No}" style="display: none; margin-top: 3px;">
-            <input type="text" id="newProjectTypeInput_${record.No}" placeholder="新規案件種別" style="width: 100%;">
-          </div>
-        </div>
 
         <!-- 施主名・施主名よみ ※画面幅に関わらず常に横並び -->
         <div class="form-row-2col">
