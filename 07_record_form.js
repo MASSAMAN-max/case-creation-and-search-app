@@ -158,7 +158,7 @@ function buildCreateWorkSetHtml(i, isFirst) {
     isFirst: isFirst,
     ids: WORK_SET_ID_SCHEME.create(i),
     useNames: true,
-    removeOnclick: "removeLastWorkField()",
+    removeOnclick: `removeCreateWorkField(${i})`,
     contentOptionsHtml: createOptionsHtml(appConfig.workContentList || [], "", "工事内容")
   });
 }
@@ -170,7 +170,7 @@ function buildEditWorkSetHtml(recordNo, i, values, isFirst) {
     isFirst: isFirst,
     ids: WORK_SET_ID_SCHEME.edit(recordNo, i),
     useNames: false,
-    removeOnclick: `removeEditWorkField('${recordNo}')`,
+    removeOnclick: `removeEditWorkField('${recordNo}', ${i})`,
     contentOptionsHtml: createOptionsHtml(appConfig.workContentList || [], values.content || "", "工事内容"),
     values: values
   });
@@ -194,6 +194,98 @@ function buildWorkSetsPanelHtml({ containerId, bodyHtml, addOnclick }) {
   `;
 }
 
+// ---- 工事セットの「×」削除（新規登録・編集で共通） ----
+// 押されたセットを消し、その後ろのセットを1つずつ前に詰める。
+// （例：3つのうち2番目を消すと、3番目の内容が2番目の位置に上がり、最後の欄が無くなる。
+//   セット番号は常に連続するため、保存処理（saveRecord・handleCreateSubmit）は変更不要。
+//   保存時は、詰めた結果と、空になった最後の番号（空値）がGASへ送られ、シート・カレンダーが更新される）
+
+// 画面に表示されている、指定番号のセットの入力値を読み取る
+//   ids : WORK_SET_ID_SCHEME で作った要素ID一式
+function readWorkSetValues(ids) {
+  const el = (id) => document.getElementById(id);
+  const startEl = el(ids.start);
+  const endEl = el(ids.end);
+  const contentSel = el(ids.content);
+  const newContentInput = el(ids.contentNewInput);
+  // 工事担当者は複数選択ウィジェットのhidden inputにカンマ区切りで入っている
+  const workerHidden = el(`workerHiddenInput_${ids.workerUid}`);
+
+  return {
+    start: startEl ? startEl.value : "",
+    end: endEl ? endEl.value : "",
+    content: contentSel ? contentSel.value : "",
+    newContentText: newContentInput ? newContentInput.value : "",
+    workers: workerHidden ? workerHidden.value : ""
+  };
+}
+
+// 作り直したセットに、読み取っておいた入力値を入れる
+function applyWorkSetValues(ids, values) {
+  const el = (id) => document.getElementById(id);
+
+  const startEl = el(ids.start);
+  if (startEl) {
+    startEl.value = values.start;
+    updateInputWeekday(startEl, ids.startSpan);
+  }
+  const endEl = el(ids.end);
+  if (endEl) {
+    endEl.value = values.end;
+    updateInputWeekday(endEl, ids.endSpan);
+  }
+
+  const contentSel = el(ids.content);
+  if (contentSel) {
+    contentSel.value = values.content;
+    // 「(新規工事内容)」を選んで入力していた場合は、入力欄を開いて入力済みの文字も戻す
+    if (values.content === "(新規工事内容)") {
+      toggleNewInput(contentSel, ids.contentNewGroup);
+      const newContentInput = el(ids.contentNewInput);
+      if (newContentInput) newContentInput.value = values.newContentText;
+    }
+  }
+
+  // 工事担当者の複数選択ウィジェットは、作り直したHTMLに対して初期化し直す
+  initWorkerMultiSelect(ids.workerUid, appConfig.userList, values.workers);
+}
+
+// 画面に実際に表示されているセット番号を、小さい順に返す
+//   maxIndex : 調べる最大の番号
+//   getIds   : 番号 → 要素ID一式 を返す関数
+function getExistingWorkSetIndices(maxIndex, getIds) {
+  const result = [];
+  for (let i = 1; i <= maxIndex; i++) {
+    if (document.getElementById(getIds(i).group)) result.push(i);
+  }
+  return result;
+}
+
+// 指定番号のセットを削除し、後ろのセットを1つずつ前に詰める。
+//   removedIndex : 削除するセット番号
+//   maxIndex     : 現在の最大のセット番号
+//   getIds       : 番号 → 要素ID一式 を返す関数
+//   rebuildGroup : (番号, 入力値) → その番号のセットを、入力値で作り直す関数
+// 戻り値：削除できたら true（1つ目のセット、または存在しない番号は削除しない）
+function removeWorkSetAt({ removedIndex, maxIndex, getIds, rebuildGroup }) {
+  const existing = getExistingWorkSetIndices(maxIndex, getIds);
+  const pos = existing.indexOf(removedIndex);
+  if (pos <= 0) return false; // 見つからない、または先頭のセット（先頭は削除不可）
+
+  // 1. 後ろのセットの入力値を、作り直す前に全部読み取っておく
+  const following = existing.slice(pos + 1).map(i => readWorkSetValues(getIds(i)));
+
+  // 2. 削除するセット以降を、「1つ後ろのセットの値」で作り直す（＝後ろが1つずつ前に詰まる）
+  existing.slice(pos, existing.length - 1).forEach((i, n) => {
+    rebuildGroup(i, following[n]);
+  });
+
+  // 3. 最後のセットの入力欄を消す
+  const lastGroup = document.getElementById(getIds(existing[existing.length - 1]).group);
+  if (lastGroup) lastGroup.remove();
+  return true;
+}
+
 // ---- 新規登録モーダル：セットの追加・削除 ----
 
 // 工事日程・内容・担当のセットを1つ追加する（上限なし）
@@ -204,11 +296,22 @@ window.showNextWorkField = function() {
   initWorkerMultiSelect(`new_${currentWorkCount}`, appConfig.userList, "");
 };
 
-// 直前に追加したセットを1つ削除する（1セット目は削除不可）
-window.removeLastWorkField = function() {
-  if (currentWorkCount <= 1) return;
-  const group = document.getElementById(WORK_SET_ID_SCHEME.create(currentWorkCount).group);
-  if (group) group.remove();
+// 押された番号のセットを削除する（1セット目は削除不可）。後ろのセットは1つずつ前に詰まる
+window.removeCreateWorkField = function(removedIndex) {
+  const getIds = (i) => WORK_SET_ID_SCHEME.create(i);
+
+  const removed = removeWorkSetAt({
+    removedIndex: removedIndex,
+    maxIndex: currentWorkCount,
+    getIds: getIds,
+    rebuildGroup: (i, values) => {
+      document.getElementById(getIds(i).group).outerHTML = buildCreateWorkSetHtml(i, false);
+      applyWorkSetValues(getIds(i), values);
+    }
+  });
+  if (!removed) return;
+
+  // 番号は連続したまま1つ減る（送信処理は 1〜currentWorkCount を順に読むため）
   currentWorkCount--;
 };
 
@@ -250,12 +353,28 @@ window.addEditWorkField = function(recordNo) {
   initWorkerMultiSelect(`edit_${recordNo}_${i}`, appConfig.userList, '');
 };
 
-window.removeEditWorkField = function(recordNo) {
-  const i = editWorkCounts[recordNo];
-  if (!i || i <= 1) return;
-  const group = document.getElementById(WORK_SET_ID_SCHEME.edit(recordNo, i).group);
-  if (group) group.remove();
-  editWorkCounts[recordNo] = i - 1;
+// 押された番号のセットを削除する（1セット目は削除不可）。後ろのセットは1つずつ前に詰まる
+window.removeEditWorkField = function(recordNo, removedIndex) {
+  const getIds = (i) => WORK_SET_ID_SCHEME.edit(recordNo, i);
+  const maxIndex = editWorkCounts[recordNo] || 1;
+
+  const removed = removeWorkSetAt({
+    removedIndex: removedIndex,
+    maxIndex: maxIndex,
+    getIds: getIds,
+    rebuildGroup: (i, values) => {
+      // 作り直しの時点で工事内容の選択状態が正しく出るよう、「(新規工事内容)」以外は値を渡す
+      const content = values.content === "(新規工事内容)" ? "" : values.content;
+      document.getElementById(getIds(i).group).outerHTML =
+        buildEditWorkSetHtml(recordNo, i, { content: content, start: values.start, end: values.end }, false);
+      applyWorkSetValues(getIds(i), values);
+    }
+  });
+  if (!removed) return;
+
+  // 追加ボタンで次に使う番号の基準を、実際に残っている最大の番号に合わせる
+  const remaining = getExistingWorkSetIndices(maxIndex, getIds);
+  editWorkCounts[recordNo] = remaining.length ? remaining[remaining.length - 1] : 1;
 };
 
 // 新規登録モーダル初期展開
