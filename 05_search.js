@@ -231,6 +231,7 @@ function renderCurrentResultsPage() {
 
     const item = document.createElement("div");
     item.className = "result-item";
+    item.dataset.recordNo = record.No;
     const parseDate = parseDateForInput;
     const savedBadges = String(record.保存済みファイル || "").split(",").map(s => s.trim()).filter(Boolean);
 
@@ -600,6 +601,7 @@ function renderCurrentResultsPage() {
   if (totalPages > 1) {
     renderResultsPagination(totalPages, topPagerDiv);
     renderResultsPagination(totalPages, container);
+    DraftStore.attachEditForm(item, record.No);
   }
 }
 
