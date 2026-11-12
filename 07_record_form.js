@@ -418,7 +418,8 @@ window.openCreateModal = function() {
   document.getElementById("newProjectTypeInputGroup").style.display = "none";
   document.getElementById("newClientInputGroup").style.display = "none";
   document.getElementById("newStaffInputGroup").style.display = "none";
-
+　DraftStore.attachCreateForm();
+	
   // 外部データの貼り付け連携：このモーダルを開いている間だけ有効化する
   window.addEventListener('paste', handleProjectPaste);
 };
@@ -518,7 +519,8 @@ async function handleCreateSubmit(event) {
     delete fDataForSheetOnly.files; // 高速な1段目にはファイルの重いデータを含めない
 
     const response = await Api.createRecordSheetOnly(fDataForSheetOnly);
-
+	DraftStore.remove('create');
+	  
     // 1. ローダー解除＆新規モーダルを閉じる
     loader.style.display = "none";
     if (typeof closeCreateModal === "function") closeCreateModal();
@@ -733,7 +735,8 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
     const fDataForSheetOnly = Object.assign({}, fData);
     delete fDataForSheetOnly.files;
     const response = await Api.updateRecordSheetOnly(fDataForSheetOnly, rowNumber, rNum);
-
+	DraftStore.remove('edit:' + rNum);
+	  
     // 1. ローダーを消して画面を解放
     loader.style.display = "none";
 
