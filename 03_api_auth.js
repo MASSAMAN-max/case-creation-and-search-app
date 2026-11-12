@@ -263,6 +263,7 @@ async function initializeApp() {
     // ログインが成功してメイン画面が出たら、ユーザー表示ラベル（兼ログアウトボタン）を表示する
     const logoutBtn = document.getElementById("userLogoutLabel");
     if (logoutBtn) logoutBtn.style.display = "flex";
+    await DraftStore.loadAll();
 
     // ③ 案件データはメイン画面表示をブロックせず、裏側で読み込む
     loadAllRecordsInBackground();
@@ -278,6 +279,8 @@ async function initializeApp() {
       confirmButtonColor: '#ef4444',
       confirmButtonText: 'OK'
     });
+
+    await DraftStore.clearAll();
     // 【互換性のための後片付け】以前のバージョンではID/パスワードをlocalStorageに
     // 保存していたため、旧バージョンから移行してきた利用者の端末に残っている
     // 可能性がある古い値も念のため消しておく（新バージョンではsessionStorageのみ使用）。
