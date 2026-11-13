@@ -231,7 +231,7 @@ function renderCurrentResultsPage() {
 
     const item = document.createElement("div");
     item.className = "result-item";
-    item.dataset.recordNo = record.No;
+    item.dataset.recordNo = record.No; // 入力途中データの保存（08_draft_store.js）で、どの案件のフォームか判別するために使う
     const parseDate = parseDateForInput;
     const savedBadges = String(record.保存済みファイル || "").split(",").map(s => s.trim()).filter(Boolean);
 
@@ -545,7 +545,7 @@ function renderCurrentResultsPage() {
       </div>
     `;
     container.appendChild(item);
-    DraftStore.attachEditForm(item, record.No);
+
     // 工事担当者マルチセレクト（編集フォーム）を記録済みの値で初期化する
     initEditWorkFieldSelections(record);
 
@@ -596,6 +596,10 @@ function renderCurrentResultsPage() {
         }
       }
     }
+
+    // 変更した項目だけを送るための「元の値」を記録してから、入力途中のデータを復元する（順序を変えないこと）
+    item._baselineFData = captureEditBaseline(record.No);
+    DraftStore.attachEditForm(item, record.No);
   }
 
   if (totalPages > 1) {
