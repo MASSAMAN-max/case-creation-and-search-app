@@ -32,7 +32,6 @@ const DraftStore = (function () {
   const cache = new Map();      // key → 下書き（メモリ上の写し。描画時に同期で参照するため）
   const contexts = new Map();   // key → { root, baseline, checkBase }（今画面にあるフォーム）
   const timers = new Map();     // key → 保存待ちのタイマー
-  const suppressed = new Set(); // 送信成功後、フォームが作り直されるまで保存しないkey
   let dbPromise = null;
 
   // ---------------------------------------------------------------
@@ -131,14 +130,12 @@ const DraftStore = (function () {
   // 保存（デバウンス）
   // ---------------------------------------------------------------
   function scheduleSave(key) {
-    if (suppressed.has(key)) return;
     if (timers.has(key)) clearTimeout(timers.get(key));
     timers.set(key, setTimeout(() => saveNow(key), SAVE_DELAY_MS));
   }
 
   function saveNow(key) {
     timers.delete(key);
-    if (suppressed.has(key)) return;
     const ctx = contexts.get(key);
     if (!ctx || !ctx.root.isConnected) return; // 再描画で消えたフォームは対象にしない
 
@@ -170,12 +167,14 @@ const DraftStore = (function () {
   // ---------------------------------------------------------------
   // 削除
   // ---------------------------------------------------------------
-  // サーバーへの保存が成功したときなどに呼ぶ。
-  // フォームが作り直されるまでは、そのkeyの保存を止める（成功後の操作で下書きが復活しないように）。
+  // サーバーへの保存（または送信キューへの記録）が成功したときなどに呼ぶ。
+  // 下書きを削除し、今のフォームの値を「元の値」にし直す
+  // （成功後に同じフォームを操作しても、保存済みの内容が下書きとして復活しないようにするため）。
   function remove(key) {
     if (timers.has(key)) { clearTimeout(timers.get(key)); timers.delete(key); }
-    suppressed.add(key);
     cache.delete(key);
+    const ctx = contexts.get(key);
+    if (ctx && ctx.root.isConnected) ctx.baseline = collectState(ctx.root);
     return dbDelete(key);
   }
 
@@ -272,7 +271,6 @@ const DraftStore = (function () {
   // ---------------------------------------------------------------
   function attachEditForm(item, recordNo) {
     const key = "edit:" + recordNo;
-    suppressed.delete(key);
     // フォームの初期化（担当者・検査日の時刻など）が済んだ状態を「元の値」とする
     contexts.set(key, { root: item, baseline: collectState(item), checkBase: true });
 
@@ -325,7 +323,6 @@ const DraftStore = (function () {
   function attachCreateForm() {
     const form = document.getElementById("createProjectForm");
     if (!form) return;
-    suppressed.delete("create");
     contexts.set("create", { root: form, baseline: collectState(form), checkBase: false });
 
     const saved = cache.get("create");
