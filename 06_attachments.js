@@ -404,4 +404,7 @@ async function uploadAllAttachedFiles(rowNumber, files) {
       confirmButtonText: '了解'
     });
   }
+
+  // 送信キュー（09_sync_queue.js）が、送信できなかったファイルだけを再送するために使う
+  return { failedNames: skippedNames };
 }
