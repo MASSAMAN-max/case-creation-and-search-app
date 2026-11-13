@@ -418,8 +418,10 @@ window.openCreateModal = function() {
   document.getElementById("newProjectTypeInputGroup").style.display = "none";
   document.getElementById("newClientInputGroup").style.display = "none";
   document.getElementById("newStaffInputGroup").style.display = "none";
-　DraftStore.attachCreateForm();
-	
+
+  // 前回の入力途中の内容があれば、復元する（08_draft_store.js）。フォームの初期化がすべて終わってから呼ぶこと
+  DraftStore.attachCreateForm();
+
   // 外部データの貼り付け連携：このモーダルを開いている間だけ有効化する
   window.addEventListener('paste', handleProjectPaste);
 };
@@ -512,86 +514,44 @@ async function handleCreateSubmit(event) {
   document.getElementById("loaderText").textContent = "新規案件を登録中...";
 
   // =================================================================
-  // 【1段目】シート高速追加処理
+  // 送信は、端末へ記録してから行う（09_sync_queue.js）。
+  //  ・1段目（シート追加）はその場で結果を待つ。入力内容の誤りなどの確定したエラーは、
+  //    従来どおり画面に表示し、入力を直せるようにする。
+  //  ・通信できない場合は、送信待ちとして端末に残し、通信が回復したら自動で送る。
+  //  ・2段目（カレンダー・メール・マスタ）と添付ファイルは、キューが裏側で順に送る。
+  //    再送でも二重登録にならないよう、キューが「リクエストID」を付けてサーバーへ送る。
   // =================================================================
   try {
     const fDataForSheetOnly = Object.assign({}, payload);
-    delete fDataForSheetOnly.files; // 高速な1段目にはファイルの重いデータを含めない
+    delete fDataForSheetOnly.files;
 
-    const response = await Api.createRecordSheetOnly(fDataForSheetOnly);
-	DraftStore.remove('create');
-	  
+    const outcome = await SyncQueue.submit({
+      type: 'create',
+      label: `新規：${fDataForSheetOnly["案件名"] || ""}`,
+      stage: 'sheet',
+      fData: fDataForSheetOnly,
+      flags: { isNew: true },
+      files: files
+    });
+
     // 1. ローダー解除＆新規モーダルを閉じる
     loader.style.display = "none";
     if (typeof closeCreateModal === "function") closeCreateModal();
 
-    // 2. 状態のクリア
+    // 2. 状態のクリア（送信内容は、端末内のキューに保存済み）
     selectedFilesMap["NEW_PROJECT"] = [];
     form.reset();
+    DraftStore.remove('create');
 
-    // 3. 軽量なトースト通知（1段目完了）※2段目完了の通知が出るまで表示し続ける
-    if (typeof showToast === "function") {
+    // 3. 軽量なトースト通知 ※2段目完了の通知が出るまで表示し続ける
+    if (outcome.queued) {
+      showToast("通信できないため、送信待ちにしました。通信が回復すると自動で登録します。");
+    } else {
       showToast("データ登録が完了しました。その他カレンダー、ファイル登録等処理中...", false, true);
     }
 
-    // =================================================================
-    // 【2段目】バックグラウンド処理（Drive保存/カレンダー同期/マスタ＆ヨミ更新）
-    // 413エラー対策：添付ファイルは processBackgroundTasks には含めず、
-    // uploadAllAttachedFiles() で種別ごとに適切な方式（画像=Base64、PDF等=チャンク分割方式）
-    // で個別に送信する。
-    // =================================================================
-    const newRowNumber = response.rowNumber;
-    const flags = { isNew: true };
-    const payloadWithoutFiles = Object.assign({}, payload);
-    delete payloadWithoutFiles.files;
-
-    try {
-      await Api.processBackgroundTasks(payloadWithoutFiles, newRowNumber, flags);
-
-      // ここまで（カレンダー登録・マスタ更新）が完了した時点で完了通知に切り替える。
-      // 添付ファイルのアップロードはこの後も裏側で継続し、完了を待たずに一覧を更新する。
-      if (typeof showToast === "function") {
-        showToast("最新の情報を一覧に反映しました。");
-      }
-
-      // バックグラウンドでマスタデータを再取得・更新
-      Api.loadAppDataMaster().then(data => {
-        if (data && typeof appConfig !== "undefined") {
-          appConfig = data;
-          applySharedMasterData(data);
-        }
-      }).catch(console.error);
-
-      // カレンダー登録まで完了した時点で、リロードせず一覧をリアルタイムに最新化
-      if (typeof refreshListAfterAllProcessing === "function") {
-        await refreshListAfterAllProcessing();
-      }
-
-      // 添付ファイルのアップロードは完了を待たず裏側で継続する（awaitしない）。
-      // 失敗した場合もファイル部分のエラーとして案内し、案件登録自体の完了通知は妨げない。
-      if (files && files.length > 0) {
-        uploadAllAttachedFiles(newRowNumber, files).catch(fileErr => {
-          console.error("❌ 添付ファイルのアップロードでエラーが発生しました:", fileErr);
-        });
-      }
-
-    } catch (bgErr) {
-      console.error("❌ バックグラウンド処理エラー(新規登録):", bgErr);
-      // 持続表示中の「処理中...」トーストをここで消す（エラー内容はSwalダイアログで案内する）
-      const toastEl = document.getElementById("toastNotification");
-      if (toastEl) toastEl.classList.remove("show");
-      if (typeof Swal !== "undefined") {
-        Swal.fire({
-          icon: 'error',
-          title: '背景処理でエラーが発生しました',
-          html: `<strong>${escapeHtml(bgErr.message)}</strong><br><br><small>カレンダー同期でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
-          confirmButtonText: '了解'
-        });
-      }
-    }
-
   } catch (err) {
-    // 1段目失敗時も必ずローダーを消し、再入力できるようボタンを戻す
+    // 確定したエラーのときも必ずローダーを消し、再入力できるようボタンを戻す（入力内容は残っている）
     loader.style.display = "none";
     console.error("❌ 新規登録エラー:", err);
 
@@ -611,13 +571,17 @@ async function handleCreateSubmit(event) {
 // =================================================================
 // 詳細データ修正保存処理
 // =================================================================
-window.saveRecord = async function(rNum, rowNumber, btnEl) {
-  if (btnEl) btnEl.disabled = true; // 二重送信防止
-  const loader = document.getElementById("initLoader");
-  loader.style.display = "flex";
-  document.getElementById("loaderText").textContent = "データを更新中";
+// =================================================================
+// 編集フォームの入力値の収集・変更項目の判定（第2段階：変更した項目だけを送る）
+// -----------------------------------------------------------------
+// 【なぜ変更項目だけを送るか】
+// 全項目を送ると、長時間オフラインだった端末が復帰して再送したとき、その間に他の人が更新した項目を
+// 古い値で上書きしてしまう。そのため、フォームを開いた時点の値（baseline）と比べ、
+// 変更した項目だけを送る。
+// =================================================================
 
-  // 1. フォームデータの収集
+// 編集フォームの現在の入力値を、サーバーへ送る形（項目名 → 値）で集める
+function collectEditFData(rNum) {
   const fData = {
     現場住所: document.getElementById(`現場住所_${rNum}`).value,
     現場緯度経度: document.getElementById(`現場緯度経度_${rNum}`).value.replace(/\s+/g, ""),
@@ -633,7 +597,7 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
     引渡日: document.getElementById(`引渡日_${rNum}`).value
   };
 
-  // 施主名・施主名よみ：画面の値をそのまま送る。
+  // 施主名・施主名よみ：画面の値をそのまま集める。
   //  ・施主名を変更し、よみが空欄 → GAS側で施主名から自動生成する
   //  ・施主名を変更せず、よみが空欄 → GAS側で既存のよみを変更しない
   const clientNameEl = document.getElementById(`施主名_${rNum}`);
@@ -716,27 +680,92 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
     fData["連絡先"] = phoneInput.value.trim();
   }
 
+  return fData;
+}
+
+// フォームを開いた直後の値を記録する（05_search.js の描画ループから呼ばれる）。
+// 失敗した場合は null を返し、保存時は全項目を送る（従来どおりの動作）。
+function captureEditBaseline(rNum) {
+  try {
+    return collectEditFData(rNum);
+  } catch (e) {
+    console.warn("⚠️ 編集フォームの元の値を記録できませんでした（保存時は全項目を送ります）:", e);
+    return null;
+  }
+}
+
+// 現在の値（current）のうち、元の値（baseline）から変更された項目だけを返す。
+// 工事セット（施工日開始・終了・工事内容・工事担当者）は、1項目でも変更があれば、そのセットの4項目すべてを含める
+// （サーバーは「工事内容N」の項目があるセット番号だけを処理するため）。
+function diffEditFData(current, baseline) {
+  if (!baseline) return Object.assign({}, current);
+
+  const diff = {};
+  const changedSets = new Set();
+  Object.keys(current).forEach(key => {
+    const before = baseline[key] === undefined ? "" : baseline[key];
+    if (current[key] === before) return;
+    diff[key] = current[key];
+    const m = key.match(/^(?:施工日|工事内容|工事担当者)(\d+)/);
+    if (m) changedSets.add(m[1]);
+  });
+
+  changedSets.forEach(n => {
+    ["施工日" + n + "開始", "施工日" + n + "終了", "工事内容" + n, "工事担当者" + n].forEach(key => {
+      if (current[key] !== undefined) diff[key] = current[key];
+    });
+  });
+  return diff;
+}
+
+window.saveRecord = async function(rNum, rowNumber, btnEl) {
+  if (btnEl) btnEl.disabled = true; // 二重送信防止
+  const loader = document.getElementById("initLoader");
+  loader.style.display = "flex";
+  document.getElementById("loaderText").textContent = "データを更新中";
+
+  // 1. フォームデータの収集と、変更した項目の判定
+  const itemEl = document.getElementById(`現場住所_${rNum}`)?.closest('.result-item');
+  const fAll = collectEditFData(rNum);
+  const fData = diffEditFData(fAll, itemEl ? itemEl._baselineFData : null);
+
   // 連絡先が、この案件の元の値から変更されたか（マスタの連絡先を上書きするかの判定に使う）
   const originalRecord = (allRecordsCache || []).find(r => r.rowNumber === rowNumber);
   const originalPhone = originalRecord ? String(originalRecord["連絡先"] || "").trim() : "";
-  const phoneChanged = (fData["連絡先"] !== undefined) && (fData["連絡先"] !== originalPhone);
-	
-  // 添付ファイル
-  // ※ チャンク分割方式（PDF等）の対象があるため、ここでは事前変換は行わず、
-  //   選択されたファイルの一覧をそのまま保持しておく。
+  const phoneChanged = (fAll["連絡先"] !== undefined) && (fAll["連絡先"] !== originalPhone);
+
+  // 添付ファイル：選択されたファイルの一覧をそのまま渡す（送信キューが、種別ごとの方式で送る）
   const files = selectedFilesMap[rNum] || [];
-  fData.files = []; // 1段目・2段目のfDataには重いファイルデータを含めない（後段で種別ごとに個別送信する）
+  const hasChanges = Object.keys(fData).length > 0;
+
+  // 変更も添付ファイルも無い場合は、サーバーへ送らない
+  if (!hasChanges && files.length === 0) {
+    loader.style.display = "none";
+    if (btnEl) btnEl.disabled = false;
+    if (itemEl) itemEl.classList.remove('is-open');
+    showToast("変更箇所はありませんでした。");
+    return;
+  }
 
   // =================================================================
-  // 【1段目】シート書き込み処理
+  // 送信は、端末へ記録してから行う（09_sync_queue.js）。
+  //  ・1段目（シート書き込み）はその場で結果を待つ。確定したエラーは、従来どおり画面に表示する。
+  //  ・通信できない場合は、送信待ちとして端末に残し、通信が回復したら自動で送る。
+  //  ・2段目（カレンダー同期・メール・マスタ）と添付ファイルは、キューが裏側で順に送る。
+  //    再送でも二重処理にならないよう、キューが「リクエストID」を付けてサーバーへ送る。
   // =================================================================
   try {
-    document.getElementById("loaderText").textContent = "データを更新中";
-    const fDataForSheetOnly = Object.assign({}, fData);
-    delete fDataForSheetOnly.files;
-    const response = await Api.updateRecordSheetOnly(fDataForSheetOnly, rowNumber, rNum);
-	DraftStore.remove('edit:' + rNum);
-	  
+    const outcome = await SyncQueue.submit({
+      type: 'update',
+      label: `No.${rNum}`,
+      stage: hasChanges ? 'sheet' : 'files', // 変更が無く、添付ファイルだけの場合は、シートへ書き込まない
+      rowNumber: rowNumber,
+      expectedNo: rNum,
+      fData: fData,
+      flags: { phoneChanged: phoneChanged },
+      files: files
+    });
+
     // 1. ローダーを消して画面を解放
     loader.style.display = "none";
 
@@ -744,68 +773,23 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
     selectedFilesMap[rNum] = [];
     if (typeof renderFileList === 'function') renderFileList(rNum);
     if (btnEl) btnEl.disabled = false;
-    const itemEl = document.getElementById(`現場住所_${rNum}`)?.closest('.result-item');
-    if (itemEl) itemEl.classList.remove('is-open');
-
-    // 変更が1件も無い場合は、カレンダー同期・通知メール・マスタ更新を行わない。
-    // 添付ファイルだけ追加されている可能性があるため、アップロードのみ続行する。
-    if (response && response.isDataChanged === false) {
-      showToast("変更箇所はありませんでした。");
-      if (files.length > 0) {
-        uploadAllAttachedFiles(rowNumber, files).catch(fileErr => {
-          console.error("❌ 添付ファイルのアップロードでエラーが発生しました:", fileErr);
-        });
-      }
-      return;
+    if (itemEl) {
+      itemEl.classList.remove('is-open');
+      itemEl._baselineFData = fAll; // 次の保存では、今回送った内容を基準に、変更した項目を判定する
     }
+    DraftStore.remove('edit:' + rNum); // 送信内容は端末内のキューに保存済みのため、入力途中のデータは不要
 
-    // 3. 軽量なトースト通知（1段目完了）※2段目完了の通知が出るまで表示し続ける
-    showToast("データ登録が完了しました。その他カレンダー、ファイル登録等処理中...", false, true);
-
-    // =================================================================
-    // 【2段目】重い処理を実行し、完了したらリロードせず一覧をリアルタイムに最新化する
-    // 413エラー対策：添付ファイルは processBackgroundTasks には含めず、
-    // uploadAllAttachedFiles() で種別ごとに適切な方式（画像=Base64、PDF等=チャンク分割方式）
-    // で個別に送信する。
-    // =================================================================
-    const fDataForBackgroundTasks = Object.assign({}, fData);
-    delete fDataForBackgroundTasks.files;
-
-    try {
-      await Api.processBackgroundTasks(fDataForBackgroundTasks, rowNumber, { phoneChanged: phoneChanged }, rNum);
-
-      // マスタ（担当者・連絡先の候補）を再取得して、次回の選択に最新の連絡先が出るようにする
-      Api.loadAppDataMaster().then(data => {
-        if (data && typeof appConfig !== "undefined") {
-          appConfig = data;
-          applySharedMasterData(data);
-        }
-      }).catch(console.error);
-
-      // すべての処理完了 → 一覧を自動的に最新化（ここでトースト表示も更新される）
-      await refreshListAfterAllProcessing();
-
-      // 添付ファイルのアップロードは完了を待たず裏側で継続する（awaitしない）。
-      if (files && files.length > 0) {
-        uploadAllAttachedFiles(rowNumber, files).catch(fileErr => {
-          console.error("❌ 添付ファイルのアップロードでエラーが発生しました:", fileErr);
-        });
-      }
-    } catch (bgErr) {
-      console.error("❌ バックグラウンド処理エラー:", bgErr);
-      // 持続表示中の「処理中...」トーストをここで消す（エラー内容はSwalダイアログで案内する）
-      const toastEl = document.getElementById("toastNotification");
-      if (toastEl) toastEl.classList.remove("show");
-      Swal.fire({
-        icon: 'error',
-        title: '背景処理でエラーが発生しました',
-        html: `<strong>${escapeHtml(bgErr.message)}</strong><br><br><small>カレンダー同期でエラーが発生した可能性があります。詳細はコンソール（F12）を確認してください。</small>`,
-        confirmButtonText: '了解'
-      });
+    // 3. 軽量なトースト通知 ※2段目完了の通知が出るまで表示し続ける
+    if (outcome.queued) {
+      showToast("通信できないため、送信待ちにしました。通信が回復すると自動で送信します。");
+    } else if (outcome.sheetResult && outcome.sheetResult.isDataChanged === false) {
+      showToast("変更箇所はありませんでした。");
+    } else if (hasChanges) {
+      showToast("データ登録が完了しました。その他カレンダー、ファイル登録等処理中...", false, true);
     }
 
   } catch (err) {
-    // 1段目（シート書き込み失敗）のときも必ずローダーを消し、ボタンを戻す
+    // 確定したエラー（入力内容の誤り等）のときも、必ずローダーを消し、ボタンを戻す（入力内容は残っている）
     loader.style.display = "none";
     if (btnEl) btnEl.disabled = false;
 
