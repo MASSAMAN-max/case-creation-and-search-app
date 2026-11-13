@@ -545,7 +545,7 @@ function renderCurrentResultsPage() {
       </div>
     `;
     container.appendChild(item);
-
+    DraftStore.attachEditForm(item, record.No);
     // 工事担当者マルチセレクト（編集フォーム）を記録済みの値で初期化する
     initEditWorkFieldSelections(record);
 
@@ -601,7 +601,6 @@ function renderCurrentResultsPage() {
   if (totalPages > 1) {
     renderResultsPagination(totalPages, topPagerDiv);
     renderResultsPagination(totalPages, container);
-    DraftStore.attachEditForm(item, record.No);
   }
 }
 
