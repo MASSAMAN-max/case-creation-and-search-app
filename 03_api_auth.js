@@ -58,7 +58,9 @@ async function apiCall(action, payload = {}, retriesLeft = RETRY_SAFE_ACTIONS.ha
       })
     });
     if (!response.ok) {
-      throw new Error(`HTTPエラー! ステータス: ${response.status}`);
+      const httpError = new Error(`HTTPエラー! ステータス: ${response.status}`);
+      httpError.httpStatus = response.status; // 送信キューが、再送してよいエラーか判断するために使う
+      throw httpError;
     }
     const resData = await response.json();
     if (resData.status === "error") {
@@ -71,6 +73,7 @@ async function apiCall(action, payload = {}, retriesLeft = RETRY_SAFE_ACTIONS.ha
   } catch (err) {
     // 通信エラー：HTTPエラー、または fetch 自体の失敗（TypeError）
     const isCommunicationError = err.message.startsWith("HTTPエラー") || err.name === "TypeError";
+    if (isCommunicationError) err.isCommunicationError = true; // 送信キューが、通信エラーを判別するために使う
 
     if (isCommunicationError && retriesLeft > 0) {
       console.warn(`⚠️ ${action}: 通信エラーのため再試行します（残り${retriesLeft}回）: ${err.message}`);
@@ -107,9 +110,10 @@ const Api = {
   loadAllRecords: (payload = {}) => apiCall("loadAllRecords", payload),
 
   // ---- 案件データ 登録・更新 ----
-  createRecordSheetOnly: (fData) => apiCall("createRecordSheetOnly", { fData }),
-  updateRecordSheetOnly: (fData, rNum, expectedNo) => apiCall("updateRecordSheetOnly", { fData, rNum, expectedNo }),
-  processBackgroundTasks: (fData, rNum, flags, expectedNo) => apiCall("processBackgroundTasks", { fData, rNum, flags, expectedNo }),
+  // requestId：再送でも同じ値を送り、サーバー側で二重処理を防ぐ（09_sync_queue.js が付与する）
+  createRecordSheetOnly: (fData, requestId) => apiCall("createRecordSheetOnly", { fData, requestId }),
+  updateRecordSheetOnly: (fData, rNum, expectedNo, requestId) => apiCall("updateRecordSheetOnly", { fData, rNum, expectedNo, requestId }),
+  processBackgroundTasks: (fData, rNum, flags, expectedNo, requestId) => apiCall("processBackgroundTasks", { fData, rNum, flags, expectedNo, requestId }),
 
   // ---- 添付ファイル（チャンク分割アップロード） ----
   uploadbox: (rowNumber, filesData) => apiCall("uploadbox", { rowNumber, filesData }),
@@ -263,10 +267,14 @@ async function initializeApp() {
     // ログインが成功してメイン画面が出たら、ユーザー表示ラベル（兼ログアウトボタン）を表示する
     const logoutBtn = document.getElementById("userLogoutLabel");
     if (logoutBtn) logoutBtn.style.display = "flex";
+
+    // 端末内に保存してある入力途中のデータ・未送信のデータを読み込む（一覧の描画より前に行う）
     await DraftStore.loadAll();
+    await SyncQueue.loadAll();
 
     // ③ 案件データはメイン画面表示をブロックせず、裏側で読み込む
     loadAllRecordsInBackground();
+    SyncQueue.kick(); // 未送信のデータがあれば、続きから送る
 
   } catch (err) {
     // 1. ローダーを非表示にする
@@ -279,8 +287,6 @@ async function initializeApp() {
       confirmButtonColor: '#ef4444',
       confirmButtonText: 'OK'
     });
-
-    await DraftStore.clearAll();
     // 【互換性のための後片付け】以前のバージョンではID/パスワードをlocalStorageに
     // 保存していたため、旧バージョンから移行してきた利用者の端末に残っている
     // 可能性がある古い値も念のため消しておく（新バージョンではsessionStorageのみ使用）。
@@ -308,6 +314,23 @@ window.handleLogout = async function() {
 
   // 「ログアウト」ボタンを押した場合のみ、以下の処理が走ります
   if (result.isConfirmed) {
+    // 未送信のデータがある場合は、ログアウトで失われることを確認する
+    if (SyncQueue.hasJobs()) {
+      const warn = await Swal.fire({
+        icon: 'warning',
+        title: '未送信のデータがあります',
+        text: 'ログアウトすると、未送信のデータは破棄されます。ログアウトしますか？',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: '破棄してログアウト',
+        cancelButtonText: 'やめる'
+      });
+      if (!warn.isConfirmed) return;
+    }
+    // 共用端末に顧客情報が残らないよう、端末内の下書き・未送信データを削除する
+    await DraftStore.clearAll();
+    await SyncQueue.clearAll();
+
     // 1. フォームの入力欄をクリア
     const idInput = document.getElementById("loginIdInput");
     const passInput = document.getElementById("loginPasswordInput");
