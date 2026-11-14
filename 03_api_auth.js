@@ -117,7 +117,8 @@ const Api = {
 
   // ---- 添付ファイル（チャンク分割アップロード） ----
   uploadbox: (rowNumber, filesData) => apiCall("uploadbox", { rowNumber, filesData }),
-  initChunkedUpload: (rowNumber, fileName) => apiCall("initChunkedUpload", { rowNumber, fileName }),
+  // uploadId：ファイルごとにフロントが発行し、再送・再開でも同じ値を送る（省略時はサーバーが発行）
+  initChunkedUpload: (rowNumber, fileName, uploadId) => apiCall("initChunkedUpload", { rowNumber, fileName, uploadId }),
   uploadChunk: (rowNumber, uploadId, chunkIndex, base64Chunk) => apiCall("uploadChunk", { rowNumber, uploadId, chunkIndex, base64Chunk }),
   finalizeChunkedUpload: (rowNumber, uploadId, totalChunks, fileName, fileType, mimeType) =>
     apiCall("finalizeChunkedUpload", { rowNumber, uploadId, totalChunks, fileName, fileType, mimeType }),
