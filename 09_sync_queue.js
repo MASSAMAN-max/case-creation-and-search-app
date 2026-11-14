@@ -8,7 +8,8 @@
 // 【送信の流れ（1件 = 1つのジョブ）】
 //   stage "sheet"      … 1段目：スプレッドシートへ書き込み（新規作成 / 更新）
 //   stage "background" … 2段目：カレンダー同期・通知メール・マスタ更新
-//   stage "files"      … 添付ファイルのアップロード（現行の方式のまま。中断再開は第3段階）
+//   stage "files"      … 添付ファイルのアップロード（06_attachments.js の uploadJobFiles。中断した場合は、
+//                        完了したファイルを飛ばし、届いているチャンクの続きから再開する）
 //   stage "done"       … 完了（キューから削除される）
 //   ※ 段階ごとに端末へ保存するため、再起動後も、途中の段階から再開する。
 //
@@ -26,7 +27,7 @@
 // （キューに入れるのは、通信エラー・一時的なエラーの場合のみ）。
 //
 // 【依存】03_api_auth.js（Api）、05/07（refreshListAfterAllProcessing, applySharedMasterData,
-//   appConfig）、06_attachments.js（uploadAllAttachedFiles）、02_utils.js（showToast, escapeHtml）。
+//   appConfig）、06_attachments.js（uploadJobFiles）、02_utils.js（showToast, escapeHtml）。
 // =====================================================================
 
 const SyncQueue = (function () {
@@ -133,6 +134,7 @@ const SyncQueue = (function () {
     if (!ok && withFiles && job.files.length > 0) {
       console.warn("⚠️ 添付ファイルを端末に保存できませんでした。アプリを閉じると、未送信の添付ファイルは失われます。");
       record.fileCount = 0;
+      job.filesVolatile = true; // 添付ファイルがメモリ上にしか無い（アプリを閉じる前に警告するための印）
       await dbWrite(stores => { stores.jobs.put(record); });
     }
   }
@@ -183,6 +185,11 @@ const SyncQueue = (function () {
       body = Date.now().toString(16) + "-" + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
     }
     return "req_" + body;
+  }
+
+  // 添付ファイルごとのID（アップロードID）。サーバー側の形式チェック：英数字・「_」・「-」のみ、8〜80文字
+  function newUploadKey() {
+    return "up_" + newRequestId().slice(4);
   }
 
   // エラーの種類を判定する
@@ -241,16 +248,22 @@ const SyncQueue = (function () {
   }
 
   async function runFilesStage(job) {
-    const result = await uploadAllAttachedFiles(job.rowNumber, job.files);
-    const failedNames = (result && result.failedNames) ? result.failedNames : [];
-    if (failedNames.length > 0) {
-      // 送信できなかったファイルだけを残す（成功済みのものを再送して、二重保存しないため）
-      job.files = job.files.filter(f => failedNames.indexOf(f.file.name) !== -1);
-      const err = new Error("添付ファイルの一部を送信できませんでした: " + failedNames.join("、"));
-      err.alreadyNotified = true; // 失敗の案内は uploadAllAttachedFiles が表示済み
-      err.filesChanged = true;
-      throw err;
-    }
+    // 以前の版で記録されたジョブなど、ファイルにIDが無い場合は、ここで付けて保存する
+    let needSaveFiles = false;
+    job.files.forEach(f => {
+      if (!f.fileKey) { f.fileKey = newUploadKey(); needSaveFiles = true; }
+    });
+    if (needSaveFiles) await persist(job, true);
+
+    job.fileProgress = job.fileProgress || {};
+    // 前回、確定したエラーで送れなかったファイルも、改めて試す
+    Object.keys(job.fileProgress).forEach(key => { delete job.fileProgress[key].error; });
+
+    await uploadJobFiles(job.rowNumber, job.files, job.fileProgress, {
+      // 進捗（完了したファイル・届いたチャンク数）を、そのつど端末へ保存する。アプリが終了しても、続きから再開できる
+      onProgress: async () => { await persist(job, false); renderIndicator(); },
+      classify: classify
+    });
     job.stage = "done";
   }
 
@@ -280,13 +293,12 @@ const SyncQueue = (function () {
     const kind = classify(err);
     console.error(`❌ 送信に失敗しました（${job.label} / ${job.stage} / ${kind}）:`, err);
     job.lastError = String((err && err.message) || err);
-    const withFiles = !!(err && err.filesChanged);
 
     if (kind === "auth") {
       // ジョブは保持する。再ログイン（再読み込み）後に、続きから送る
       job.status = "pending";
       paused = true;
-      await persist(job, withFiles);
+      await persist(job, false);
       renderIndicator();
       return "stop";
     }
@@ -296,13 +308,13 @@ const SyncQueue = (function () {
     if (retryable) {
       job.status = "pending";
       job.nextAttemptAt = Date.now() + backoff(job.attempts);
-      await persist(job, withFiles);
+      await persist(job, false);
       renderIndicator();
       return kind === "communication" ? "stop" : "continue";
     }
 
     job.status = "failed";
-    await persist(job, withFiles);
+    await persist(job, false);
     renderIndicator();
     if (!err || !err.alreadyNotified) notifyFailure(job);
     return "continue";
@@ -402,7 +414,9 @@ const SyncQueue = (function () {
       rowNumber: input.rowNumber || null,
       expectedNo: input.expectedNo || null,
       flags: input.flags || {},
-      files: (input.files || []).slice(), // 画面側の配列を後で空にしても影響しないよう、複製する
+      // 画面側の配列を後で空にしても影響しないよう複製し、ファイルごとにアップロードIDを付ける
+      files: (input.files || []).map(f => Object.assign({}, f, { fileKey: f.fileKey || newUploadKey() })),
+      fileProgress: {}, // ファイルごとの送信状況（fileKey → { done, error, sentChunks, ... }）
       attempts: 0,
       nextAttemptAt: 0,
       lastError: "",
@@ -476,7 +490,16 @@ const SyncQueue = (function () {
 
     let text = "送信状況：";
     const parts = [];
-    if (uploading > 0) parts.push("送信中");
+    if (uploading > 0) {
+      let sending = "送信中";
+      const filesJob = all.find(j => j.status === "uploading" && j.stage === "files" && j.files.length > 0);
+      if (filesJob) {
+        const progress = filesJob.fileProgress || {};
+        const doneCount = filesJob.files.filter(f => progress[f.fileKey] && progress[f.fileKey].done).length;
+        sending += `（添付 ${doneCount}/${filesJob.files.length}件）`;
+      }
+      parts.push(sending);
+    }
     if (pending > 0) parts.push(`送信待ち${pending}件`);
     if (failed > 0) parts.push(`要確認${failed}件`);
     text += parts.join(" / ");
@@ -561,11 +584,19 @@ const SyncQueue = (function () {
     if (document.visibilityState === "visible") kick();
   });
 
+  // 添付ファイルを端末に保存できていないジョブ（容量不足など）がある間だけ、画面を閉じる前に警告する。
+  // 保存できている場合は、アプリを閉じても、次に開いたときに続きから送るため、警告は出さない。
+  window.addEventListener("beforeunload", e => {
+    const volatile = Array.from(jobs.values()).some(j => j.filesVolatile && j.stage === "files" && j.files.length > 0);
+    if (volatile) { e.preventDefault(); e.returnValue = ""; }
+  });
+
   return {
     loadAll: loadAll,
     submit: submit,
     kick: kick,
     hasJobs: hasJobs,
-    clearAll: clearAll
+    clearAll: clearAll,
+    classify: classify
   };
 })();
