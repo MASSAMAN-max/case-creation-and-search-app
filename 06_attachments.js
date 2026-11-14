@@ -1,8 +1,8 @@
 // =====================================================================
 // 06_attachments.js ― 添付ファイル
 // ---------------------------------------------------------------------
-// ファイル選択・ドラッグ＆ドロップ、画像の送信前圧縮、PDF等のチャンク分割アップロード、
-// アップロード中のリロード警告。rowNumberが確定した後（保存後）に呼び出される。
+// ファイル選択・ドラッグ＆ドロップ、画像の送信前圧縮、PDF等のチャンク分割アップロード（中断・再開に対応）。
+// アップロードの実行は、送信キュー（09_sync_queue.js）が uploadJobFiles() を呼んで行う。rowNumberが確定した後に呼ばれる。
 // 読み込み順：index.html の <script> タグの順（01 → 07）。通常の<script>のため、
 // 各ファイルで宣言した変数・関数は、他のファイルからそのまま参照できる。
 // =====================================================================
@@ -212,57 +212,31 @@ function isImageFile(file) {
 // =================================================================
 const UPLOAD_CHUNK_SIZE = 1.2 * 1024 * 1024; // 1チャンクあたりの元データサイズ（Base64化前）
 
-// FileをArrayBufferとして読み込み、指定サイズごとにBase64文字列の配列へ分割する
-function splitFileIntoBase64Chunks(file, chunkSize) {
+// ファイルの「index番目のチャンク」だけを読み込み、Base64文字列にして返す。
+// 以前は、ファイル全体をBase64の配列に変換してから送っていたため、大きなPDFではメモリを多く使い、
+// OSにアプリが終了されやすかった。今は、送る直前に、そのチャンクの分だけを読み込む（中断・再開にも都合がよい）。
+function readChunkAsBase64(file, index, chunkSize) {
   return new Promise((resolve, reject) => {
+    const start = index * chunkSize;
+    const blob = file.slice(start, Math.min(start + chunkSize, file.size));
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const bytes = new Uint8Array(reader.result);
-        const chunks = [];
-        for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-          const slice = bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length));
-          // バイナリ文字列化してからbtoaでBase64化する（大きい配列でもスタック超過しないよう分割して結合）
-          let binary = '';
-          const stepSize = 0x8000;
-          for (let i = 0; i < slice.length; i += stepSize) {
-            binary += String.fromCharCode.apply(null, slice.subarray(i, i + stepSize));
-          }
-          chunks.push(btoa(binary));
+        // バイナリ文字列化してからbtoaでBase64化する（大きい配列でもスタック超過しないよう分割して結合）
+        let binary = '';
+        const stepSize = 0x8000;
+        for (let i = 0; i < bytes.length; i += stepSize) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + stepSize));
         }
-        resolve(chunks.length > 0 ? chunks : ['']); // 0バイトファイルでも最低1チャンクは送る
+        resolve(btoa(binary));
       } catch (err) {
         reject(err);
       }
     };
-    reader.onerror = (err) => reject(err);
-    reader.readAsArrayBuffer(file);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(blob);
   });
-}
-
-async function uploadFileViaChunkedUpload(rowNumber, fileObj) {
-  const file = fileObj.file;
-  const mimeType = file.type || 'application/octet-stream';
-
-  // ① アップロードセッションを開始する
-  const session = await Api.initChunkedUpload(rowNumber, file.name);
-  const uploadId = session && session.uploadId;
-  if (!uploadId) {
-    throw new Error("アップロードセッションを開始できませんでした。");
-  }
-
-  // ② ファイルをチャンクに分割し、1つずつ順番にVercel経由で送信する
-  //    （並列に送ると合計の同時通信量が大きくなり得るため、あえて直列で送る）
-  const chunks = await splitFileIntoBase64Chunks(file, UPLOAD_CHUNK_SIZE);
-  for (let i = 0; i < chunks.length; i++) {
-    await Api.uploadChunk(rowNumber, uploadId, i, chunks[i]);
-    console.log(`📦 チャンク送信 ${i + 1}/${chunks.length}: ${file.name}`);
-  }
-
-  // ③ 全チャンク送信完了を通知し、GAS側で結合・正式保存してもらう
-  await Api.finalizeChunkedUpload(rowNumber, uploadId, chunks.length, file.name, fileObj.fileType, mimeType);
-
-  console.log(`📤 チャンク分割アップロード完了: ${file.name} (${(file.size/1024/1024).toFixed(2)}MB, ${chunks.length}チャンク)`);
 }
 
 // 画像ファイルを送信前に圧縮し、Base64データを生成する（写真のみが対象）。
@@ -311,100 +285,137 @@ function fileToBase64(fileObj) {
 }
 
 // =================================================================
-// 添付ファイルのアップロード（413エラー対策：種別ごとに経路を振り分けて送信）
+// 送信中の画面の自動消灯の防止（Wake Lock）
 // -----------------------------------------------------------------------
-// ・画像：送信前に圧縮してBase64化し、GASの「uploadbox」アクションで1枚ずつ送信
-// ・画像以外（PDF等）：ファイル本体を一切加工せず、チャンク分割方式で
-//   ブラウザから直接Google Driveへ送信（Vercel/GASのリクエストサイズ上限を
-//   受けないため、ファイルサイズに関わらず413エラーが起きない）
-//
-// rowNumberが確定してから（案件の保存が完了してから）呼び出す必要がある。
+// 画面が自動で消灯（ロック）すると、アプリのJavaScriptが止まり、アップロードが中断される。
+// 送信中だけ、画面を点灯したままにする。
+// ・対応していない端末・ブラウザでは、何もしない（エラーにしない）
+// ・画面がバックグラウンドに回ると、ブラウザが自動で解除する。アプリに戻ったときに、取り直す
+// ・端末の電源ボタンによる手動のロックは、防げない
+// ・送信が終わると解除する（電池の消費を抑えるため）
 // =================================================================
-// -------------------------------------------------------------
-// 【離脱確認】添付ファイルのアップロード中に、誤ってページを
-// リロード・タブを閉じてしまうと、その時点までの進捗が失われ、
-// 一部のファイルだけが保存されない事故に繋がる（実際に発生した）。
-// アップロード中はこのフラグを立て、beforeunloadで警告を出すことで、
-// 事故の発生を減らす（完全に防げるわけではない点に注意。ユーザーが
-// 確認ダイアログで「離れる」を選べば、結局中断される）。
-// -------------------------------------------------------------
-let isUploadingAttachedFiles = false;
+const UploadWakeLock = (function () {
+  let sentinel = null;
+  let holders = 0; // 送信中の処理の数
 
-window.addEventListener("beforeunload", (e) => {
-  if (isUploadingAttachedFiles) {
-    // 【重要】現在のブラウザ仕様では、カスタムメッセージの表示は
-    // できず、ブラウザ標準の確認文言が出るだけになる。
-    // preventDefault()とreturnValueの設定が、確認ダイアログを
-    // 表示させるための標準的な書き方。
-    e.preventDefault();
-    e.returnValue = "";
+  async function request() {
+    if (!("wakeLock" in navigator) || sentinel || document.visibilityState !== "visible") return;
+    try {
+      sentinel = await navigator.wakeLock.request("screen");
+      sentinel.addEventListener("release", () => { sentinel = null; });
+    } catch (err) {
+      console.warn("⚠️ 画面の消灯防止を開始できませんでした:", err);
+    }
   }
-});
 
-async function uploadAllAttachedFiles(rowNumber, files) {
-  if (!files || files.length === 0) return;
+  document.addEventListener("visibilitychange", () => {
+    if (holders > 0 && document.visibilityState === "visible") request();
+  });
 
-  const imageFileObjs = files.filter(f => isImageFile(f.file));
-  const otherFileObjs = files.filter(f => !isImageFile(f.file));
-  const skippedNames = [];
-  const totalCount = imageFileObjs.length + otherFileObjs.length;
-  let succeededCount = 0;
-
-  isUploadingAttachedFiles = true;
-  try {
-    // 画像：圧縮してBase64化してから1枚ずつ送信
-    for (const fileObj of imageFileObjs) {
-      try {
-        const base64File = await fileToBase64(fileObj);
-        await Api.uploadbox(rowNumber, [base64File]);
-        succeededCount++;
-      } catch (err) {
-        console.error(`❌ 画像アップロード失敗: ${fileObj.file.name}`, err);
-        skippedNames.push(fileObj.file.name);
+  return {
+    acquire: function () { holders++; return request(); },
+    release: function () {
+      holders = Math.max(0, holders - 1);
+      if (holders === 0 && sentinel) {
+        sentinel.release().catch(() => {});
+        sentinel = null;
       }
     }
+  };
+})();
 
-    // 画像以外：チャンク分割方式でVercel経由で送信
-    for (const fileObj of otherFileObjs) {
+// =================================================================
+// 添付ファイルのアップロード（中断・再開に対応）
+// -----------------------------------------------------------------------
+// 送信キュー（09_sync_queue.js）から、ジョブごとに呼ばれる。
+//   ・画像 ：送信前に圧縮してBase64化し、GASの「uploadbox」で1枚ずつ送信する（1リクエスト）。
+//   ・画像以外（PDF等）：約1.2MBのチャンクに分けて送る。サーバーに届いているチャンクを確認し、
+//     足りない分だけ送る（途中から再開）。最後に結合・保存を依頼する。
+//   ・ファイルごとに、フロントが発行したID（fileKey）をサーバーへ送る。再送しても同じIDなので、
+//     サーバー側で、保存済みのファイルを二重に保存しない。
+//   ・完了したファイルは progress に記録される。再送のとき、完了済みのファイルは送らない。
+//
+// 引数：
+//   rowNumber : 案件の行番号（保存が完了してから呼ぶこと）
+//   files     : [{ file, fileType, fileKey }]
+//   progress  : fileKey → { done, error, chunkSize, totalChunks, sentChunks }（呼び出し側が端末に保存しておく）
+//   hooks     : { onProgress: 進捗が変わるたびに呼ばれる非同期関数, classify: エラーの種類を判定する関数 }
+// 例外：通信エラーなどはそのまま投げる（キュー側が、間隔をあけて再送する）。
+//       入力内容の誤りなど、再送しても成功しないファイルは、他のファイルの送信を続けたうえで、最後にまとめて投げる。
+// =================================================================
+async function uploadOneFileResumable(rowNumber, fileObj, st, hooks) {
+  const file = fileObj.file;
+
+  // 画像：圧縮して1リクエストで送る（uploadKey でサーバー側の二重保存を防ぐ）
+  if (isImageFile(file)) {
+    const base64File = await fileToBase64(fileObj);
+    base64File.uploadKey = fileObj.fileKey;
+    await Api.uploadbox(rowNumber, [base64File]);
+    st.done = true;
+    await hooks.onProgress();
+    return;
+  }
+
+  // 画像以外：チャンク分割。分割の大きさは、最初に決めた値を使い続ける（再開時に、区切りがずれないように）
+  const chunkSize = st.chunkSize || UPLOAD_CHUNK_SIZE;
+  const totalChunks = Math.max(1, Math.ceil(file.size / chunkSize));
+  st.chunkSize = chunkSize;
+  st.totalChunks = totalChunks;
+
+  // セッションの開始（または再開）。すでに届いているチャンクの番号が返る
+  const session = await Api.initChunkedUpload(rowNumber, file.name, fileObj.fileKey);
+  if (session && session.finalized) {
+    st.done = true; // すでに保存まで完了している
+    await hooks.onProgress();
+    return;
+  }
+  const received = new Set((session && session.receivedChunks) || []);
+  st.sentChunks = received.size;
+
+  // 足りないチャンクだけを、順番に送る
+  for (let i = 0; i < totalChunks; i++) {
+    if (received.has(i)) continue;
+    const base64Chunk = await readChunkAsBase64(file, i, chunkSize);
+    await Api.uploadChunk(rowNumber, fileObj.fileKey, i, base64Chunk);
+    received.add(i);
+    st.sentChunks = received.size;
+    await hooks.onProgress();
+    console.log(`📦 チャンク送信 ${received.size}/${totalChunks}: ${file.name}`);
+  }
+
+  // 全チャンクが届いたので、結合・保存を依頼する
+  await Api.finalizeChunkedUpload(rowNumber, fileObj.fileKey, totalChunks, file.name, fileObj.fileType, file.type || 'application/octet-stream');
+  st.done = true;
+  await hooks.onProgress();
+  console.log(`📤 チャンク分割アップロード完了: ${file.name} (${(file.size/1024/1024).toFixed(2)}MB, ${totalChunks}チャンク)`);
+}
+
+async function uploadJobFiles(rowNumber, files, progress, hooks) {
+  const failedNames = [];
+
+  await UploadWakeLock.acquire();
+  try {
+    for (const fileObj of files) {
+      const st = progress[fileObj.fileKey] || (progress[fileObj.fileKey] = {});
+      if (st.done) continue; // 完了済みのファイルは送らない
+
       try {
-        await uploadFileViaChunkedUpload(rowNumber, fileObj);
-        succeededCount++;
+        await uploadOneFileResumable(rowNumber, fileObj, st, hooks);
       } catch (err) {
+        // 通信エラー・ログイン期限切れなどは、キュー側で再送する。ここでは止める
+        if (hooks.classify(err) !== "business") throw err;
+        // 再送しても成功しないファイルは、記録して、他のファイルの送信を続ける
         console.error(`❌ ファイルアップロード失敗: ${fileObj.file.name}`, err);
-        skippedNames.push(fileObj.file.name);
+        st.error = String((err && err.message) || err);
+        failedNames.push(fileObj.file.name);
+        await hooks.onProgress();
       }
     }
   } finally {
-    // 【重要】途中で例外が起きた場合でも、必ずフラグを戻す
-    // （そうしないと、以降ずっとリロード警告が出続けてしまう）
-    isUploadingAttachedFiles = false;
+    UploadWakeLock.release();
   }
 
-  if (skippedNames.length > 0 && typeof Swal !== "undefined") {
-    await Swal.fire({
-      icon: 'warning',
-      title: '一部のファイルを送信できませんでした',
-      html: `次のファイルのアップロードに失敗しました。<br><strong>${escapeHtml(skippedNames.join('、'))}</strong><br><br>お手数ですが、もう一度お試しください。`,
-      confirmButtonText: '了解'
-    });
+  if (failedNames.length > 0) {
+    throw new Error("次のファイルを送信できませんでした: " + failedNames.join("、"));
   }
-
-  // -------------------------------------------------------------
-  // 【完了後の件数チェック】try/catchで捕捉できるエラー（通信失敗等）
-  // とは別に、「試行した件数」と「実際に成功した件数」を突き合わせる。
-  // これにより、想定外の原因（リロードによる中断等、tryブロックの
-  // 外側で処理そのものが止まってしまうケース）で一部が欠けていても、
-  // ユーザーが気づけるようにする。
-  // -------------------------------------------------------------
-  if (succeededCount < totalCount && skippedNames.length === 0 && typeof Swal !== "undefined") {
-    await Swal.fire({
-      icon: 'warning',
-      title: 'アップロード件数をご確認ください',
-      html: `${totalCount}件中${succeededCount}件のみ保存が確認できました。<br>編集画面から、添付ファイルの件数をご確認ください。`,
-      confirmButtonText: '了解'
-    });
-  }
-
-  // 送信キュー（09_sync_queue.js）が、送信できなかったファイルだけを再送するために使う
-  return { failedNames: skippedNames };
 }
