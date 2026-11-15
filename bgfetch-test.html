@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Background Fetch 検証</title>
+<style>
+  body { font-family: sans-serif; margin: 16px; line-height: 1.6; color: #222; }
+  h1 { font-size: 20px; }
+  h2 { font-size: 16px; margin-top: 24px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+  button { font-size: 16px; padding: 10px 14px; margin: 4px 4px 4px 0; }
+  label { display: block; margin: 6px 0; }
+  input { font-size: 16px; padding: 6px; width: 120px; }
+  pre { background: #f4f6f9; padding: 8px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; font-size: 13px; }
+  .ok { color: #15803d; font-weight: bold; }
+  .ng { color: #b91c1c; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>Background Fetch 検証ページ（一時的なもの）</h1>
+<p>画面のロックや他のアプリへの切り替えのあとも、アップロードが続くかを確認します。サーバーの検証用の受け口（<code>/api/bgfetch-test</code>）に、ダミーのデータを送ります。案件・Drive・シートには一切触れません。</p>
+
+<h2>1. 環境</h2>
+<pre id="env">確認中...</pre>
+
+<h2>2. サービスワーカー</h2>
+<button id="btnRegister">登録する</button>
+<button id="btnUnregister">解除する</button>
+
+<h2>3. 検証の開始</h2>
+<label>リクエストの数 <input id="count" type="number" value="12" min="1" max="60"></label>
+<label>1件のサイズ（KB） <input id="sizeKb" type="number" value="1024" min="1" max="3000"></label>
+<label>1件の遅延（ミリ秒、最大3000） <input id="delay" type="number" value="3000" min="0" max="3000"></label>
+<button id="btnStart">開始する</button>
+<p>開始したら、下の「検証の手順」に従って操作してください。</p>
+<pre id="live">未開始</pre>
+
+<h2>4. 結果（ロック中に完了していたかの確認）</h2>
+<button id="btnReload">結果を更新</button>
+<button id="btnClear">結果を削除</button>
+<pre id="results">（まだありません）</pre>
+
+<h2>検証の手順</h2>
+<ol>
+  <li>「登録する」を押し、「環境」に BackgroundFetchManager が「あり」と出ることを確認します。</li>
+  <li>「開始する」を押し、通知（進捗の表示）が出ることを確認します。</li>
+  <li>
+    次のいずれか1つを行い、1分ほど待ちます（<b>それぞれ、別の回として試してください</b>）。
+    <ul>
+      <li>A：ホームボタンを押して、他のアプリを開く</li>
+      <li>B：電源ボタンで画面をロックする</li>
+      <li>C：このアプリ（Chrome）をタスク一覧から消す</li>
+      <li>D：送信の途中で、機内モードにして、30秒後に戻す</li>
+    </ul>
+  </li>
+  <li>戻ってきて「結果を更新」を押します。</li>
+  <li>
+    判定：すべてのリクエストが <b>status 200</b>、受信時刻（<code>receivedAt</code>）が、
+    <b>操作している間の時刻を含んでいれば</b>、その操作の間も送信が続いていたことになります。
+  </li>
+</ol>
+
+<script>
+const DB_NAME = "bgfetch-test";
+const STORE = "results";
+const $ = id => document.getElementById(id);
+
+function log(el, text) { $(el).textContent = text; }
+
+// ---- 環境の確認 ----
+function showEnv() {
+  const lines = [];
+  lines.push("User-Agent: " + navigator.userAgent);
+  lines.push("serviceWorker: " + ("serviceWorker" in navigator ? "あり" : "なし"));
+  lines.push("BackgroundFetchManager: " + (("BackgroundFetchManager" in self) ? "あり" : "なし（この環境では使えません）"));
+  lines.push("表示モード: " + (matchMedia("(display-mode: standalone)").matches ? "ホーム画面から起動したアプリ（standalone）" : "ブラウザのタブ"));
+  lines.push("Wake Lock: " + (("wakeLock" in navigator) ? "あり" : "なし"));
+  log("env", lines.join("\n"));
+}
+
+// ---- IndexedDB（サービスワーカーが書いた結果の読み出し） ----
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE, { keyPath: "id" });
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function readResults() {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(STORE, "readonly").objectStore(STORE).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function clearResults() {
+  const db = await openDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).clear();
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function fmt(ms) { return new Date(ms).toLocaleTimeString("ja-JP", { hour12: false }); }
+
+async function showResults() {
+  const rows = await readResults();
+  if (rows.length === 0) { log("results", "（まだありません）"); return; }
+  const startAt = Number(localStorage.getItem("bgtest-start-at") || 0);
+  const out = [];
+  rows.sort((a, b) => a.at - b.at).forEach(r => {
+    out.push(`■ ${r.id}  状態: ${r.state}${r.reason ? "（" + r.reason + "）" : ""}  完了の記録: ${fmt(r.at)}`);
+    if (startAt) out.push(`  開始から完了の記録まで: ${Math.round((r.at - startAt) / 1000)}秒`);
+    (r.items || []).forEach(it => {
+      let received = "";
+      try { received = JSON.parse(it.body).receivedAt; } catch (e) { received = it.body; }
+      out.push(`  status ${it.status}  受信時刻 ${received}  ${it.url.replace(location.origin, "")}`);
+    });
+  });
+  log("results", out.join("\n"));
+}
+
+// ---- サービスワーカー ----
+$("btnRegister").onclick = async () => {
+  try {
+    await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.ready;
+    alert("登録しました。");
+    showEnv();
+  } catch (err) { alert("登録に失敗しました: " + err.message); }
+};
+
+$("btnUnregister").onclick = async () => {
+  const regs = await navigator.serviceWorker.getRegistrations();
+  for (const r of regs) await r.unregister();
+  alert("解除しました（" + regs.length + "件）。");
+};
+
+// ---- 検証の開始 ----
+$("btnStart").onclick = async () => {
+  try {
+    if (!("BackgroundFetchManager" in self)) { alert("この環境では Background Fetch を使えません。"); return; }
+    const reg = await navigator.serviceWorker.ready;
+
+    const count = Math.min(Math.max(Number($("count").value) || 1, 1), 60);
+    const sizeKb = Math.min(Math.max(Number($("sizeKb").value) || 1, 1), 3000);
+    const delay = Math.min(Math.max(Number($("delay").value) || 0, 0), 3000);
+
+    const requests = [];
+    for (let i = 0; i < count; i++) {
+      requests.push(new Request(`/api/bgfetch-test?i=${i}&delay=${delay}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/octet-stream" },
+        body: new Blob([new Uint8Array(sizeKb * 1024)])
+      }));
+    }
+
+    const id = "test-" + Date.now();
+    localStorage.setItem("bgtest-start-at", String(Date.now()));
+    const bgReg = await reg.backgroundFetch.fetch(id, requests, {
+      title: "検証：アップロード（" + count + "件）",
+      downloadTotal: count * 300
+    });
+    log("live", "開始しました: " + id + "\n（進捗の通知が出ていることを確認してください）");
+
+    bgReg.addEventListener("progress", () => {
+      log("live",
+        `ID: ${bgReg.id}\n` +
+        `送信済み: ${bgReg.uploaded} / ${bgReg.uploadTotal} バイト\n` +
+        `結果: ${bgReg.result || "（進行中）"}  失敗の理由: ${bgReg.failureReason || "なし"}`);
+    });
+  } catch (err) {
+    log("live", "開始に失敗しました:\n" + err.name + ": " + err.message);
+  }
+};
+
+$("btnReload").onclick = showResults;
+$("btnClear").onclick = async () => { await clearResults(); showResults(); };
+
+showEnv();
+showResults();
+</script>
+</body>
+</html>
