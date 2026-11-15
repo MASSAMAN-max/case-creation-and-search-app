@@ -453,6 +453,37 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); outlin
 /* ローディング：テキストのパルスアニメーション */
 @keyframes pulseText { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 
+/* 案件リストを最新に更新するボタン（ログインユーザー表示の左隣）。
+   右寄せはこのボタンが担当し、続くログアウトボタンの margin-left: auto と合わせて2つが右端に並ぶ。 */
+.refresh-records-btn {
+  margin-left: auto;
+  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--primary);
+  background: #e0edff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  /* <button>の標準スタイルをリセット（ログアウトボタンと同じ見た目の基準にする） */
+  font-family: inherit;
+  line-height: inherit;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.refresh-records-btn .material-symbols-outlined { font-size: 18px; }
+.refresh-records-btn:hover { background: #cfe2ff; border-color: var(--primary); }
+.refresh-records-btn:disabled { opacity: 0.6; cursor: default; }
+/* 更新中はアイコンを回転させる */
+.refresh-records-btn.is-loading .material-symbols-outlined { animation: spinRefresh 1s linear infinite; }
+@keyframes spinRefresh { to { transform: rotate(360deg); } }
+
 /* 【ユーザー表示ラベル統合型ログアウトボタン】
    通常時は「👤ユーザー名」を表示し、カーソルを乗せる（ホバーする）と
    ログアウトアイコン＋「ログアウト」表示に切り替わるボタン。
