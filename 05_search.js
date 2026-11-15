@@ -34,6 +34,24 @@ function loadAllRecordsInBackground() {
   return recordsLoadingPromise;
 }
 
+// 「案件リストを最新に更新」ボタンの処理。
+// 案件データを再取得し、現在の検索条件のまま一覧を描き直す（実処理は 07_record_form.js の
+// refreshListAfterAllProcessing を再利用。成功・失敗のトースト通知もそちらが出す）。
+// 連打で loadAllRecords が多重に走らないよう、実行中はボタンを無効にする。
+async function refreshRecordsManually() {
+  const btn = document.getElementById("refreshRecordsBtn");
+  if (!btn || btn.disabled) return;
+
+  btn.disabled = true;
+  btn.classList.add("is-loading");
+  try {
+    await refreshListAfterAllProcessing();
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove("is-loading");
+  }
+}
+
 // 日程検索
 // shouldScroll: 検索結果が表示された際に画面を少し下へスクロールするかどうか（既定はtrue）。
 //   保存後のバックグラウンド更新（refreshListAfterAllProcessing）など、
