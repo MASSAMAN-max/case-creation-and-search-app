@@ -346,7 +346,7 @@
           <div class="form-group">
             <label><span class="material-symbols-outlined">notes</span> 備 考</label>
             <div class="voice-input-wrapper">
-              <textarea name="備考" id="remarks" rows="2" placeholder="特記事項があれば入力してください" style="width: 100%; box-sizing: border-box;"></textarea>
+              <textarea name="備考" id="remarks" class="auto-grow" rows="2" placeholder="特記事項があれば入力してください" style="width: 100%; box-sizing: border-box;"></textarea>
               <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
                 <span class="material-symbols-outlined">mic</span>
               </button>
@@ -371,38 +371,46 @@
             </div>
           </div>
           
-          <!-- セクション6：システム管理項目（ID・日付等） -->
-          <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px; margin-top: 20px;">
-            <h3 style="margin: 0 0 12px 0; font-size: 15px; color: #334155; font-weight: bold; display: flex; align-items: center; gap: 6px;">
-              <span class="material-symbols-outlined" style="font-size: 24px; color: var(--text-sub);">admin_panel_settings</span> システム管理項目他
-            </h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div class="form-group" style="margin:0;">
-                <label>システムID</label>
-                <input type="text" id="system_id" name="システムID" placeholder="システムID" style="width: 100%;">
-              </div>
-              <div class="form-group" style="margin:0;">
-                <label>メールID</label>
-                <input type="text" id="property_id" name="メールID" placeholder="メールID" style="width: 100%;">
-              </div>
-              <div class="form-group" style="margin:0;">
-                <label>着工日</label>
-                <!-- ★style属性の重複を1つに統合 -->
-                <input type="date" id="construction_start_date" name="着工日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
-              </div>
-              <div class="form-group" style="margin:0;">
-                <label>完成日</label>
-                <!-- ★style属性の重複を1つに統合 -->
-                <input type="date" id="completion_date" name="完成日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
-              </div>
-              <div class="form-group" style="margin:0; grid-column: span 2;">
-                <label>引渡日</label>
-                <!-- ★style属性の重複を1つに統合 -->
-                <input type="date" id="delivery_date" name="引渡日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+          <!-- セクション6：システム管理項目他（普段は折りたたんでおく。編集フォームと同じ開閉方式） -->
+          <div class="inner-accordion" style="margin-top:20px; margin-bottom:20px; border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
+            <div class="inner-accordion-summary" onclick="toggleInnerAccordion(this)" style="cursor:pointer; background:#e2e8f0; padding:12px; font-weight:bold; display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#334155;">
+              <span style="display:flex; align-items:center; gap:6px;"><span class="material-symbols-outlined" style="font-size:18px;">admin_panel_settings</span> システム管理項目他</span>
+              <span class="material-symbols-outlined inner-expand-icon" style="transition:transform 0.2s;">expand_more</span>
+            </div>
+            <div class="inner-accordion-details" style="display:none; padding:16px; background:#f1f5f9; border-top:1px solid #cbd5e1;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group" style="margin:0;">
+                  <label>システムID</label>
+                  <input type="text" id="system_id" name="システムID" placeholder="システムID" style="width: 100%;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label>メールID</label>
+                  <input type="text" id="property_id" name="メールID" placeholder="メールID" style="width: 100%;">
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label>上棟日</label>
+                  <input type="date" id="upper_house_date" name="上棟日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label>木工検査日</label>
+                  <input type="date" id="wood_inspection_date" name="木工検査日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label>着工日</label>
+                  <input type="date" id="construction_start_date" name="着工日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+                </div>
+                <div class="form-group" style="margin:0;">
+                  <label>完成日</label>
+                  <input type="date" id="completion_date" name="完成日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+                </div>
+                <div class="form-group" style="margin:0; grid-column: span 2;">
+                  <label>引渡日</label>
+                  <input type="date" id="delivery_date" name="引渡日" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+                </div>
               </div>
             </div>
           </div>
-    
+
           <!-- セクション7：ファイル添付 -->
           <div class="form-group">
             <label><span class="material-symbols-outlined">attach_file</span> 添付ファイル</label>
