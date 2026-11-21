@@ -625,3 +625,70 @@ optgroup option {
   font-weight: normal;
   padding: 4px 8px;
 }
+
+
+/* =====================================================================
+   備考欄：入力した行数に合わせて高さを自動で変える（CSSのみ）
+   ※ field-sizing 非対応のブラウザでは、従来どおり2行の固定高さになる（入力・保存には影響なし）
+   ===================================================================== */
+textarea.auto-grow {
+  field-sizing: content;
+  min-height: 3.4em;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+/* 備考のように、マイクボタンが付く欄が複数行になっても、ボタンが縦に伸びないよう上端に揃える */
+.voice-input-wrapper:has(textarea) { align-items: flex-start; }
+
+/* =====================================================================
+   工事予定・担当割当：セットごとの視覚的な区別
+   ・左の色帯＋薄い背景＋「セット N」バッジの3点で区別する（色だけに頼らない）
+   ・色は6色を循環（番号は JS の WORK_SET_COLOR_COUNT と揃える）
+   ・全体を囲むカード枠は設けず、余白を詰めてコンパクトにしている
+   ===================================================================== */
+.work-sets-panel { margin-bottom: 14px; }
+.work-sets-title {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 15px; font-weight: bold; color: #475569; margin-bottom: 6px;
+}
+.work-sets-title .material-symbols-outlined { font-size: 20px; color: var(--primary); }
+
+.work-set {
+  --set-accent: #1976D2;   /* 左の色帯・バッジの色 */
+  --set-tint: #E3F2FD;     /* 背景の薄い色 */
+  background: var(--set-tint);
+  border-left: 5px solid var(--set-accent);
+  border-radius: 8px;
+  padding: 8px 10px 4px 10px;
+  margin-bottom: 8px;
+}
+.work-set-color-2 { --set-accent: #2E7D32; --set-tint: #E8F5E9; }
+.work-set-color-3 { --set-accent: #EF6C00; --set-tint: #FFF3E0; }
+.work-set-color-4 { --set-accent: #7B1FA2; --set-tint: #F3E5F5; }
+.work-set-color-5 { --set-accent: #00838F; --set-tint: #E0F7FA; }
+.work-set-color-6 { --set-accent: #C2185B; --set-tint: #FCE4EC; }
+
+.work-set-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.work-set-badge {
+  background: var(--set-accent); color: #fff;
+  font-size: 13px; font-weight: bold; padding: 2px 12px; border-radius: 12px;
+}
+.work-set-remove {
+  background: none; border: none; color: #ef4444; cursor: pointer;
+  display: flex; align-items: center; padding: 2px;
+}
+.work-set-remove .material-symbols-outlined { font-size: 20px; }
+
+/* セット内の余白を詰める（共通の .form-group の余白・ラベルの折り返し禁止を上書き） */
+.work-set .form-group { margin-bottom: 6px; }
+.work-set .form-row-2col { margin-bottom: 0; }
+.work-set .form-group label {
+  margin-bottom: 2px; gap: 2px; font-size: 14px;
+  white-space: normal; align-items: center;
+}
+
+.work-set-add-btn {
+  margin-top: 4px; width: 100%; padding: 8px; gap: 4px;
+  background: #e2e8f0; color: #334155; border: 1px dashed #cbd5e1;
+}
+.work-set-add-btn .material-symbols-outlined { font-size: 18px; }
