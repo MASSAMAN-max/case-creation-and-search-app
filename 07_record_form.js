@@ -93,36 +93,41 @@ const WORK_SET_ID_SCHEME = {
 //   removeOnclick      : 「×」ボタンのonclick（JS文字列）
 //   contentOptionsHtml : 工事内容セレクトの <option> 一覧
 //   values             : 初期値 { start, end }（編集フォーム用。yyyy-MM-dd形式）
+// セット番号ごとの色分けの種類数（番号が増えたら、この数で色を循環させる。CSS の .work-set-color-N と揃える）
+const WORK_SET_COLOR_COUNT = 6;
+
 function buildWorkSetFormHtml({ i, isFirst, ids, useNames, removeOnclick, contentOptionsHtml, values = {} }) {
   const nameAttr = (name) => useNames ? ` name="${name}"` : "";
   const start = values.start || "";
   const end = values.end || "";
 
-  const removeBtnHtml = isFirst ? '' : `
-    <button type="button" onclick="${removeOnclick}" title="この工事予定を削除"
-      style="position:absolute; top:14px; right:0; background:none; border:none; color:#ef4444; cursor:pointer; display:flex; align-items:center; padding:4px;">
-      <span class="material-symbols-outlined" style="font-size:20px;">close</span>
-    </button>`;
-  const wrapperStyle = isFirst ? "" : "margin-top:20px; border-top:1px dashed #cbd5e1; padding-top:12px; position:relative;";
+  // セットの見分け方：①番号バッジ（色だけに頼らない） ②左の色帯＋薄い背景（style.css の .work-set-color-N）
+  const colorClass = `work-set-color-${((i - 1) % WORK_SET_COLOR_COUNT) + 1}`;
 
-  // 横幅が半分になるため、ラベルは折り返しを許可する（共通CSSの nowrap を上書き）
-  const labelStyle = "margin-bottom: 0px; align-items: center; gap: 2px; white-space: normal;";
+  // 「×」は見出し行の右端に置く（1セット目は削除不可）
+  const removeBtnHtml = isFirst ? '' : `
+        <button type="button" class="work-set-remove" onclick="${removeOnclick}" title="このセットを削除">
+          <span class="material-symbols-outlined">close</span>
+        </button>`;
 
   return `
-    <div id="${ids.group}" class="work-input-group" style="${wrapperStyle} display:grid; grid-template-columns: 1fr; gap: 2px;">
-      ${removeBtnHtml}
+    <div id="${ids.group}" class="work-input-group work-set ${colorClass}">
+      <div class="work-set-header">
+        <span class="work-set-badge">セット ${i}</span>${removeBtnHtml}
+      </div>
+
       <div class="form-group">
-        <label style="margin-bottom: 0px; align-items: center; gap: 2px; margin-top:20px;">
-          <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span><span>施工予定日 ${i}（開始〜終了）</span>
+        <label>
+          <span class="material-symbols-outlined" style="font-size: 18px;">calendar_month</span><span>施工予定日（開始〜終了）</span>
         </label>
         <div style="display:flex; align-items:flex-start; gap:6px;">
           <div style="flex:1;">
-            <input type="date"${nameAttr(`施工日${i}開始`)} id="${ids.start}" value="${start}" onchange="handleWorkStartDateChange(this, '${ids.end}', '${ids.startSpan}', '${ids.endSpan}')" onclick="this.showPicker && this.showPicker();" style="width:100%; margin-top: 2px; cursor:pointer;">
+            <input type="date"${nameAttr(`施工日${i}開始`)} id="${ids.start}" value="${start}" onchange="handleWorkStartDateChange(this, '${ids.end}', '${ids.startSpan}', '${ids.endSpan}')" onclick="this.showPicker && this.showPicker();" style="width:100%; cursor:pointer;">
             <span id="${ids.startSpan}" style="font-size:12px; font-weight:bold; color:var(--primary);">${getWeekday(start)}</span>
           </div>
-          <span style="color:#94a3b8; margin-top:12px;">〜</span>
+          <span style="color:#94a3b8; margin-top:10px;">〜</span>
           <div style="flex:1;">
-            <input type="date"${nameAttr(`施工日${i}終了`)} id="${ids.end}" value="${end}" onchange="updateInputWeekday(this, '${ids.endSpan}')" onclick="this.showPicker && this.showPicker();" style="width:100%; margin-top: 2px; cursor:pointer;">
+            <input type="date"${nameAttr(`施工日${i}終了`)} id="${ids.end}" value="${end}" onchange="updateInputWeekday(this, '${ids.endSpan}')" onclick="this.showPicker && this.showPicker();" style="width:100%; cursor:pointer;">
             <span id="${ids.endSpan}" style="font-size:12px; font-weight:bold; color:var(--primary);">${getWeekday(end)}</span>
           </div>
         </div>
@@ -131,18 +136,18 @@ function buildWorkSetFormHtml({ i, isFirst, ids, useNames, removeOnclick, conten
       <!-- 工事内容と工事担当者は横一列（画面幅に関わらず1:1） -->
       <div class="form-row-2col">
         <div class="form-group">
-          <label style="${labelStyle}">
-            <span class="material-symbols-outlined" style="font-size: 18px;">construction</span><span>工事内容 ${i}</span> <span class="badge-required">必須</span>
+          <label>
+            <span class="material-symbols-outlined" style="font-size: 18px;">construction</span><span>工事内容</span> <span class="badge-required">必須</span>
           </label>
-          <select${nameAttr(`工事内容${i}`)} id="${ids.content}" required style="width:100%; margin-top: 2px;" onchange="toggleNewInput(this, '${ids.contentNewGroup}')">${contentOptionsHtml}</select>
+          <select${nameAttr(`工事内容${i}`)} id="${ids.content}" required style="width:100%;" onchange="toggleNewInput(this, '${ids.contentNewGroup}')">${contentOptionsHtml}</select>
           <div id="${ids.contentNewGroup}" style="display: none; margin-top: 2px;">
             <input type="text" id="${ids.contentNewInput}" placeholder="新規工事内容を入力" style="width:100%;">
           </div>
         </div>
 
         <div class="form-group">
-          <label style="${labelStyle}">
-            <span class="material-symbols-outlined" style="font-size: 18px;">supervisor_account</span><span>工事担当者 ${i}</span>
+          <label>
+            <span class="material-symbols-outlined" style="font-size: 18px;">supervisor_account</span><span>工事担当者</span>
           </label>
           ${buildWorkerMultiSelectHtml(ids.workerUid, useNames ? `工事担当者${i}` : '')}
         </div>
@@ -176,19 +181,20 @@ function buildEditWorkSetHtml(recordNo, i, values, isFirst) {
   });
 }
 
-// 「工事予定・担当割当」の枠（見出し＋セット一覧＋追加ボタン）。新規登録・編集で共通。
+// 「工事予定・担当割当」の領域（見出し＋セット一覧＋追加ボタン）。新規登録・編集で共通。
+// 以前のカード枠（背景・罫線）は廃止し、各セットの色帯だけで区切る。
 //   containerId : セット一覧を入れる要素のID（追加・削除時にここへ出し入れする）
 //   bodyHtml    : 初期表示するセットのHTML
 //   addOnclick  : 「追加」ボタンのonclick（JS文字列）
 function buildWorkSetsPanelHtml({ containerId, bodyHtml, addOnclick }) {
   return `
-    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-      <h3 style="margin: 0 0 12px 0; font-size: 18px; color: #475569; display: flex; align-items: center; gap: 6px;">
-        工事予定・担当割当
-      </h3>
+    <div class="work-sets-panel">
+      <div class="work-sets-title">
+        <span class="material-symbols-outlined">engineering</span> 工事予定・担当割当
+      </div>
       <div id="${containerId}">${bodyHtml}</div>
-      <button type="button" class="btn" style="margin-top:16px; background:#e2e8f0; color:#334155; width:100%; border:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:4px; padding:8px;" onclick="${addOnclick}">
-        <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span> 施工日・工事内容・担当を追加
+      <button type="button" class="btn work-set-add-btn" onclick="${addOnclick}">
+        <span class="material-symbols-outlined">add_circle</span> 施工日・工事内容・担当を追加
       </button>
     </div>
   `;
@@ -592,6 +598,8 @@ function collectEditFData(rNum) {
     備考: document.getElementById(`備考_${rNum}`).value,
     システムID: document.getElementById(`システムID_${rNum}`).value,
     メールID: document.getElementById(`メールID_${rNum}`).value,
+    上棟日: document.getElementById(`上棟日_${rNum}`).value,
+    木工検査日: document.getElementById(`木工検査日_${rNum}`).value,
     着工日: document.getElementById(`着工日_${rNum}`).value,
     完成日: document.getElementById(`完成日_${rNum}`).value,
     引渡日: document.getElementById(`引渡日_${rNum}`).value
