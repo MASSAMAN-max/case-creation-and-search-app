@@ -488,7 +488,7 @@ function renderCurrentResultsPage() {
         <div class="form-group">
           <label><span class="material-symbols-outlined">notes</span> 備 考</label>
           <div class="voice-input-wrapper">
-            <textarea id="備考_${record.No}" rows="2" placeholder="特記事項があれば入力してください" style="width: 100%; box-sizing: border-box;">${escapeHtml(record.備考 || '')}</textarea>
+            <textarea id="備考_${record.No}" class="auto-grow" rows="2" placeholder="特記事項があれば入力してください" style="width: 100%; box-sizing: border-box;">${escapeHtml(record.備考 || '')}</textarea>
             <button type="button" class="btn btn-sm" onclick="startVoiceInput(this)">
               <span class="material-symbols-outlined">mic</span>
             </button>
@@ -529,6 +529,14 @@ function renderCurrentResultsPage() {
               <div class="form-group" style="margin:0;">
                 <label>メールID</label>
                 <input type="text" id="メールID_${record.No}" value="${escapeAttr(record.メールID || '')}" placeholder="メールID" style="width: 100%;">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>上棟日</label>
+                <input type="date" id="上棟日_${record.No}" value="${parseDate(record.上棟日)}" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label>木工検査日</label>
+                <input type="date" id="木工検査日_${record.No}" value="${parseDate(record.木工検査日)}" style="width: 100%; cursor: pointer;" onclick="this.showPicker?.()">
               </div>
               <div class="form-group" style="margin:0;">
                 <label>着工日</label>
