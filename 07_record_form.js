@@ -850,18 +850,20 @@ async function handleProjectPaste(e) {
       '担当者': 		       'addStaffSelect',
       '案件名': 		       'project_name',
       '施主名': 		       'client_name',
-	      '施主名よみ': 	   	   'client_name_yomi',
+	  '施主名よみ': 	   	   'client_name_yomi',
       '住所': 		       'address',
       '現場緯度経度': 	　 'Latitude_longitude',
       '専有面積・延床面積': 'room_area',
       'キーBOX': 		   'key_box',
+      '上棟日':            'upper_house_date',
+      '木工検査日':         'wood_inspection_date',
       '着工日': 		       'construction_start_date',
       '完成日': 		       'completion_date',
       '引渡日': 		       'delivery_date',
       '備考': 		       'remarks'
     };
     // 日付フィールドのリスト
-    const dateFields = ['着工日', '完成日', '引渡日'];
+    const dateFields = ['上棟日', '木工検査日', '着工日', '完成日', '引渡日'];
     // マッピングを元にデータを流し込み
     Object.entries(data).forEach(([key, value]) => {
       const targetId = fieldMapping[key];
