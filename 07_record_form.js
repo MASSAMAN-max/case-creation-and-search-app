@@ -2,7 +2,7 @@
 // 07_record_form.js ― 案件の新規登録・編集フォーム
 // ---------------------------------------------------------------------
 // 新規登録モーダル、案件の保存（新規・更新の2段階処理）、工事予定・担当割当セットの入力フォーム
-// （新規・編集共通）、外部データの貼り付け連携。
+// （新規・編集共通。請求金額・外注費の入力と、外注費の自動入力・確認を含む）、外部データの貼り付け連携。
 // 読み込み順：index.html の <script> タグの順（01 → 07）。通常の<script>のため、
 // 各ファイルで宣言した変数・関数は、他のファイルからそのまま参照できる。
 // =====================================================================
@@ -26,6 +26,120 @@ window.handleWorkStartDateChange = function(startEl, endElId, startSpanId, endSp
 };
 
 // =================================================================
+// 金額入力（請求金額・外注費）の共通処理
+// -----------------------------------------------------------------
+// 【方針】
+//  ・画面の入力欄は、カンマ区切り（例：120,000）で表示する。整数のみ（小数・マイナスは入力できない）。
+//  ・サーバーへ送る値は、カンマを除いた数字だけの文字列（例："120000"）。空欄は ""。
+//  ・外注費は、請求金額を入力（変更）するたびに「請求金額 × 外注費支払率（端数切り捨て）」で自動入力（上書き）する。
+//    自動入力された外注費は、ユーザーが自由に変更できる。請求金額を空にすると、外注費も空に戻る。
+//  ・外注費支払率は、GASが返す appConfig.outsourceRate（案件管理リストタブの「外注費支払率」）。
+//    未設定（null）の場合は、自動入力も確認ダイアログも行わない。
+// =================================================================
+
+// 金額の最大桁数（GAS側の AMOUNT_MAX_DIGITS（03_案件データ_登録更新.js）と同じ値にすること）
+const MONEY_MAX_DIGITS = 12;
+
+// 入力された文字列から、数字だけを取り出して返す（全角数字は半角にする。数字が無ければ ""）。
+// 先頭の0は取り除く（"007" → "7"。"0" だけは残す）
+function parseMoney(text) {
+  const half = String(text === null || text === undefined ? "" : text)
+    .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  const digits = half.replace(/[^0-9]/g, "").replace(/^0+(?=\d)/, "").slice(0, MONEY_MAX_DIGITS);
+  return digits;
+}
+
+// 数字だけの文字列を、カンマ区切りの表示用文字列にする（"120000" → "120,000"。空なら ""）
+function formatMoney(digits) {
+  return digits === "" ? "" : Number(digits).toLocaleString("ja-JP");
+}
+
+// 入力欄の値をカンマ区切りに整える。入力途中でも、カーソルが末尾へ飛ばないよう位置を保つ
+function formatMoneyInput(el) {
+  // カーソルより左にある「数字」の個数を覚えておき、整形後に同じ個数の数字の右へカーソルを戻す
+  const caret = el.selectionStart === null ? el.value.length : el.selectionStart;
+  const digitsBeforeCaret = parseMoney(el.value.slice(0, caret)).length;
+
+  el.value = formatMoney(parseMoney(el.value));
+
+  let pos = 0, seen = 0;
+  while (pos < el.value.length && seen < digitsBeforeCaret) {
+    if (/\d/.test(el.value.charAt(pos))) seen++;
+    pos++;
+  }
+  try { el.setSelectionRange(pos, pos); } catch (e) { /* 一部の端末で未対応でも、入力自体には影響しない */ }
+}
+
+// 外注費支払率を返す。未設定・不正（null）の場合は null
+function getOutsourceRate() {
+  const rate = appConfig ? appConfig.outsourceRate : null;
+  return (typeof rate === "number" && rate > 0) ? rate : null;
+}
+
+// 請求金額（数字だけの文字列）から、外注費の標準額（請求金額 × 外注費支払率、端数切り捨て）を返す。
+// 請求金額が空、または支払率が未設定の場合は ""
+function calcOutsourceFee(billingDigits) {
+  const rate = getOutsourceRate();
+  if (billingDigits === "" || rate === null) return "";
+  // 小数（例：0.7 × 30 が 20.999… になる）の計算誤差で1円少なくならないよう、整数（BigInt）で計算する。
+  // 支払率は小数第6位まで有効（0.7 → 700000 / 1000000）。BigInt の割り算は、正の数では切り捨てになる
+  const rateScaled = BigInt(Math.round(rate * 1000000));
+  return String(BigInt(billingDigits) * rateScaled / 1000000n);
+}
+
+// 請求金額の入力時：カンマ区切りに整え、外注費を自動入力（上書き）する
+//   outsourceElId : 同じセットの外注費の入力欄のID
+window.handleBillingInput = function(billingEl, outsourceElId) {
+  formatMoneyInput(billingEl);
+  if (getOutsourceRate() === null) return; // 支払率が未設定なら、外注費には触らない
+  const outsourceEl = document.getElementById(outsourceElId);
+  if (outsourceEl) outsourceEl.value = formatMoney(calcOutsourceFee(parseMoney(billingEl.value)));
+};
+
+// 外注費の入力時：カンマ区切りに整えるだけ（自動計算した金額から、ユーザーが自由に変更できる）
+window.handleOutsourceInput = function(outsourceEl) {
+  formatMoneyInput(outsourceEl);
+};
+
+// 外注費が「標準額（請求金額 × 支払率、端数切り捨て）」と異なるセットを返す（保存前の確認用）。
+//   sets : [{ index, billing, outsource }]（billing・outsource は数字だけの文字列。空欄は ""）
+//   戻り値：異なるセットに、標準額 expected を付けた配列。請求金額・外注費がともに空のセットは対象外
+function findOutsourceMismatches(sets) {
+  return sets
+    .map(s => Object.assign({ expected: calcOutsourceFee(s.billing) }, s))
+    .filter(s => getOutsourceRate() !== null && s.outsource !== s.expected);
+}
+
+// 外注費が標準額と異なるセットがあれば、確認ダイアログを出す。保存してよければ true、入力に戻るなら false
+async function confirmOutsourceMismatches(sets) {
+  const mismatches = findOutsourceMismatches(sets);
+  if (mismatches.length === 0) return true;
+
+  const yen = (digits) => digits === "" ? "（空欄）" : `${formatMoney(digits)}円`;
+  const listHtml = mismatches.map(m => `
+    <li style="margin-bottom:6px;">
+      <strong>セット${m.index}</strong>：請求金額 ${yen(m.billing)}<br>
+      標準額 ${yen(m.expected)} ／ 入力中の外注費 <strong>${yen(m.outsource)}</strong>
+    </li>`).join("");
+
+  const result = await Swal.fire({
+    icon: 'warning',
+    title: '外注費を確認してください',
+    html: `<div style="text-align:left; font-size:15px;">
+             外注費が「請求金額 × ${getOutsourceRate()}（端数切り捨て）」と異なるセットがあります。
+             <ul style="padding-left:20px; margin:10px 0;">${listHtml}</ul>
+             このまま保存しますか？
+           </div>`,
+    showCancelButton: true,
+    confirmButtonText: 'このまま保存',
+    cancelButtonText: '入力に戻る',
+    // 新規登録モーダル（z-index:5000）やローダー（9999）より手前に表示する
+    didOpen: () => { const c = Swal.getContainer(); if (c) c.style.zIndex = "10000"; }
+  });
+  return result.isConfirmed;
+}
+
+// =================================================================
 // 工事予定・担当割当セットのHTML生成（編集フォーム用）
 // レコードに実際に値が入っているセット番号だけ初期表示し、
 // 「追加」ボタンで無制限にセットを増やせる。
@@ -47,7 +161,10 @@ function getRecordWorkSetIndices(record) {
 
 function getRecordActiveWorkSetIndices(record) {
   const all = getRecordWorkSetIndices(record);
-  const active = all.filter(i => record[`工事内容${i}`] || record[`施工日${i}開始`] || record[`施工日${i}終了`] || record[`工事担当者${i}`]);
+  // 金額は 0 の場合があるため、真偽値ではなく「空欄かどうか」で判定する
+  const hasAmount = (v) => v !== undefined && v !== null && String(v) !== "";
+  const active = all.filter(i => record[`工事内容${i}`] || record[`施工日${i}開始`] || record[`施工日${i}終了`] || record[`工事担当者${i}`]
+    || hasAmount(record[`請求金額${i}`]) || hasAmount(record[`外注費${i}`]));
   return active.length ? active : [1];
 }
 
@@ -70,7 +187,9 @@ const WORK_SET_ID_SCHEME = {
     content: `newWorkContent_${i}`,
     contentNewGroup: `newWorkContentInputGroup_${i}`,
     contentNewInput: `newWorkContentInput_${i}`,
-    workerUid: `new_${i}`
+    workerUid: `new_${i}`,
+    billing: `newWorkBilling_${i}`,
+    outsource: `newWorkOutsource_${i}`
   }),
   edit: (recordNo, i) => ({
     group: `editWorkGroup_${recordNo}_${i}`,
@@ -81,7 +200,9 @@ const WORK_SET_ID_SCHEME = {
     content: `editWorkContent_${recordNo}_${i}`,
     contentNewGroup: `newEditWorkContentGroup_${recordNo}_${i}`,
     contentNewInput: `newEditWorkContentInput_${recordNo}_${i}`,
-    workerUid: `edit_${recordNo}_${i}`
+    workerUid: `edit_${recordNo}_${i}`,
+    billing: `editWorkBilling_${recordNo}_${i}`,
+    outsource: `editWorkOutsource_${recordNo}_${i}`
   })
 };
 
@@ -92,7 +213,7 @@ const WORK_SET_ID_SCHEME = {
 //   useNames           : trueなら name 属性を付ける（新規登録フォームの FormData 送信用）
 //   removeOnclick      : 「×」ボタンのonclick（JS文字列）
 //   contentOptionsHtml : 工事内容セレクトの <option> 一覧
-//   values             : 初期値 { start, end }（編集フォーム用。yyyy-MM-dd形式）
+//   values             : 初期値 { start, end, billing, outsource }（編集フォーム用。日付はyyyy-MM-dd形式、金額は数値または数字の文字列）
 // セット番号ごとの色分けの種類数（番号が増えたら、この数で色を循環させる。CSS の .work-set-color-N と揃える）
 const WORK_SET_COLOR_COUNT = 6;
 
@@ -100,6 +221,8 @@ function buildWorkSetFormHtml({ i, isFirst, ids, useNames, removeOnclick, conten
   const nameAttr = (name) => useNames ? ` name="${name}"` : "";
   const start = values.start || "";
   const end = values.end || "";
+  const billing = formatMoney(parseMoney(values.billing));     // 画面にはカンマ区切りで表示する
+  const outsource = formatMoney(parseMoney(values.outsource));
 
   // セットの見分け方：①番号バッジ（色だけに頼らない） ②左の色帯＋薄い背景（style.css の .work-set-color-N）
   const colorClass = `work-set-color-${((i - 1) % WORK_SET_COLOR_COUNT) + 1}`;
@@ -152,6 +275,23 @@ function buildWorkSetFormHtml({ i, isFirst, ids, useNames, removeOnclick, conten
           ${buildWorkerMultiSelectHtml(ids.workerUid, useNames ? `工事担当者${i}` : '')}
         </div>
       </div>
+
+      <!-- 請求金額と外注費も横一列（1:1）。外注費は、請求金額の入力に合わせて自動入力され、変更もできる -->
+      <div class="form-row-2col">
+        <div class="form-group">
+          <label>
+            <span class="material-symbols-outlined" style="font-size: 18px;">payments</span><span>請求金額（円）</span>
+          </label>
+          <input type="text"${nameAttr(`請求金額${i}`)} id="${ids.billing}" value="${billing}" inputmode="numeric" autocomplete="off" placeholder="例：120,000" oninput="handleBillingInput(this, '${ids.outsource}')" style="width:100%; text-align:right;">
+        </div>
+
+        <div class="form-group">
+          <label>
+            <span class="material-symbols-outlined" style="font-size: 18px;">request_quote</span><span>外注費（円）</span>
+          </label>
+          <input type="text"${nameAttr(`外注費${i}`)} id="${ids.outsource}" value="${outsource}" inputmode="numeric" autocomplete="off" placeholder="請求金額から自動入力" oninput="handleOutsourceInput(this)" style="width:100%; text-align:right;">
+        </div>
+      </div>
     </div>
   `;
 }
@@ -168,7 +308,7 @@ function buildCreateWorkSetHtml(i, isFirst) {
   });
 }
 
-// 編集フォーム用：工事セット1つ分（values: { content, start, end }）
+// 編集フォーム用：工事セット1つ分（values: { content, start, end, billing, outsource }）
 function buildEditWorkSetHtml(recordNo, i, values, isFirst) {
   return buildWorkSetFormHtml({
     i: i,
@@ -216,13 +356,18 @@ function readWorkSetValues(ids) {
   const newContentInput = el(ids.contentNewInput);
   // 工事担当者は複数選択ウィジェットのhidden inputにカンマ区切りで入っている
   const workerHidden = el(`workerHiddenInput_${ids.workerUid}`);
+  const billingEl = el(ids.billing);
+  const outsourceEl = el(ids.outsource);
 
   return {
     start: startEl ? startEl.value : "",
     end: endEl ? endEl.value : "",
     content: contentSel ? contentSel.value : "",
     newContentText: newContentInput ? newContentInput.value : "",
-    workers: workerHidden ? workerHidden.value : ""
+    workers: workerHidden ? workerHidden.value : "",
+    // 金額は画面の表示のまま（カンマ区切り）で受け渡す。詰め直しで外注費を再計算しないため、手で変えた外注費も保たれる
+    billing: billingEl ? billingEl.value : "",
+    outsource: outsourceEl ? outsourceEl.value : ""
   };
 }
 
@@ -251,6 +396,12 @@ function applyWorkSetValues(ids, values) {
       if (newContentInput) newContentInput.value = values.newContentText;
     }
   }
+
+  // 請求金額・外注費（外注費は自動計算せず、読み取っておいた値をそのまま戻す）
+  const billingEl = el(ids.billing);
+  if (billingEl) billingEl.value = values.billing;
+  const outsourceEl = el(ids.outsource);
+  if (outsourceEl) outsourceEl.value = values.outsource;
 
   // 工事担当者の複数選択ウィジェットは、作り直したHTMLに対して初期化し直す
   initWorkerMultiSelect(ids.workerUid, appConfig.userList, values.workers);
@@ -332,7 +483,9 @@ function buildEditWorkFieldsContainerHtml(record) {
   const bodyHtml = indices.map((i, idx) => buildEditWorkSetHtml(record.No, i, {
     content: record['工事内容' + i] || '',
     start: parseDateForInput(record['施工日' + i + '開始']),
-    end: parseDateForInput(record['施工日' + i + '終了'])
+    end: parseDateForInput(record['施工日' + i + '終了']),
+    billing: record['請求金額' + i],
+    outsource: record['外注費' + i]
   }, idx === 0)).join('');
 
   return buildWorkSetsPanelHtml({
@@ -372,7 +525,7 @@ window.removeEditWorkField = function(recordNo, removedIndex) {
       // 作り直しの時点で工事内容の選択状態が正しく出るよう、「(新規工事内容)」以外は値を渡す
       const content = values.content === "(新規工事内容)" ? "" : values.content;
       document.getElementById(getIds(i).group).outerHTML =
-        buildEditWorkSetHtml(recordNo, i, { content: content, start: values.start, end: values.end }, false);
+        buildEditWorkSetHtml(recordNo, i, { content: content, start: values.start, end: values.end, billing: values.billing, outsource: values.outsource }, false);
       applyWorkSetValues(getIds(i), values);
     }
   });
@@ -487,6 +640,9 @@ async function handleCreateSubmit(event) {
       payload["施工日" + i + "開始"] = eVal;
       payload["施工日" + i + "終了"] = sVal;
     }
+    // 請求金額・外注費：画面のカンマ区切りを外し、数字だけの文字列にする（空欄は ""）
+    payload["請求金額" + i] = parseMoney(payload["請求金額" + i]);
+    payload["外注費" + i] = parseMoney(payload["外注費" + i]);
   }
 
   // -------------------------------------------------------------
@@ -506,6 +662,19 @@ async function handleCreateSubmit(event) {
     }
   } else {
     payload["検査日"] = "";
+  }
+
+  // -------------------------------------------------------------
+  // 外注費の確認：外注費が「請求金額 × 外注費支払率（端数切り捨て）」と異なるセットがあれば、保存前に確認する。
+  // （ローダーは画面全体を覆ってダイアログを隠すため、確認が済むまで表示しない）
+  // -------------------------------------------------------------
+  const amountSets = [];
+  for (let i = 1; i <= currentWorkCount; i++) {
+    amountSets.push({ index: i, billing: payload["請求金額" + i], outsource: payload["外注費" + i] });
+  }
+  if (!(await confirmOutsourceMismatches(amountSets))) {
+    submitBtn.disabled = false; // 入力画面に戻る（入力内容はそのまま残る）
+    return;
   }
 
   // -------------------------------------------------------------
@@ -652,6 +821,8 @@ function collectEditFData(rNum) {
         fData["施工日" + i + "終了"] = "";
         fData["工事内容" + i] = "";
         fData["工事担当者" + i] = "";
+        fData["請求金額" + i] = "";
+        fData["外注費" + i] = "";
       }
       continue;
     }
@@ -674,6 +845,13 @@ function collectEditFData(rNum) {
     // 工事担当者は複数選択ウィジェットのhidden inputにカンマ区切りで格納されている
     const workerHidden = document.getElementById(`workerHiddenInput_edit_${rNum}_${i}`);
     fData["工事担当者" + i] = workerHidden ? workerHidden.value : "";
+
+    // 請求金額・外注費：カンマを除いた数字だけの文字列で送る（空欄は ""）
+    const amountIds = WORK_SET_ID_SCHEME.edit(rNum, i);
+    const billingEl = document.getElementById(amountIds.billing);
+    const outsourceEl = document.getElementById(amountIds.outsource);
+    fData["請求金額" + i] = billingEl ? parseMoney(billingEl.value) : "";
+    fData["外注費" + i] = outsourceEl ? parseMoney(outsourceEl.value) : "";
   }
 
   const staffSel = document.getElementById(`editStaffSelect_${rNum}`);
@@ -703,7 +881,7 @@ function captureEditBaseline(rNum) {
 }
 
 // 現在の値（current）のうち、元の値（baseline）から変更された項目だけを返す。
-// 工事セット（施工日開始・終了・工事内容・工事担当者）は、1項目でも変更があれば、そのセットの4項目すべてを含める
+// 工事セット（施工日開始・終了・工事内容・工事担当者・請求金額・外注費）は、1項目でも変更があれば、そのセットの6項目すべてを含める
 // （サーバーは「工事内容N」の項目があるセット番号だけを処理するため）。
 function diffEditFData(current, baseline) {
   if (!baseline) return Object.assign({}, current);
@@ -714,23 +892,43 @@ function diffEditFData(current, baseline) {
     const before = baseline[key] === undefined ? "" : baseline[key];
     if (current[key] === before) return;
     diff[key] = current[key];
-    const m = key.match(/^(?:施工日|工事内容|工事担当者)(\d+)/);
+    const m = key.match(/^(?:施工日|工事内容|工事担当者|請求金額|外注費)(\d+)/);
     if (m) changedSets.add(m[1]);
   });
 
   changedSets.forEach(n => {
-    ["施工日" + n + "開始", "施工日" + n + "終了", "工事内容" + n, "工事担当者" + n].forEach(key => {
+    ["施工日" + n + "開始", "施工日" + n + "終了", "工事内容" + n, "工事担当者" + n, "請求金額" + n, "外注費" + n].forEach(key => {
       if (current[key] !== undefined) diff[key] = current[key];
     });
   });
   return diff;
 }
 
+// 保存前の「外注費の確認」の対象にするセットを集める（編集フォーム用）。
+// 今回の保存で請求金額または外注費を変更したセットだけが対象。
+// （金額に触れていないセットは、過去に確認済みの金額のため、他の項目を直すたびに確認はしない）
+//   current  : 現在の入力値（collectEditFData の結果）
+//   baseline : フォームを開いた時点の入力値。無い場合（記録に失敗したとき）は、すべてのセットが対象
+function collectChangedAmountSets(current, baseline) {
+  const sets = [];
+  Object.keys(current).forEach(key => {
+    const m = key.match(/^請求金額(\d+)$/);
+    if (!m) return;
+    const n = m[1];
+    const billing = current["請求金額" + n] || "";
+    const outsource = current["外注費" + n] || "";
+    const changed = !baseline
+      || billing !== (baseline["請求金額" + n] || "")
+      || outsource !== (baseline["外注費" + n] || "");
+    if (changed) sets.push({ index: Number(n), billing: billing, outsource: outsource });
+  });
+  return sets;
+}
+
 window.saveRecord = async function(rNum, rowNumber, btnEl) {
   if (btnEl) btnEl.disabled = true; // 二重送信防止
   const loader = document.getElementById("initLoader");
-  loader.style.display = "flex";
-  document.getElementById("loaderText").textContent = "データを更新中";
+  // ※ ローダーは画面全体を覆うため、外注費の確認ダイアログ（下）が済んでから表示する
 
   // 1. フォームデータの収集と、変更した項目の判定
   const itemEl = document.getElementById(`現場住所_${rNum}`)?.closest('.result-item');
@@ -748,12 +946,22 @@ window.saveRecord = async function(rNum, rowNumber, btnEl) {
 
   // 変更も添付ファイルも無い場合は、サーバーへ送らない
   if (!hasChanges && files.length === 0) {
-    loader.style.display = "none";
     if (btnEl) btnEl.disabled = false;
     if (itemEl) itemEl.classList.remove('is-open');
     showToast("変更箇所はありませんでした。");
     return;
   }
+
+  // 外注費の確認：今回、請求金額・外注費を変更したセットのうち、外注費が
+  // 「請求金額 × 外注費支払率（端数切り捨て）」と異なるものがあれば、保存前に確認する
+  const amountSets = collectChangedAmountSets(fAll, itemEl ? itemEl._baselineFData : null);
+  if (!(await confirmOutsourceMismatches(amountSets))) {
+    if (btnEl) btnEl.disabled = false; // 入力画面に戻る（入力内容はそのまま残る）
+    return;
+  }
+
+  loader.style.display = "flex";
+  document.getElementById("loaderText").textContent = "データを更新中";
 
   // =================================================================
   // 送信は、端末へ記録してから行う（09_sync_queue.js）。
